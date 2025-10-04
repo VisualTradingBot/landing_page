@@ -1,15 +1,22 @@
-import { useState } from "react";
+import React from "react";
+import Navbar from "./Navbar";
+import Hero from "./Hero";
+import Build from "./Build";
+import Trade from "./Trade";
+import Footer from "./Footer";
 import "./App.css";
 
 function App() {
   return (
-    <>
+    <div className="app-root">
       <Navbar />
-      <Hero />
-      <Build />
-      <Trade />
+      <main>
+        <Hero />
+        <Build />
+        <Trade />
+      </main>
       <Footer />
-    </>
+    </div>
   );
 }
 
