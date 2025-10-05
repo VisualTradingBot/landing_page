@@ -1,32 +1,9 @@
 .trade {
-  background: #fff;
+  background: transparent;
   color: var(--fg);
   padding: 80px 18px;
   position: relative;
   overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        45deg,
-        transparent 48%,
-        rgba(124, 58, 237, 0.03) 49%,
-        rgba(124, 58, 237, 0.03) 51%,
-        transparent 52%
-      ),
-      linear-gradient(
-        -45deg,
-        transparent 48%,
-        rgba(124, 58, 237, 0.02) 49%,
-        rgba(124, 58, 237, 0.02) 51%,
-        transparent 52%
-      );
-    background-size: 40px 40px, 60px 60px;
-    pointer-events: none;
-    opacity: 0.45;
-  }
 }
 
 .trade .container {

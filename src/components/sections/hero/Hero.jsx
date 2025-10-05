@@ -77,9 +77,6 @@ export default function Hero({ onOpenModal }) {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           {heroText}
-          <span className="cursor" aria-hidden>
-            _
-          </span>
         </motion.h1>
 
         {showTagline && (
@@ -122,13 +119,6 @@ export default function Hero({ onOpenModal }) {
 
       {/* Moving Tile Wall Animation */}
       <TileWall />
-
-      <motion.div
-        className="divider"
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 1.5, delay: 1 }}
-      />
     </section>
   );
 }
