@@ -1,4 +1,3 @@
-import React from "react";
 import "./footer.scss";
 
 export default function Footer() {
@@ -9,22 +8,41 @@ export default function Footer() {
           <div className="footer-left">
             <div className="brand">VTrade — Visual Trading Studio</div>
             <div className="contact-info">
-              <div className="address">123 Trading Street, Finance District, NY 10001</div>
+              <div className="address">
+                123 Trading Street, Finance District, NY 10001
+              </div>
             </div>
           </div>
           <div className="footer-right">
             <div className="social-links">
-              <a href="https://instagram.com/vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://instagram.com/vtrade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 Instagram
               </a>
-              <a href="https://x.com/vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://x.com/vtrade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 X
               </a>
-              <a href="https://tiktok.com/@vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://tiktok.com/@vtrade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 TikTok
               </a>
             </div>
-            <a href="mailto:contact@vtrade.com" className="email">contact@vtrade.com</a>
+            <a href="mailto:contact@vtrade.com" className="email">
+              contact@vtrade.com
+            </a>
           </div>
         </div>
         <div className="footer-bottom">

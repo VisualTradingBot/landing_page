@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import "./contactModal.scss";
 
@@ -7,21 +7,21 @@ export default function ContactModal({ isOpen, onClose }) {
     name: "",
     email: "",
     tradingExperience: "beginner", // beginner, intermediate, advanced
-    botExperience: "beginner" // beginner, intermediate, advanced
+    botExperience: "beginner", // beginner, intermediate, advanced
   });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleExperienceChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -35,7 +35,7 @@ export default function ContactModal({ isOpen, onClose }) {
   const experienceLevels = [
     { value: "beginner", label: "Beginner" },
     { value: "intermediate", label: "Intermediate" },
-    { value: "advanced", label: "Advanced" }
+    { value: "advanced", label: "Advanced" },
   ];
 
   if (!isOpen) return null;
@@ -95,8 +95,12 @@ export default function ContactModal({ isOpen, onClose }) {
                 <button
                   key={level.value}
                   type="button"
-                  className={`toggle-button ${formData.tradingExperience === level.value ? 'active' : ''}`}
-                  onClick={() => handleExperienceChange('tradingExperience', level.value)}
+                  className={`toggle-button ${
+                    formData.tradingExperience === level.value ? "active" : ""
+                  }`}
+                  onClick={() =>
+                    handleExperienceChange("tradingExperience", level.value)
+                  }
                 >
                   {level.label}
                 </button>
@@ -111,8 +115,12 @@ export default function ContactModal({ isOpen, onClose }) {
                 <button
                   key={level.value}
                   type="button"
-                  className={`toggle-button ${formData.botExperience === level.value ? 'active' : ''}`}
-                  onClick={() => handleExperienceChange('botExperience', level.value)}
+                  className={`toggle-button ${
+                    formData.botExperience === level.value ? "active" : ""
+                  }`}
+                  onClick={() =>
+                    handleExperienceChange("botExperience", level.value)
+                  }
                 >
                   {level.label}
                 </button>
