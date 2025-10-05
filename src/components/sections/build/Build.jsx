@@ -72,13 +72,13 @@ export default function Build() {
           </div>
 
           <div className={`feature-item ${activeFeature === 'analytics' ? 'active' : ''}`} onClick={() => setActiveFeature('analytics')}>
-            <span className="feature-label">Real-time Analytics</span>
-            <span className="feature-description">Monitor strategies with live performance metrics</span>
+            <span className="feature-label">Advanced metrics control</span>
+            <span className="feature-description">Use advanced and custom metrics and custom formulas to build strategies with total precision and freedom.</span>
           </div>
 
           <div className={`feature-item ${activeFeature === 'indicators' ? 'active' : ''}`} onClick={() => setActiveFeature('indicators')}>
-            <span className="feature-label">Custom Indicators</span>
-            <span className="feature-description">Create and share custom technical indicators</span>
+            <span className="feature-label">Modular & Scalable</span>
+            <span className="feature-description">Build strategies from simple blocks and seamlessly aggregate them into advanced functional modules—scalable design made convenient</span>
           </div>
         </div>
 
