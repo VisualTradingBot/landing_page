@@ -1,11 +1,9 @@
-import React from "react";
-import Navbar from "./components/layout/Navbar";
-import Hero from "./components/sections/hero/Hero";
-import Build from "./components/sections/build/Build";
-import Trade from "./components/sections/trade/Trade";
-import TradingPage from "./components/trading/TradingPage";
-import Footer from "./components/layout/Footer";
-import "./styles/App.css";
+import Navbar from "./Navbar";
+import Hero from "./Hero";
+import Build from "./Build";
+import Footer from "./Footer";
+import Trade from "./pages/TradingPage";
+import "./App.css";
 
 function App() {
   return (
@@ -15,7 +13,6 @@ function App() {
         <Hero />
         <Build />
         <Trade />
-        <TradingPage />
       </main>
       <Footer />
     </div>
