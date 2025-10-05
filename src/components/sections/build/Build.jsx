@@ -110,6 +110,70 @@ export default function Build() {
         // Store interval ID for cleanup
         return () => clearInterval(intervalId);
       }
+
+      // Modular & Scalable animation
+      if (activeFeature === 'indicators') {
+        // Function to run the modular sequence
+        const runModularSequence = () => {
+          // Reset to initial state
+          animate(".modular-block", {
+            translateX: [0],
+            translateY: [0],
+            scale: [1],
+            easing: "easeInOutCubic",
+            duration: 0,
+          });
+
+
+
+          animate(".container-block", {
+            opacity: [0],
+            scale: [0.8],
+            easing: "easeInOutCubic",
+            duration: 0,
+          });
+
+          // Wait a moment, then start the sequence
+          setTimeout(() => {
+            // Step 1: Show the two blocks with line (500-2000ms)
+            animate(".modular-block", {
+              translateX: [0],
+              translateY: [0],
+              easing: "easeInOutCubic",
+              duration: 1500,
+            });
+
+
+
+            // Step 3: Container block appears and selection line vanishes (2000-3000ms)
+            animate(".container-block", {
+              opacity: [0, 1],
+              scale: [0.8, 1],
+              easing: "easeInOutCubic",
+              duration: 1000,
+              delay: 1000,
+            });
+
+
+            // Step 4: Scale up the container (3000-3500ms)
+            animate(".container-block", {
+              scale: [1, 1.1, 1],
+              easing: "easeInOutCubic",
+              duration: 500,
+              delay: 2000,
+            });
+          }, 500);
+        };
+
+        // Run the sequence immediately
+        runModularSequence();
+
+        // Set up interval to repeat every 5 seconds
+        const modularIntervalId = setInterval(runModularSequence, 5000);
+
+        // Store interval ID for cleanup
+        return () => clearInterval(modularIntervalId);
+      }
     });
     return () => scopeRef.current?.revert();
   }, [activeFeature]);
@@ -119,7 +183,7 @@ export default function Build() {
       <div className="build-contents">
         <div className="build-header">
           <h2 className="build-title">Build</h2>
-          <p className="build-subtitle">
+        <p className="build-subtitle">
             Create sophisticated trading algorithms with our visual drag-and-drop interface
           </p>
         </div>
@@ -188,17 +252,36 @@ export default function Build() {
               </div>
             )}
             
-            {activeFeature === 'indicators' && (
-              <div className="indicators-animation">
-                <div className="indicator-grid">
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                </div>
-                <div className="custom-shape"></div>
-              </div>
-            )}
+                {activeFeature === 'indicators' && (
+                  <div className="indicators-animation">
+                    {/* Three modular blocks */}
+                    <div className="modular-block block-1">
+                      <div className="block-content">
+                        <div className="block-icon"></div>
+                      </div>
+                    </div>
+                    
+                    <div className="modular-block block-2">
+                      <div className="block-content">
+                        <div className="block-icon"></div>
+                      </div>
+                    </div>
+                    
+                    <div className="modular-block block-3">
+                      <div className="block-content">
+                        <div className="block-icon"></div>
+                      </div>
+                    </div>
+                    
+                    
+                    {/* Container block that wraps everything */}
+                    <div className="container-block">
+                      <div className="container-content">
+                        <div className="container-label">Module</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
           </div>
         </div>
         

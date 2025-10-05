@@ -360,6 +360,107 @@
         animation: rotateShape 2s linear infinite;
       }
     }
+
+    .indicators-animation {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+
+      .modular-block {
+        width: 60px;
+        height: 45px;
+        background: rgba(124, 58, 237, 0.1);
+        border: 3px solid var(--accent);
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 4px 4px 0 var(--accent);
+        position: absolute;
+        z-index: 2;
+
+          &.block-1 {
+            left: 120px;
+            top: 50%;
+            transform: translate(-50%, -50%);
+          }
+
+          &.block-2 {
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%);
+          }
+
+          &.block-3 {
+            right: 120px;
+            top: 55%;
+            transform: translate(50%, -50%);
+          }
+
+        .block-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .block-icon {
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 2px;
+            position: relative;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: 2px;
+              left: 2px;
+              right: 2px;
+              bottom: 2px;
+              background: #ffffff;
+              border-radius: 1px;
+            }
+          }
+        }
+      }
+
+
+
+      .container-block {
+        position: absolute;
+        left: 15%;
+        top: 30%;
+        transform: translate(-50%, -50%);
+        width: 400px;
+        height: 180px;
+        background: rgba(124, 58, 237, 0.15);
+        border: 4px solid var(--accent);
+        border-radius: 0;
+        box-shadow: 8px 8px 0 var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3;
+        opacity: 0;
+
+        .container-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .container-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+        }
+      }
+    }
   }
 
 }
