@@ -5,10 +5,10 @@ import "./trade.scss";
 export default function Test() {
   return (
     <>
-      {/* Trade Section */}
-      <section id="trade" className="trade">
+      {/* Test Section */}
+      <section id="test" className="trade">
         <div className="container">
-          <h2>Trade</h2>
+          <h2>Test</h2>
           <p className="sub">
             Backtest, simulate and deploy to exchanges securely.
           </p>

@@ -1,7 +1,7 @@
 import React from "react";
 import "./footer.scss";
 
-export default function Footer({ onOpenModal }) {
+export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -10,7 +10,6 @@ export default function Footer({ onOpenModal }) {
             <div className="brand">VTrade — Visual Trading Studio</div>
             <div className="contact-info">
               <div className="address">123 Trading Street, Finance District, NY 10001</div>
-              <div className="email">contact@vtrade.com</div>
             </div>
           </div>
           <div className="footer-right">
@@ -25,7 +24,7 @@ export default function Footer({ onOpenModal }) {
                 TikTok
               </a>
             </div>
-                <button className="contact-btn" onClick={onOpenModal}>Contact Us</button>
+            <a href="mailto:contact@vtrade.com" className="email">contact@vtrade.com</a>
           </div>
         </div>
         <div className="footer-bottom">
