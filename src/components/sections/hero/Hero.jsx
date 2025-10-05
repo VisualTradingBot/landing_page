@@ -9,6 +9,16 @@ export default function Hero({ onOpenModal }) {
   const [showTagline, setShowTagline] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
 
+  const scrollToBuild = () => {
+    const buildSection = document.getElementById('build');
+    if (buildSection) {
+      buildSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   useEffect(() => {
     const mainText = "VTrade";
     const taglineText = "New generation platform for visual trading automation.";
@@ -104,6 +114,7 @@ export default function Hero({ onOpenModal }) {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            onClick={scrollToBuild}
           >
             Learn More
           </motion.button>

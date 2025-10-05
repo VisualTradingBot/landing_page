@@ -41,7 +41,7 @@ export default function Build({ title = "Build" }) {
   }, []);
 
   return (
-    <section className="build" ref={root}>
+    <section id="build" className="build" ref={root}>
       <div className="build-contents">
         <h2 className="build-title">{title}</h2>
         <p className="build-subtitle">
