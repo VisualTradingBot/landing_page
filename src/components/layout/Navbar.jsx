@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "./navbar.scss";
 
-export default function Navbar() {
+export default function Navbar({ onOpenModal }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -27,16 +27,30 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleContactClick = (e) => {
+    e.preventDefault();
+    if (onOpenModal) {
+      onOpenModal();
+    }
+  };
+
   return (
     <header className={`nav-wrap ${!isVisible ? 'collapsed' : ''}`}>
       <div className="nav-inner">
-        <div className="logo">VTrade</div>
+        <div className="logo" onClick={() => scrollToSection('hero')}>VTrade</div>
         <nav className="links">
-          <a href="#build">BUILD</a>
-          <a href="#test">TEST</a>
-          <a href="#trade">TRADE</a>
-          <a href="#faq">FAQ</a>
-          <a href="#contact">CONTACT US</a>
+          <a href="#build" onClick={(e) => { e.preventDefault(); scrollToSection('build'); }}>BUILD</a>
+          <a href="#test" onClick={(e) => { e.preventDefault(); scrollToSection('test'); }}>TEST</a>
+          <a href="#trade" onClick={(e) => { e.preventDefault(); scrollToSection('trade'); }}>TRADE</a>
+          <a href="#faq" onClick={(e) => { e.preventDefault(); scrollToSection('faq'); }}>FAQ</a>
+          <a href="#contact" onClick={handleContactClick}>CONTACT US</a>
         </nav>
       </div>
     </header>

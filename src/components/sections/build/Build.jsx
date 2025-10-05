@@ -116,8 +116,9 @@ export default function Build() {
               <div className="custom-shape"></div>
             </div>
           )}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </div>
+          </div>
+          <div className="divider"></div>
+        </section>
+      );
+    }

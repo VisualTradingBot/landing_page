@@ -6,7 +6,7 @@ export default function Test() {
   return (
     <>
       {/* Test Section */}
-      <section id="test" className="trade">
+      <section id="test" className="test-section">
         <div className="container">
           <h2>Test</h2>
           <p className="sub">
@@ -27,14 +27,15 @@ export default function Test() {
               <p>Connect to major exchanges and deploy in minutes.</p>
             </div>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Performance Chart Section */}
+        {/* Performance Chart Section */}
       <div className="min-h-screen w-full bg-[#05070d] text-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12">
           <PerformanceChart />
         </div>
+        <div className="divider"></div>
       </div>
     </>
   );

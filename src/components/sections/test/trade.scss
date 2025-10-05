@@ -1,12 +1,12 @@
-.trade {
+.test-section {
   padding: 64px 18px;
   background: var(--bg);
 }
-.trade .container {
+.test-section .container {
   max-width: 1100px;
   margin: 0 auto;
 }
-.trade h2 {
+.test-section h2 {
   font-size: clamp(3rem, 8vw, 6rem);
   margin-bottom: 1rem;
   font-weight: 700;
@@ -15,7 +15,7 @@
   text-transform: uppercase;
   letter-spacing: -0.02em;
 }
-.trade .sub {
+.test-section .sub {
   font-size: clamp(1.2rem, 2.5vw, 1.8rem);
   opacity: 0.85;
   margin-bottom: 2rem;
@@ -68,6 +68,14 @@
       left: 100%;
     }
   }
+}
+
+.divider {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin-top: auto;
+  transform-origin: left;
 }
 
 .card h3 {

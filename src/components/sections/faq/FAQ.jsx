@@ -68,8 +68,9 @@ export default function FAQ() {
               )}
             </div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </div>
+          </div>
+          <div className="divider"></div>
+        </section>
+      );
+    }

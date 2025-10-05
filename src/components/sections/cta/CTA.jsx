@@ -12,6 +12,7 @@ export default function CTA({ onOpenModal }) {
         <button className="contact-btn" onClick={onOpenModal}>
           Get In Touch
         </button>
+       
       </div>
     </section>
   );
