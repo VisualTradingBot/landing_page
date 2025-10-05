@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./components/layout/Navbar";
 import Hero from "./components/sections/hero/Hero";
 import Build from "./components/sections/build/Build";
-import Trade from "./components/sections/trade/Trade";
-import TradingPage from "./components/trading/TradingPage";
+import Test from "./components/sections/test/Test";
 import Footer from "./components/layout/Footer";
 import ContactModal from "./components/layout/ContactModal";
 import "./styles/App.css";
@@ -53,8 +52,7 @@ function App() {
       <main>
         <Hero onOpenModal={openModal} />
         <Build />
-        <Trade />
-        <TradingPage />
+        <Test />
       </main>
       <Footer onOpenModal={openModal} />
       <ContactModal isOpen={isModalOpen} onClose={closeModal} />
