@@ -23,7 +23,6 @@
     z-index: 2;
     position: relative;
     min-height: 80vh; // Reserve space to prevent shifts
-    padding-left: 5vw;
     min-width: 600px; // Prevent horizontal shifts
 
     h1 {
@@ -204,4 +203,5 @@
       }
     }
   }
+
 }

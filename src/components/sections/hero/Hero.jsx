@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import TileWall from "./TileWall";
 import "./hero.scss";
 
 export default function Hero({ onOpenModal }) {
@@ -118,6 +119,9 @@ export default function Hero({ onOpenModal }) {
           </motion.button>
         </motion.div>
       </motion.div>
+
+      {/* Moving Tile Wall Animation */}
+      <TileWall />
 
       <motion.div
         className="divider"

@@ -1,0 +1,205 @@
+// Moving Tile Wall Animation
+.tile-wall {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 80px; // Fixed height instead of 1fr for shorter blocks
+  gap: 8px;
+  padding: 20px;
+
+  // Responsive grid configurations
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(11, 80px); // 11 rows for 1920x1080
+  }
+
+  @media (min-width: 2560px) {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(14, 80px); // 6 columns × 14 rows for large screens
+  }
+}
+
+.tile {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border: 4px solid #000000;
+  border-radius: 0;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+
+
+  // 10 different animation styles - slower and more chill
+  &.tile-animation-0 { animation: morphAnimation1 15s ease-in-out infinite; }
+  &.tile-animation-1 { animation: morphAnimation2 18s ease-in-out infinite; }
+  &.tile-animation-2 { animation: morphAnimation3 12s ease-in-out infinite; }
+  &.tile-animation-3 { animation: morphAnimation4 20s ease-in-out infinite; }
+  &.tile-animation-4 { animation: morphAnimation5 16s ease-in-out infinite; }
+  &.tile-animation-5 { animation: morphAnimation6 14s ease-in-out infinite; }
+  &.tile-animation-6 { animation: morphAnimation7 22s ease-in-out infinite; }
+  &.tile-animation-7 { animation: morphAnimation8 17s ease-in-out infinite; }
+  &.tile-animation-8 { animation: morphAnimation9 19s ease-in-out infinite; }
+  &.tile-animation-9 { animation: morphAnimation10 21s ease-in-out infinite; }
+
+  .tile-content {
+    font-family: "ShareTechMono", "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+  }
+
+  // Different tile fill types
+  &.tile-empty {
+    background: #ffffff;
+    .tile-content {
+      color: #000000;
+      opacity: 0.7;
+    }
+  }
+
+  &.tile-filled-purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    .tile-content {
+      color: #ffffff;
+      opacity: 1;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  &.tile-filled-black {
+    background: #000000;
+    .tile-content {
+      color: #ffffff;
+      opacity: 1;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+  }
+}
+
+// Missing tiles (empty space)
+.tile-missing {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  opacity: 0;
+}
+
+// 10 Different Morph Animations - Each with 5 states (0%, 25%, 50%, 75%, 100%)
+
+@keyframes morphAnimation1 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: dashed; transform: scale(1.02); }
+  50% { border-color: #ffffff; border-style: double; transform: scale(1.05); }
+  75% { border-color: #7c3aed; border-style: solid; transform: scale(0.98); }
+}
+
+@keyframes morphAnimation2 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: double; transform: scale(0.96); }
+  50% { border-color: #ffffff; border-style: dashed; transform: scale(1.08); }
+  75% { border-color: #000000; border-style: solid; transform: scale(1.01); }
+}
+
+@keyframes morphAnimation3 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: solid; transform: scale(1.04); }
+  50% { border-color: #ffffff; border-style: double; transform: scale(0.94); }
+  75% { border-color: #7c3aed; border-style: dashed; transform: scale(1.02); }
+}
+
+@keyframes morphAnimation4 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: dashed; transform: scale(0.92); }
+  50% { border-color: #000000; border-style: solid; transform: scale(1.12); }
+  75% { border-color: #ffffff; border-style: double; transform: scale(0.99); }
+}
+
+@keyframes morphAnimation5 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: double; transform: scale(1.06); }
+  50% { border-color: #000000; border-style: dashed; transform: scale(0.93); }
+  75% { border-color: #7c3aed; border-style: solid; transform: scale(1.03); }
+}
+
+@keyframes morphAnimation6 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #ffffff; border-style: dashed; transform: scale(0.97); }
+  50% { border-color: #7c3aed; border-style: double; transform: scale(1.09); }
+  75% { border-color: #000000; border-style: solid; transform: scale(0.98); }
+}
+
+@keyframes morphAnimation7 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: solid; transform: scale(1.03); }
+  50% { border-color: #ffffff; border-style: dashed; transform: scale(0.95); }
+  75% { border-color: #000000; border-style: double; transform: scale(1.02); }
+}
+
+@keyframes morphAnimation8 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: double; transform: scale(0.94); }
+  50% { border-color: #ffffff; border-style: solid; transform: scale(1.07); }
+  75% { border-color: #000000; border-style: dashed; transform: scale(0.99); }
+}
+
+@keyframes morphAnimation9 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #ffffff; border-style: dashed; transform: scale(1.05); }
+  50% { border-color: #7c3aed; border-style: double; transform: scale(0.91); }
+  75% { border-color: #000000; border-style: solid; transform: scale(1.04); }
+}
+
+@keyframes morphAnimation10 {
+  0%, 100% { border-color: #000000; border-style: solid; transform: scale(1); }
+  25% { border-color: #7c3aed; border-style: solid; transform: scale(0.96); }
+  50% { border-color: #000000; border-style: dashed; transform: scale(1.1); }
+  75% { border-color: #ffffff; border-style: double; transform: scale(0.99); }
+}
+
+// Tile shape variations
+.tile:nth-child(4n) {
+  border-style: dashed;
+}
+
+.tile:nth-child(7n) {
+  border-width: 6px;
+}
+
+.tile:nth-child(11n) {
+  border-style: double;
+  border-width: 2px;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .tile-wall {
+    width: 30vw;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+    gap: 6px;
+    padding: 15px;
+  }
+  
+  .tile {
+    border-width: 3px;
+    
+    &.revealed .tile-content {
+      font-size: 9px;
+    }
+  }
+}
