@@ -1,0 +1,23 @@
+.nav-wrap {
+  background: transparent;
+  border-bottom: 1px solid #000;
+  font-family: ITC Avant Garde Gothic Pro, sans-serif;
+}
+.nav-inner {
+  padding: 10px 50vw 10px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5vw;
+}
+.logo {
+  padding: 8px 12px;
+  background: var(--fg);
+  color: #fff;
+}
+.links a {
+  margin: 0 12px;
+  text-decoration: none;
+  color: var(--fg);
+  font-weight: 500;
+  padding: 6px;
+}

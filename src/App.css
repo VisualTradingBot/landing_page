@@ -1,3 +1,67 @@
+@import url("https://fonts.googleapis.com/css2?family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+
+@font-face {
+  font-family: "ITC Avant Garde";
+  src: url("./font/ITC Avant Garde Gothic Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #ffffff;
+  --fg: #0b0b0b;
+  --muted: #f4f4f4;
+  --border: #111111;
+  --accent: #7c3aed; /* purple accent */
+}
+
 #root {
+  width: 100%;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+/* shared button styles */
+.btn {
+  display: inline-block;
+  padding: 10px 14px;
+  border: 3px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn.ghost {
+  background: transparent;
+}
+
+/* utility container */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 18px;
 }
