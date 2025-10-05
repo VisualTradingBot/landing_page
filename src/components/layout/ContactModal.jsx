@@ -151,7 +151,7 @@ export default function ContactModal({ isOpen, onClose }) {
           </div>
 
           <div className="form-group">
-            <label>Trading Experience (Optional)</label>
+            <label>Trading Experience</label>
             <div className="toggle-group">
               {experienceLevels.map((level) => (
                 <button
@@ -171,7 +171,7 @@ export default function ContactModal({ isOpen, onClose }) {
           </div>
 
           <div className="form-group">
-            <label>Trading Bot Experience (Optional)</label>
+            <label>Trading Bot Experience</label>
             <div className="toggle-group">
               {experienceLevels.map((level) => (
                 <button
