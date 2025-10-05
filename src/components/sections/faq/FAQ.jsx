@@ -16,20 +16,20 @@ export default function FAQ() {
 
   const faqData = [
     {
-      question: "How does VTrade's visual programming work?",
-      answer: "VTrade uses a drag-and-drop interface where you can connect trading components visually. No coding required - just drag indicators, conditions, and actions to create sophisticated trading strategies."
+      question: "How does CRYPTIQ's visual programming work?",
+      answer: "CRYPTIQ uses a drag-and-drop interface where you can connect trading components visually. No coding required - just drag indicators, conditions, and actions to create sophisticated trading strategies."
     },
     {
       question: "Can I backtest my strategies before deploying?",
-      answer: "Yes! VTrade includes comprehensive backtesting tools that let you test your strategies against historical data. You can see performance metrics, drawdowns, and optimize your parameters before going live."
+      answer: "Yes! CRYPTIQ includes comprehensive backtesting tools that let you test your strategies against historical data. You can see performance metrics, drawdowns, and optimize your parameters before going live."
     },
     {
-      question: "Which exchanges does VTrade support?",
-      answer: "VTrade connects to major exchanges including Binance, Coinbase Pro, Kraken, and many others. We're constantly adding new exchange integrations to expand your trading opportunities."
+      question: "Which exchanges does CRYPTIQ support?",
+      answer: "CRYPTIQ connects to major exchanges including Binance, Coinbase Pro, Kraken, and many others. We're constantly adding new exchange integrations to expand your trading opportunities."
     },
     {
       question: "Is there a paper trading mode?",
-      answer: "Absolutely. VTrade includes a paper trading feature that lets you simulate live markets without risking real capital. Perfect for testing new strategies and building confidence."
+      answer: "Absolutely. CRYPTIQ includes a paper trading feature that lets you simulate live markets without risking real capital. Perfect for testing new strategies and building confidence."
     },
     {
       question: "How secure is my trading data?",
@@ -37,7 +37,7 @@ export default function FAQ() {
     },
     {
       question: "Can I create custom indicators?",
-      answer: "Yes! VTrade's visual editor allows you to create custom technical indicators by combining existing components. You can also import indicators from the community marketplace."
+      answer: "Yes! CRYPTIQ's visual editor allows you to create custom technical indicators by combining existing components. You can also import indicators from the community marketplace."
     }
   ];
 
@@ -46,7 +46,7 @@ export default function FAQ() {
       <div className="container">
         <h2>FAQ</h2>
         <p className="sub">
-          Frequently asked questions about VTrade's visual trading platform.
+          Frequently asked questions about CRYPTIQ's visual trading platform.
         </p>
 
         <div className="faq-items">

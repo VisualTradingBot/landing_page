@@ -44,7 +44,7 @@ export default function Navbar({ onOpenModal }) {
   return (
     <header className={`nav-wrap ${!isVisible ? 'collapsed' : ''}`}>
       <div className="nav-inner">
-        <div className="logo" onClick={() => scrollToSection('hero')}>VTrade</div>
+        <div className="logo" onClick={() => scrollToSection('hero')}>CRYPTIQ</div>
         <nav className="links">
           <a href="#build" onClick={(e) => { e.preventDefault(); scrollToSection('build'); }}>BUILD</a>
           <a href="#test" onClick={(e) => { e.preventDefault(); scrollToSection('test'); }}>TEST</a>

@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-top">
           <div className="footer-left">
-            <div className="brand">VTrade — Visual Trading Studio</div>
+            <div className="brand">CRYPTIQ — Visual Trading Studio</div>
             <div className="contact-info">
               <div className="address">
                 123 Trading Street, Finance District, NY 10001
@@ -40,8 +40,8 @@ export default function Footer() {
                 TikTok
               </a>
             </div>
-            <a href="mailto:contact@vtrade.com" className="email">
-              contact@vtrade.com
+            <a href="mailto:contact@cryptiq.com" className="email">
+              contact@cryptiq.com
             </a>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function Footer() {
             <a href="#terms">Terms of Service</a>
             <a href="#cookies">Cookie Policy</a>
           </div>
-          <div className="copyright">© 2024 VTrade. All rights reserved.</div>
+          <div className="copyright">© 2024 CRYPTIQ. All rights reserved.</div>
         </div>
       </div>
     </footer>
