@@ -1,7 +1,7 @@
 .nav-wrap {
   background: transparent;
-  border-bottom: 1px solid #000;
-  font-family: ITC Avant Garde Gothic Pro, sans-serif;
+  border-bottom: 1px solid #ccc;
+  font-family: SUSE Mono, sans-serif;
 }
 .nav-inner {
   padding: 10px 50vw 10px 10px;
@@ -17,7 +17,12 @@
 .links a {
   margin: 0 12px;
   text-decoration: none;
-  color: var(--fg);
+  color: #000;
   font-weight: 500;
   padding: 6px;
+
+  :hover {
+    color: var(--accent);
+    border-radius: 4px;
+  }
 }
