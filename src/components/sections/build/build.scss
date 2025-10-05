@@ -1,25 +1,417 @@
 .build {
-  height: 170vh; // longer than viewport so it has scroll room
-  background: #111;
+  background: linear-gradient(135deg, #111 0%, #1a1a1a 50%, #111 100%);
   color: white;
   padding: 64px 18px;
+  position: relative;
+  overflow: hidden;
+
+  // Subtle background pattern
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
 
   .build-contents {
-    position: sticky;
-    top: 0;
-    height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: transform 0.2s;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 2rem;
+    padding: 4rem 0;
+  }
 
-    h2 {
-      font-size: 5rem;
+  .build-header {
+    text-align: center;
+    max-width: 800px;
+
+    .build-title {
+      font-size: clamp(3rem, 8vw, 6rem);
+      margin: 0 0 1rem 0;
+      color: #fff;
+      font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .build-subtitle {
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+      color: rgba(255, 255, 255, 0.8);
+      font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
       margin: 0;
-      color: #ccc;
-      font-family: "AvantGarde", "ITC Avant Garde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-weight: 500;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  }
+
+  .build-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: 0;
+
+    .feature-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        border-bottom-color: var(--accent);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .feature-label {
+        font-size: 1.1rem;
+        color: #fff;
+        font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .feature-description {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .scale-indicator {
+    position: fixed;
+    left: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+
+    .scale-rotation {
+      width: 100px;
+      height: 100px;
+      position: relative;
+      animation: rotateScale 8s linear infinite;
+
+      .scale-circle {
+        width: 100%;
+        height: 100%;
+        border: 2px solid rgba(124, 58, 237, 0.3);
+        border-radius: 50%;
+        position: relative;
+
+        .scale-mark {
+          position: absolute;
+          width: 3px;
+          height: 15px;
+          background: var(--accent);
+          left: 50%;
+          top: -2px;
+          transform-origin: 50% 52px;
+          transform: translateX(-50%);
+
+          &:nth-child(1) { transform: translateX(-50%) rotate(0deg); }
+          &:nth-child(2) { transform: translateX(-50%) rotate(45deg); }
+          &:nth-child(3) { transform: translateX(-50%) rotate(90deg); }
+          &:nth-child(4) { transform: translateX(-50%) rotate(135deg); }
+          &:nth-child(5) { transform: translateX(-50%) rotate(180deg); }
+          &:nth-child(6) { transform: translateX(-50%) rotate(225deg); }
+          &:nth-child(7) { transform: translateX(-50%) rotate(270deg); }
+          &:nth-child(8) { transform: translateX(-50%) rotate(315deg); }
+        }
+      }
+
+      .scale-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        background: var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+      }
+    }
+  }
+
+  .animation-area {
+    position: absolute;
+    left: 20%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 300px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .visual-animation {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      animation: dragDrop 2s ease-in-out infinite;
+
+      .drag-icon {
+        font-size: 2rem;
+        animation: bounce 1s ease-in-out infinite;
+      }
+
+      .drop-zone {
+        font-size: 2rem;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      .connection-line {
+        position: absolute;
+        width: 60px;
+        height: 2px;
+        background: var(--accent);
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        animation: drawLine 2s ease-in-out infinite;
+      }
+    }
+
+    .analytics-animation {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+
+      .chart-bars {
+        display: flex;
+        align-items: end;
+        gap: 0.5rem;
+
+        .bar {
+          width: 20px;
+          background: var(--accent);
+          border-radius: 2px;
+          animation: growBar 1.5s ease-in-out infinite;
+
+          &:nth-child(1) { height: 40px; animation-delay: 0s; }
+          &:nth-child(2) { height: 60px; animation-delay: 0.2s; }
+          &:nth-child(3) { height: 80px; animation-delay: 0.4s; }
+          &:nth-child(4) { height: 50px; animation-delay: 0.6s; }
+          &:nth-child(5) { height: 70px; animation-delay: 0.8s; }
+        }
+      }
+
+      .trend-line {
+        width: 100px;
+        height: 2px;
+        background: var(--accent);
+        border-radius: 1px;
+        animation: trendUp 2s ease-in-out infinite;
+      }
+    }
+
+    .indicators-animation {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+
+      .indicator-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+
+        .grid-item {
+          width: 30px;
+          height: 30px;
+          border: 1px solid var(--accent);
+          background: rgba(124, 58, 237, 0.1);
+          animation: gridPulse 1.5s ease-in-out infinite;
+
+          &:nth-child(1) { animation-delay: 0s; }
+          &:nth-child(2) { animation-delay: 0.3s; }
+          &:nth-child(3) { animation-delay: 0.6s; }
+          &:nth-child(4) { animation-delay: 0.9s; }
+        }
+      }
+
+      .custom-shape {
+        width: 40px;
+        height: 40px;
+        background: var(--accent);
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        animation: rotateShape 2s linear infinite;
+      }
+    }
+  }
+
+}
+
+// Animation keyframes
+@keyframes rotateScale {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dragDrop {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes drawLine {
+  0% { width: 0; }
+  100% { width: 60px; }
+}
+
+@keyframes growBar {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes trendUp {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-20px) rotate(-5deg); }
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes rotateShape {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .build {
+    padding: 32px 18px;
+
+    .build-contents {
+      gap: 2rem;
+    }
+
+    .build-features {
+      max-width: 100%;
+      margin: 0 auto;
+
+      .feature-item {
+        .feature-label {
+          font-size: 1rem;
+        }
+
+        .feature-description {
+          font-size: 0.85rem;
+        }
+      }
+    }
+
+    .scale-indicator {
+      position: relative;
+      left: auto;
+      top: auto;
+      transform: none;
+      width: 80px;
+      height: 80px;
+      margin: 1rem auto;
+
+      .scale-rotation {
+        width: 70px;
+        height: 70px;
+
+        .scale-circle {
+          .scale-mark {
+            width: 2px;
+            height: 10px;
+            transform-origin: 50% 36px;
+          }
+        }
+
+        .scale-center {
+          width: 8px;
+          height: 8px;
+        }
+      }
+    }
+
+    .animation-area {
+      position: relative;
+      left: auto;
+      top: auto;
+      transform: none;
+      width: 100%;
+      height: 150px;
+      margin: 1rem auto;
+      margin-left: auto;
+
+      .visual-animation {
+        gap: 1rem;
+
+        .drag-icon,
+        .drop-zone {
+          font-size: 1.5rem;
+        }
+      }
+
+      .chart-bars .bar {
+        width: 15px;
+
+        &:nth-child(1) { height: 30px; }
+        &:nth-child(2) { height: 45px; }
+        &:nth-child(3) { height: 60px; }
+        &:nth-child(4) { height: 35px; }
+        &:nth-child(5) { height: 50px; }
+      }
+
+      .indicator-grid {
+        .grid-item {
+          width: 25px;
+          height: 25px;
+        }
+      }
+
+      .custom-shape {
+        width: 30px;
+        height: 30px;
+      }
     }
   }
 }
