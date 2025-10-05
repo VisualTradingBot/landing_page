@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import "./contactModal.scss";
 
+const STATIC_RECIPIENT_EMAIL = "giancarlofranceschetti1202@gmail.com";
+
+const INITIAL_FORM_STATE = {
+  name: "",
+  email: "",
+  tradingExperience: "beginner", // beginner, intermediate, advanced
+  botExperience: "beginner", // beginner, intermediate, advanced
+};
+
 export default function ContactModal({ isOpen, onClose }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    tradingExperience: "beginner", // beginner, intermediate, advanced
-    botExperience: "beginner", // beginner, intermediate, advanced
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // "success" | "error"
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,11 +32,57 @@ export default function ContactModal({ isOpen, onClose }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
-    onClose();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    setSubmitMessage("");
+
+    try {
+      const response = await fetch(
+        `https://formsubmit.co/ajax/${STATIC_RECIPIENT_EMAIL}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            ...formData,
+            subject: "New contact form submission",
+            message: `Contact request from ${
+              formData.name || "Anonymous"
+            }\\n\\nEmail: ${formData.email}\\nTrading experience: ${
+              formData.tradingExperience
+            }\\nBot experience: ${formData.botExperience}`,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success === "true") {
+        setSubmitStatus("success");
+        setSubmitMessage(
+          "Thanks! We received your message and will reply soon."
+        );
+        setFormData(INITIAL_FORM_STATE);
+      } else {
+        throw new Error(data.message || "Unable to send message.");
+      }
+    } catch (error) {
+      console.error("Contact form submission failed:", error);
+      setSubmitStatus("error");
+      setSubmitMessage(
+        "We couldn't send your message right now. Please try again in a moment."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const experienceLevels = [
@@ -37,6 +90,15 @@ export default function ContactModal({ isOpen, onClose }) {
     { value: "intermediate", label: "Intermediate" },
     { value: "advanced", label: "Advanced" },
   ];
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(INITIAL_FORM_STATE);
+      setSubmitStatus(null);
+      setSubmitMessage("");
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -128,12 +190,27 @@ export default function ContactModal({ isOpen, onClose }) {
             </div>
           </div>
 
+          {submitStatus && (
+            <div
+              className={`submission-message ${submitStatus}`}
+              role={submitStatus === "error" ? "alert" : "status"}
+              aria-live="polite"
+            >
+              {submitMessage}
+            </div>
+          )}
+
           <div className="form-actions">
             <button type="button" className="cancel-button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="submit-button">
-              Send Message
+            <button
+              type="submit"
+              className="submit-button"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting ? "Sending…" : "Send Message"}
             </button>
           </div>
         </form>
