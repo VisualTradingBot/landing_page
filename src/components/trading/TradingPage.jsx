@@ -1,4 +1,4 @@
-import PerformanceChart from "../components/PerformanceChart";
+import PerformanceChart from "./PerformanceChart";
 
 export default function TradingSection() {
   return (

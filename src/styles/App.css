@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: "ITC Avant Garde";
-  src: url("./font/ITC Avant Garde Gothic Medium.otf") format("opentype");
+  src: url("../assets/font/ITC Avant Garde Gothic Medium.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
   font-display: swap;

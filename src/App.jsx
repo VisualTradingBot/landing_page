@@ -1,11 +1,11 @@
 import React from "react";
-import Navbar from "./Navbar";
-import Hero from "./Hero";
-import Build from "./Build";
-import Trade from "./Trade";
-import TradingPage from "./pages/TradingPage";
-import Footer from "./Footer";
-import "./App.css";
+import Navbar from "./components/layout/Navbar";
+import Hero from "./components/sections/hero/Hero";
+import Build from "./components/sections/build/Build";
+import Trade from "./components/sections/trade/Trade";
+import TradingPage from "./components/trading/TradingPage";
+import Footer from "./components/layout/Footer";
+import "./styles/App.css";
 
 function App() {
   return (
