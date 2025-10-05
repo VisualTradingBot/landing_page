@@ -1,5 +1,5 @@
 .test-section {
-  padding: 64px 18px;
+  padding: 0px 18px;
   background: var(--bg);
 }
 .test-section .container {
@@ -8,7 +8,6 @@
 }
 .test-section h2 {
   font-size: clamp(3rem, 8vw, 6rem);
-  margin-bottom: 1rem;
   font-weight: 700;
   color: var(--fg);
   font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -18,8 +17,8 @@
 .test-section .sub {
   font-size: clamp(1.2rem, 2.5vw, 1.8rem);
   opacity: 0.85;
-  margin-bottom: 2rem;
-  margin-top: 0;
+  margin-bottom: 1rem;
+  margin-top: -1rem;
   font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.6;
 }
@@ -37,6 +36,16 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
+
+  &.active {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+    box-shadow: 15px 15px 0 rgba(124, 58, 237, 0.2);
+
+    h3 {
+      color: var(--accent);
+    }
+  }
 
   &:hover {
     transform: translateY(-5px);
@@ -76,6 +85,264 @@
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   margin-top: auto;
   transform-origin: left;
+}
+
+// Chart Wrapper Styles
+.chart-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.chart-container {
+  background: #ffffff;
+  border: 6px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.06);
+  position: relative;
+  margin-top: 30px;
+}
+
+.chart-header {
+  padding: 24px 32px 0;
+  border-bottom: 1px solid rgba(11, 11, 11, 0.1);
+}
+
+.chart-title {
+  h3 {
+    color: var(--fg);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  p {
+    color: rgba(11, 11, 11, 0.7);
+    font-size: 0.9rem;
+    margin: 0;
+    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+.chart-content {
+  display: flex;
+  min-height: 420px;
+}
+
+.chart-section {
+  flex: 1;
+  padding: 32px;
+}
+
+.chart-area {
+  position: relative;
+  height: 360px;
+  border: 1px solid rgba(11, 11, 11, 0.1);
+  border-radius: 0;
+  overflow: hidden;
+  background: 
+    linear-gradient(90deg, rgba(11, 11, 11, 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(11, 11, 11, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.chart-interactive {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.chart-overlay {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.metrics-panel {
+  width: 280px;
+  background: #ffffff;
+  border-left: 1px solid rgba(11, 11, 11, 0.1);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metrics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(11, 11, 11, 0.1);
+
+  h4 {
+    color: var(--fg);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+.metrics-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(11, 11, 11, 0.7);
+  font-size: 0.8rem;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.metrics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  flex: 1;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.metric-label {
+  color: rgba(11, 11, 11, 0.7);
+  font-size: 0.85rem;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.metric-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  &.positive {
+    color: #10b981;
+  }
+
+  &.negative {
+    color: #ef4444;
+  }
+
+  &.primary {
+    color: var(--fg);
+  }
+
+  &.info {
+    color: #3b82f6;
+  }
+
+  &.warning {
+    color: #f59e0b;
+  }
+}
+
+.metrics-summary {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(11, 11, 11, 0.1);
+}
+
+.summary-item {
+  text-align: center;
+}
+
+.summary-label {
+  display: block;
+  color: rgba(11, 11, 11, 0.7);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.summary-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  &.positive {
+    color: #10b981;
+  }
+
+  &.negative {
+    color: #ef4444;
+  }
+}
+
+// Responsive design for chart
+@media (max-width: 1024px) {
+  .chart-content {
+    flex-direction: column;
+  }
+
+  .metrics-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(11, 11, 11, 0.1);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .metrics-summary {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    border-radius: 16px;
+  }
+
+  .chart-header {
+    padding: 20px 20px 0;
+  }
+
+  .chart-section {
+    padding: 20px;
+  }
+
+  .metrics-panel {
+    padding: 24px 20px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .chart-title h3 {
+    font-size: 1.3rem;
+  }
+
+  .summary-value {
+    font-size: 1.5rem;
+  }
 }
 
 .card h3 {

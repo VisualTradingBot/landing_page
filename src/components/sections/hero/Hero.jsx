@@ -12,9 +12,12 @@ export default function Hero({ onOpenModal }) {
   const scrollToBuild = () => {
     const buildSection = document.getElementById('build');
     if (buildSection) {
-      buildSection.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
+      const elementPosition = buildSection.offsetTop;
+      const offsetPosition = elementPosition - 80;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
       });
     }
   };

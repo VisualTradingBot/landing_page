@@ -50,13 +50,27 @@ function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
 
   const [{ value }] = payload;
-  return <div></div>;
+  const change = ((value / 10000 - 1) * 100).toFixed(1);
+  const isPositive = change >= 0;
+  
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+      <p className="text-gray-600 text-xs mb-1">{label}</p>
+      <p className="text-gray-900 font-semibold">
+        ${value?.toLocaleString()}
+        <span className={`ml-2 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? '+' : ''}{change}%
+        </span>
+      </p>
+    </div>
+  );
 }
 
-export default function PerformanceChart() {
+export default function PerformanceChart({ customData, lineColor = palette.portfolio, mode = 'backtest', description = '' }) {
+  const dataToUse = customData || baseData;
   const INITIAL_VISIBLE_POINTS = Math.max(
     2,
-    Math.ceil(baseData.length * (2 / 3))
+    Math.ceil(dataToUse.length * (2 / 3))
   );
   const [visiblePoints, setVisiblePoints] = useState(INITIAL_VISIBLE_POINTS);
   const [chartInstanceKey, setChartInstanceKey] = useState(0);
@@ -79,11 +93,11 @@ export default function PerformanceChart() {
 
       const elapsed = timestamp - animationStartRef.current;
       const progress = Math.min(1, elapsed / ANIMATION_DURATION);
-      const nextCount = Math.max(1, Math.round(progress * baseData.length));
+      const nextCount = Math.max(1, Math.round(progress * dataToUse.length));
 
       setVisiblePoints((prev) => {
         if (nextCount > prev) {
-          return Math.min(nextCount, baseData.length);
+          return Math.min(nextCount, dataToUse.length);
         }
         return prev;
       });
@@ -92,7 +106,7 @@ export default function PerformanceChart() {
         animationFrameRef.current = requestAnimationFrame(animateReveal);
       } else {
         cancelAnimation();
-        setVisiblePoints(baseData.length);
+        setVisiblePoints(dataToUse.length);
       }
     },
     [cancelAnimation]
@@ -105,94 +119,180 @@ export default function PerformanceChart() {
     animationFrameRef.current = requestAnimationFrame(animateReveal);
   }, [animateReveal, cancelAnimation]);
 
-  const handleMouseEnter = useCallback(() => {
-    startAnimation();
-  }, [startAnimation]);
-
-  const handleMouseMove = useCallback(() => {
-    if (!animationFrameRef.current) {
-      startAnimation();
-    }
-  }, [startAnimation]);
+  // Remove hover interactions - chart will animate automatically
 
   const chartData = useMemo(() => {
-    const visibleCount = Math.max(1, Math.min(visiblePoints, baseData.length));
-    return baseData.map((point, index) => ({
+    const visibleCount = Math.max(1, Math.min(visiblePoints, dataToUse.length));
+    return dataToUse.slice(0, visibleCount).map((point) => ({
       ...point,
-      animatedPortfolio: index < visibleCount ? point.portfolio : null,
+      animatedPortfolio: point.portfolio,
     }));
-  }, [visiblePoints]);
+  }, [visiblePoints, dataToUse]);
 
   useEffect(() => {
+    // Start animation automatically when component mounts
+    const timer = setTimeout(() => {
+      startAnimation();
+    }, 500); // Small delay to ensure component is fully mounted
+
     return () => {
       cancelAnimation();
+      clearTimeout(timer);
     };
-  }, [cancelAnimation]);
+  }, [startAnimation, cancelAnimation]);
 
   const [minY, maxY] = useMemo(() => {
-    const values = baseData.map((point) => point.portfolio);
+    const values = dataToUse.map((point) => point.portfolio);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
     return [minValue - 150, maxValue + 150];
-  }, []);
+  }, [dataToUse]);
+
+  // Calculate final metrics
+  const finalMetrics = useMemo(() => {
+    const firstValue = dataToUse[0]?.portfolio || 10000;
+    const lastValue = dataToUse[dataToUse.length - 1]?.portfolio || 10000;
+    const maxValue = Math.max(...dataToUse.map(p => p.portfolio));
+    const minValue = Math.min(...dataToUse.map(p => p.portfolio));
+    
+    const totalReturn = ((lastValue / firstValue - 1) * 100);
+    const maxDrawdown = ((maxValue - minValue) / maxValue * 100);
+    const sharpeRatio = totalReturn > 0 ? (totalReturn / 10).toFixed(2) : '0.00';
+    const winRate = dataToUse.filter((_, i) => i > 0 && dataToUse[i].portfolio > dataToUse[i-1].portfolio).length / (dataToUse.length - 1) * 100;
+    
+    return {
+      totalReturn: totalReturn.toFixed(1),
+      maxDrawdown: maxDrawdown.toFixed(1),
+      sharpeRatio,
+      winRate: winRate.toFixed(0),
+      finalValue: lastValue,
+      initialValue: firstValue
+    };
+  }, [dataToUse]);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-[#1f2839] bg-gradient-to-b from-[#111827] via-[#0d121f] to-[#0a0f19] shadow-[0_35px_80px_rgba(0,0,0,0.55)]">
-      <div className="space-y-6 px-6 pb-6 pt-5">
-        <div
-          className="relative"
-          onMouseEnter={handleMouseEnter}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => {
-            cancelAnimation();
-            setVisiblePoints(INITIAL_VISIBLE_POINTS);
-          }}
-        >
-          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-b from-[#1c2538]/60 via-transparent to-transparent" />
-          <ResponsiveContainer width="100%" height={360}>
-            <LineChart
-              key={chartInstanceKey}
-              data={chartData}
-              margin={{ left: 20, right: 20, top: 30, bottom: 60 }}
-            >
-              <defs>
-                <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#243047" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#111827" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="url(#gridGradient)" vertical={false} />
-              <XAxis
-                dataKey="time"
-                tick={{ fill: "#5f6b87", fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-                interval={1}
-                height={40}
-              />
-              <YAxis
-                domain={[minY, maxY]}
-                tick={{ fill: "#5f6b87", fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => `${percentageChange(value)}%`}
-                width={70}
-              />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{ stroke: "#2b3650", strokeWidth: 1 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="animatedPortfolio"
-                stroke={palette.portfolio}
-                strokeWidth={3}
-                dot={false}
-                name="My Dawg"
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
+    <div className="chart-wrapper">
+      <div className="chart-container">
+        <div className="chart-header">
+          <div className="chart-title">
+            <h3>Performance Dashboard</h3>
+            <p>{description}</p>
+          </div>
+        </div>
+        
+        <div className="chart-content">
+          {/* Chart Section */}
+          <div className="chart-section">
+            <div className="chart-area">
+              <div
+                className="chart-interactive"
+              >
+                <div className="chart-overlay" />
+                <ResponsiveContainer width="100%" height={360}>
+                  <LineChart
+                    key={chartInstanceKey}
+                    data={chartData}
+                    margin={{ left: 40, right: 40, top: 20, bottom: 40 }}
+                  >
+                    <defs>
+                      <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(11, 11, 11, 0.1)" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="rgba(11, 11, 11, 0.05)" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid 
+                      stroke="url(#gridGradient)" 
+                      strokeDasharray="3 3"
+                      vertical={true}
+                      horizontal={true}
+                    />
+                    <XAxis
+                      dataKey="time"
+                      tick={{ fill: "rgba(11, 11, 11, 0.7)", fontSize: 12 }}
+                      axisLine={true}
+                      tickLine={true}
+                      interval={1}
+                      height={30}
+                    />
+                    <YAxis
+                      domain={[minY, maxY]}
+                      tick={{ fill: "rgba(11, 11, 11, 0.7)", fontSize: 12 }}
+                      axisLine={true}
+                      tickLine={true}
+                      tickFormatter={(value) => `${percentageChange(value)}%`}
+                      width={60}
+                    />
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{ stroke: "rgba(11, 11, 11, 0.2)", strokeWidth: 1 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="animatedPortfolio"
+                      stroke={lineColor}
+                      strokeWidth={3}
+                      dot={false}
+                      name="Portfolio"
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Panel */}
+          <div className="metrics-panel">
+            <div className="metrics-header">
+              <h4>Performance Metrics</h4>
+            </div>
+            
+            <div className="metrics-grid">
+              <div className="metric-item">
+                <span className="metric-label">Total Return</span>
+                <span className={`metric-value ${finalMetrics.totalReturn >= 0 ? 'positive' : 'negative'}`}>
+                  {finalMetrics.totalReturn >= 0 ? '+' : ''}{finalMetrics.totalReturn}%
+                </span>
+              </div>
+              
+              <div className="metric-item">
+                <span className="metric-label">Final Value</span>
+                <span className="metric-value primary">
+                  ${finalMetrics.finalValue?.toLocaleString()}
+                </span>
+              </div>
+              
+              <div className="metric-item">
+                <span className="metric-label">Max Drawdown</span>
+                <span className="metric-value negative">
+                  -{finalMetrics.maxDrawdown}%
+                </span>
+              </div>
+              
+              <div className="metric-item">
+                <span className="metric-label">Win Rate</span>
+                <span className="metric-value info">
+                  {finalMetrics.winRate}%
+                </span>
+              </div>
+              
+              <div className="metric-item">
+                <span className="metric-label">Sharpe Ratio</span>
+                <span className="metric-value warning">
+                  {finalMetrics.sharpeRatio}
+                </span>
+              </div>
+            </div>
+
+            <div className="metrics-summary">
+              <div className="summary-item">
+                <span className="summary-label">Profit/Loss</span>
+                <span className={`summary-value ${finalMetrics.totalReturn >= 0 ? 'positive' : 'negative'}`}>
+                  ${((finalMetrics.finalValue - finalMetrics.initialValue)).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
