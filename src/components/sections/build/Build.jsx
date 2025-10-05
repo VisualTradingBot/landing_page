@@ -5,7 +5,8 @@ import "./build.scss";
 export default function Build() {
   const root = useRef(null);
   const scopeRef = useRef(null);
-  const [activeFeature, setActiveFeature] = useState(null);
+  const [activeFeature, setActiveFeature] = useState('visual');
+
 
   useEffect(() => {
     scopeRef.current = createScope({ root }).add(() => {
@@ -65,37 +66,22 @@ export default function Build() {
         </div>
 
         <div className="build-features">
-          <div className="feature-item" onClick={() => setActiveFeature('visual')}>
+          <div className={`feature-item ${activeFeature === 'visual' ? 'active' : ''}`} onClick={() => setActiveFeature('visual')}>
             <span className="feature-label">Visual Programming</span>
             <span className="feature-description">Drag and drop components to build complex trading strategies</span>
           </div>
 
-          <div className="feature-item" onClick={() => setActiveFeature('analytics')}>
+          <div className={`feature-item ${activeFeature === 'analytics' ? 'active' : ''}`} onClick={() => setActiveFeature('analytics')}>
             <span className="feature-label">Real-time Analytics</span>
             <span className="feature-description">Monitor strategies with live performance metrics</span>
           </div>
 
-          <div className="feature-item" onClick={() => setActiveFeature('indicators')}>
+          <div className={`feature-item ${activeFeature === 'indicators' ? 'active' : ''}`} onClick={() => setActiveFeature('indicators')}>
             <span className="feature-label">Custom Indicators</span>
             <span className="feature-description">Create and share custom technical indicators</span>
           </div>
         </div>
 
-        <div className="scale-indicator">
-          <div className="scale-rotation">
-            <div className="scale-circle">
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-              <div className="scale-mark"></div>
-            </div>
-            <div className="scale-center"></div>
-          </div>
-        </div>
 
         <div className="animation-area">
           {activeFeature === 'visual' && (

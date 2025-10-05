@@ -88,3 +88,109 @@ h3 {
   margin: 0 auto;
   padding: 0 18px;
 }
+
+/* Global Scale Indicator */
+.scale-indicator {
+  position: fixed;
+  left: 2%;
+  top: 0;
+  width: 40px;
+  height: 100vh;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2rem;
+}
+
+.scale-indicator .vertical-scale {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.scale-indicator .scale-tick {
+  width: 20px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.8);
+  position: relative;
+  transition: all 0.1s ease;
+}
+
+.scale-indicator .scale-tick:nth-child(5n) {
+  width: 30px;
+  background: rgba(255, 255, 255, 1);
+  height: 2px;
+}
+
+.scale-indicator .scale-tick:nth-child(10n) {
+  width: 35px;
+  background: rgba(255, 255, 255, 1);
+  height: 3px;
+}
+
+.scale-indicator .scale-tick:nth-child(10n)::after {
+  content: attr(data-value);
+  position: absolute;
+  left: 40px;
+  top: -8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 1);
+  font-family: "ShareTechMono", monospace;
+}
+
+.scale-indicator .scale-tick:hover {
+  background: rgba(255, 255, 255, 1);
+  width: 25px;
+}
+
+/* Override colors for light sections (like hero) */
+.scale-indicator.light-bg .scale-tick {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.scale-indicator.light-bg .scale-tick:nth-child(5n),
+.scale-indicator.light-bg .scale-tick:nth-child(10n) {
+  background: rgba(0, 0, 0, 1);
+}
+
+.scale-indicator.light-bg .scale-tick:nth-child(10n)::after {
+  color: rgba(0, 0, 0, 1);
+}
+
+.scale-indicator.light-bg .scale-tick:hover {
+  background: rgba(0, 0, 0, 1);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .scale-indicator {
+    left: 1%;
+    width: 30px;
+  }
+
+  .scale-indicator .scale-tick {
+    width: 15px;
+  }
+
+  .scale-indicator .scale-tick:nth-child(5n) {
+    width: 20px;
+  }
+
+  .scale-indicator .scale-tick:nth-child(10n) {
+    width: 25px;
+  }
+
+  .scale-indicator .scale-tick:nth-child(10n)::after {
+    left: 30px;
+    font-size: 8px;
+  }
+
+  .scale-indicator .scale-tick:hover {
+    width: 18px;
+  }
+}
