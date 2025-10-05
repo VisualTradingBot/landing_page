@@ -10,7 +10,7 @@ const marketPresets = {
     timeframes: {
       "1H": {
         label: "1H",
-        description: "High-frequency scalping with adaptive liquidity routing.",
+        description: "Fast trading that finds the best prices across exchanges.",
         latency: "3.2ms",
         data: [
           { time: "06:00", portfolio: 46510 },
@@ -87,7 +87,7 @@ const marketPresets = {
       "4H": {
         label: "4H",
         description:
-          "Mid-term swing book balanced across derivatives and spot liquidity.",
+          "Medium-term trading that balances between different market types.",
         latency: "4.6ms",
         data: [
           { time: "Mon 00:00", portfolio: 44210 },
@@ -118,7 +118,7 @@ const marketPresets = {
           },
           {
             id: "btc-vwap-4h",
-            label: "VWAP Deviation",
+            label: "Price Deviation",
             value: "0.8%",
             tone: "info",
           },
@@ -130,7 +130,7 @@ const marketPresets = {
           },
           {
             id: "btc-rv-4h",
-            label: "Realized Vol",
+            label: "Volatility",
             value: "43%",
             tone: "info",
           },
@@ -164,7 +164,7 @@ const marketPresets = {
       "1D": {
         label: "1D",
         description:
-          "Long-horizon systematic trend following with adaptive hedging.",
+          "Long-term trading that follows market trends with protection against losses.",
         latency: "5.0ms",
         data: [
           { time: "Jul 01", portfolio: 41890 },
@@ -205,7 +205,7 @@ const marketPresets = {
           },
           {
             id: "btc-var-1d",
-            label: "VaR (95%)",
+            label: "Risk Level",
             value: "$3,420",
             tone: "warning",
           },
@@ -249,7 +249,7 @@ const marketPresets = {
       "1H": {
         label: "1H",
         description:
-          "Layer-2 aware execution capturing ETH breakout rotations.",
+          "Smart trading that takes advantage of Ethereum price movements.",
         latency: "2.7ms",
         data: [
           { time: "06:00", portfolio: 3320 },
@@ -326,7 +326,7 @@ const marketPresets = {
       "4H": {
         label: "4H",
         description:
-          "Directional delta overlay with dynamic hedging across perpetuals.",
+          "Trading that adjusts positions based on market direction and risk.",
         latency: "3.4ms",
         data: [
           { time: "Mon 00:00", portfolio: 2980 },
@@ -369,7 +369,7 @@ const marketPresets = {
           },
           {
             id: "eth-vol-4h",
-            label: "Realized Vol",
+            label: "Volatility",
             value: "51%",
             tone: "info",
           },
@@ -403,7 +403,7 @@ const marketPresets = {
       "1D": {
         label: "1D",
         description:
-          "Macro factor model allocating across staking and derivatives yield.",
+          "Long-term strategy that combines staking rewards with trading profits.",
         latency: "3.1ms",
         data: [
           { time: "Jul 01", portfolio: 2760 },
@@ -439,7 +439,7 @@ const marketPresets = {
           { id: "eth-tvl-1d", label: "TVL Flow", value: "$1.9B", tone: "info" },
           {
             id: "eth-var-1d",
-            label: "VaR (95%)",
+            label: "Risk Level",
             value: "$620",
             tone: "warning",
           },
@@ -483,7 +483,7 @@ const marketPresets = {
       "1H": {
         label: "1H",
         description:
-          "Latency-sensitive execution on high velocity SOL order flow.",
+          "Ultra-fast trading that captures quick price movements in SOL.",
         latency: "1.9ms",
         data: [
           { time: "06:00", portfolio: 146 },
@@ -559,7 +559,7 @@ const marketPresets = {
       },
       "4H": {
         label: "4H",
-        description: "Cross-exchange arb capturing SOL basis spreads.",
+        description: "Trading that finds price differences between exchanges.",
         latency: "2.5ms",
         data: [
           { time: "Mon 00:00", portfolio: 128 },
@@ -590,7 +590,7 @@ const marketPresets = {
           },
           {
             id: "sol-basis-4h",
-            label: "Basis Capture",
+            label: "Price Spread",
             value: "1.6%",
             tone: "info",
           },
@@ -602,7 +602,7 @@ const marketPresets = {
           },
           {
             id: "sol-vol-4h",
-            label: "Realized Vol",
+            label: "Volatility",
             value: "67%",
             tone: "info",
           },
@@ -636,7 +636,7 @@ const marketPresets = {
       "1D": {
         label: "1D",
         description:
-          "Momentum plus liquidity provisioning across SOL ecosystems.",
+          "Trading that provides liquidity and follows momentum in SOL markets.",
         latency: "2.2ms",
         data: [
           { time: "Jul 01", portfolio: 114 },
@@ -677,7 +677,7 @@ const marketPresets = {
           },
           {
             id: "sol-risk-1d",
-            label: "VaR (95%)",
+            label: "Risk Level",
             value: "$280",
             tone: "warning",
           },
@@ -719,27 +719,27 @@ const marketPresets = {
 const tradeBenefits = [
   {
     id: "latency",
-    title: "Latency Optimized Routing",
+    title: "Ultra-Fast Execution",
     description:
-      "Co-located exchange gateways deliver sub-5ms reactions to order book shifts.",
+      "Get the best prices instantly with lightning-fast order processing.",
   },
   {
     id: "risk",
-    title: "Adaptive Risk Controls",
+    title: "Smart Risk Protection",
     description:
-      "Dynamic position sizing and kill-switches react instantly to volatility spikes.",
+      "Automatic safety features that protect your investments from sudden market changes.",
   },
   {
     id: "hedge",
-    title: "Inventory Hedging",
+    title: "Automatic Protection",
     description:
-      "Perpetual and spot inventory is auto-hedged to keep exposure on target.",
+      "Your positions are automatically protected against market risks.",
   },
   {
     id: "intel",
-    title: "Streaming Intelligence",
+    title: "Real-Time Insights",
     description:
-      "Real-time analytics attribute P&L down to each fill for rapid iteration.",
+      "See exactly how each trade performs with instant profit and loss tracking.",
   },
 ];
 
@@ -802,11 +802,10 @@ export default function Trade() {
       });
 
       animate(".feature-row", {
+        translateY: [30, 0],
         opacity: [0, 1],
-        translateY: [24, 0],
         easing: "easeOutExpo",
-        duration: 500,
-        delay: (el, i) => i * 80,
+        duration: 600,
         autoplay: onScroll({
           target: ".trade-highlights",
           enter: "bottom center",
@@ -860,8 +859,7 @@ export default function Trade() {
         <div className="trade-header">
           <h2 className="trade-title">Trade</h2>
           <p className="trade-subtitle">
-            Deploy institutional-grade execution across leading digital asset
-            venues with real-time telemetry.
+            Professional trading tools that work across all major cryptocurrency exchanges with real-time monitoring.
           </p>
         </div>
 
