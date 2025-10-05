@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import PerformanceChart from "./PerformanceChart";
-import "./trade.scss";
+import "./test.scss";
 
 export default function Test() {
   const [activeMode, setActiveMode] = useState('backtest');
