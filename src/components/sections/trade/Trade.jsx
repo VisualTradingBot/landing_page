@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { animate, createScope, onScroll } from "animejs";
 import "./trade.scss";
 
@@ -8,25 +8,29 @@ export default function Trade() {
 
   const benefits = [
     {
-      id: 'automation',
-      title: '24/7 Automation',
-      description: 'Your algorithms trade around the clock, never missing opportunities while you sleep.'
+      id: "automation",
+      title: "24/7 Automation",
+      description:
+        "Your algorithms trade around the clock, never missing opportunities while you sleep.",
     },
     {
-      id: 'speed',
-      title: 'Lightning Speed',
-      description: 'Execute trades in milliseconds, faster than human reaction time.'
+      id: "speed",
+      title: "Lightning Speed",
+      description:
+        "Execute trades in milliseconds, faster than human reaction time.",
     },
     {
-      id: 'emotion',
-      title: 'Emotion-Free Trading',
-      description: 'Remove fear and greed from your trading decisions with systematic algorithms.'
+      id: "emotion",
+      title: "Emotion-Free Trading",
+      description:
+        "Remove fear and greed from your trading decisions with systematic algorithms.",
     },
     {
-      id: 'backtesting',
-      title: 'Proven Strategies',
-      description: 'Deploy only strategies that have been thoroughly backtested and optimized.'
-    }
+      id: "backtesting",
+      title: "Proven Strategies",
+      description:
+        "Deploy only strategies that have been thoroughly backtested and optimized.",
+    },
   ];
 
   useEffect(() => {
