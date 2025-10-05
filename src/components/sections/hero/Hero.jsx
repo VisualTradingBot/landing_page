@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import "./hero.scss";
 
-export default function Hero() {
+export default function Hero({ onOpenModal }) {
   const [heroText, setHeroText] = useState("");
   const [taglineText, setTaglineText] = useState("");
   const [showTagline, setShowTagline] = useState(false);
@@ -90,14 +90,15 @@ export default function Hero() {
           animate={{ opacity: showButtons ? 1 : 0 }}
           transition={{ duration: 0.6 }}
         >
-          <motion.button
-            className="cta-button"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            Get Started
-          </motion.button>
+           <motion.button
+             className="cta-button"
+             whileHover={{ scale: 1.05, y: -2 }}
+             whileTap={{ scale: 0.95 }}
+             transition={{ type: "spring", stiffness: 400, damping: 10 }}
+             onClick={onOpenModal}
+           >
+             Get Started
+           </motion.button>
           <motion.button
             className="secondary-button"
             whileHover={{ scale: 1.05, y: -2 }}

@@ -1,7 +1,7 @@
 import React from "react";
 import "./footer.scss";
 
-export default function Footer() {
+export default function Footer({ onOpenModal }) {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -25,7 +25,7 @@ export default function Footer() {
                 TikTok
               </a>
             </div>
-            <button className="contact-btn">Contact Us</button>
+                <button className="contact-btn" onClick={onOpenModal}>Contact Us</button>
           </div>
         </div>
         <div className="footer-bottom">
