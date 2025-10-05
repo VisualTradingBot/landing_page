@@ -110,6 +110,171 @@ export default function Build() {
         // Store interval ID for cleanup
         return () => clearInterval(intervalId);
       }
+
+      // Modular & Scalable animation
+      if (activeFeature === 'indicators') {
+        // Function to run the modular sequence
+        const runModularSequence = () => {
+          // Reset to initial state
+          animate(".modular-block", {
+            translateX: [0],
+            translateY: [0],
+            scale: [1],
+            easing: "easeInOutCubic",
+            duration: 0,
+          });
+
+          animate(".selection-box", {
+            opacity: 0,
+            scale: 0,
+            easing: "easeInOutCubic",
+            duration: 0,
+          });
+
+          animate(".container-block", {
+            opacity: [0],
+            scale: [0.8],
+            easing: "easeInOutCubic",
+            duration: 0,
+          });
+
+          // Wait a moment, then start the sequence
+          setTimeout(() => {
+            // Step 1: Show the modular blocks (0-800ms)
+            animate(".modular-block", {
+              translateX: [0],
+              translateY: [0],
+              easing: "easeInOutCubic",
+              duration: 800,
+            });
+
+            // Step 2: Selection box appears around blocks (800-2000ms)
+            setTimeout(() => {
+              console.log("Animating selection box to appear");
+              animate(".selection-box", {
+                opacity: [0, 1],
+                scale: [0, 1],
+                easing: "easeOutCubic",
+                duration: 800,
+              });
+            }, 800);
+
+            // Step 3: Container block appears and selection box disappears (2000-3000ms)
+            setTimeout(() => {
+              animate(".selection-box", {
+                opacity: [1, 0],
+                easing: "easeInCubic",
+                duration: 1000,
+              });
+
+              animate(".container-block", {
+                opacity: [0, 1],
+                scale: [0.8, 1],
+                easing: "easeOutCubic",
+                duration: 600,
+                delay: 200,
+              });
+            }, 2000);
+
+            // Step 4: Scale up the container (3000-3500ms)
+            setTimeout(() => {
+              animate(".container-block", {
+                scale: [1, 1.1, 1],
+                easing: "easeInOutCubic",
+                duration: 500,
+              });
+            }, 3000);
+
+          });
+        };
+
+        // Run the sequence immediately
+        runModularSequence();
+
+        // Set up interval to repeat every 7 seconds
+        const modularIntervalId = setInterval(runModularSequence, 5000);
+
+        // Store interval ID for cleanup
+        return () => clearInterval(modularIntervalId);
+      } else if (activeFeature === 'analytics') {
+        // Advanced Metrics Control Animation
+        const runAdvancedSequence = () => {
+          console.log("Starting advanced sequence");
+          
+          setTimeout(() => {
+            console.log("Panel appearing");
+            // Step 1: Control panel appears (0-800ms)
+            animate(".control-panel", {
+              opacity: [0, 1],
+              scale: [0.9, 1],
+              easing: "easeOutCubic",
+              duration: 800,
+            });
+
+            // Step 2: Toggles start switching (1000-2500ms)
+            setTimeout(() => {
+              animate(".toggle-thumb", {
+                translateX: [0, 24, 0, 24, 0],
+                easing: "easeInOutCubic",
+                duration: 1500,
+                delay: 200,
+              });
+            }, 1000);
+
+            // Step 3: Sliders start moving (1500-3500ms)
+            setTimeout(() => {
+              animate(".slider-thumb", {
+                translateX: [0, 60, 20, 45, 30],
+                easing: "easeInOutCubic",
+                duration: 2000,
+                delay: 300,
+              });
+            }, 1500);
+
+            // Step 4: Input fields change values (2000-4000ms)
+            setTimeout(() => {
+              const fieldValues = [
+                ["1000", "1500", "1200"],
+                ["15%", "20%", "18%"]
+              ];
+              
+              fieldValues.forEach((values, fieldIndex) => {
+                values.forEach((value, valueIndex) => {
+                  setTimeout(() => {
+                    const field = document.querySelectorAll(".control-input")[fieldIndex];
+                    if (field) {
+                      field.value = value;
+                      // Flash effect
+                      field.style.background = "rgba(124, 58, 237, 0.1)";
+                      setTimeout(() => {
+                        field.style.background = "";
+                      }, 300);
+                    }
+                  }, valueIndex * 700);
+                });
+              });
+            }, 2000);
+
+            // Step 5: Panel pulse effect (3500-4000ms)
+            setTimeout(() => {
+              animate(".control-panel", {
+                scale: [1, 1.02, 1],
+                easing: "easeInOutCubic",
+                duration: 500,
+              });
+            }, 3500);
+          }, 500);
+        };
+
+        // Run the sequence immediately
+        runAdvancedSequence();
+
+        // Set up interval to repeat every 6 seconds
+        const advancedIntervalId = setInterval(runAdvancedSequence, 6000);
+
+        // Store interval ID for cleanup
+        return () => clearInterval(advancedIntervalId);
+      }
     });
     return () => scopeRef.current?.revert();
   }, [activeFeature]);
@@ -119,7 +284,7 @@ export default function Build() {
       <div className="build-contents">
         <div className="build-header">
           <h2 className="build-title">Build</h2>
-          <p className="build-subtitle">
+        <p className="build-subtitle">
             Create sophisticated trading algorithms with our visual drag-and-drop interface
           </p>
         </div>
@@ -176,29 +341,114 @@ export default function Build() {
             )}
             
             {activeFeature === 'analytics' && (
-              <div className="analytics-animation">
-                <div className="chart-bars">
-                  <div className="bar"></div>
-                  <div className="bar"></div>
-                  <div className="bar"></div>
-                  <div className="bar"></div>
-                  <div className="bar"></div>
+              <div className="advanced-animation">
+                {/* Control Panel Structure */}
+                <div className="control-panel">
+                  {/* Left Column - Toggles */}
+                  <div className="control-column left-column">
+                    <div className="control-group">
+                      <div className="control-item">
+                        <div className="toggle-switch">
+                          <div className="toggle-track">
+                            <div className="toggle-thumb"></div>
+                          </div>
+                        </div>
+                        <div className="control-label">Auto Trading</div>
+                      </div>
+                      
+                      <div className="control-item">
+                        <div className="toggle-switch">
+                          <div className="toggle-track">
+                            <div className="toggle-thumb"></div>
+                          </div>
+                        </div>
+                        <div className="control-label">Risk Management</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Center Column - Sliders */}
+                  <div className="control-column center-column">
+                    <div className="control-group">
+                      <div className="control-item">
+                        <div className="slider-container">
+                          <div className="slider-track">
+                            <div className="slider-thumb"></div>
+                          </div>
+                          <div className="slider-value">75%</div>
+                        </div>
+                        <div className="control-label">Risk Level</div>
+                      </div>
+                      
+                      <div className="control-item">
+                        <div className="slider-container">
+                          <div className="slider-track">
+                            <div className="slider-thumb"></div>
+                          </div>
+                          <div className="slider-value">2.5%</div>
+                        </div>
+                        <div className="control-label">Take Profit</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right Column - Input Fields */}
+                  <div className="control-column right-column">
+                    <div className="control-group">
+                      <div className="control-item">
+                        <div className="input-container">
+                          <input type="text" className="control-input" readOnly />
+                          <div className="input-unit">USD</div>
+                        </div>
+                        <div className="control-label">Position Size</div>
+                      </div>
+                      
+                      <div className="control-item">
+                        <div className="input-container">
+                          <input type="text" className="control-input" readOnly />
+                          <div className="input-unit">%</div>
+                        </div>
+                        <div className="control-label">Drawdown Limit</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="trend-line"></div>
               </div>
             )}
             
-            {activeFeature === 'indicators' && (
-              <div className="indicators-animation">
-                <div className="indicator-grid">
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                  <div className="grid-item"></div>
-                </div>
-                <div className="custom-shape"></div>
-              </div>
-            )}
+      {activeFeature === 'indicators' && (
+        <div className="indicators-animation">
+          {/* Three modular blocks */}
+          <div className="modular-block block-1">
+            <div className="block-content">
+              <div className="block-icon"></div>
+            </div>
+          </div>
+          
+          <div className="modular-block block-2">
+            <div className="block-content">
+              <div className="block-icon"></div>
+            </div>
+          </div>
+          
+          <div className="modular-block block-3">
+            <div className="block-content">
+              <div className="block-icon"></div>
+            </div>
+          </div>
+          
+          {/* Selection box that appears around the blocks */}
+          <div className="selection-box"></div>
+          
+          {/* Container block that wraps everything */}
+          <div className="container-block">
+            <div className="container-content">
+              <div className="container-label">Module</div>
+            </div>
+          </div>
+        </div>
+      )}
+
           </div>
         </div>
         
