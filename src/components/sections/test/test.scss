@@ -10,7 +10,8 @@
   font-size: clamp(3rem, 8vw, 6rem);
   font-weight: 700;
   color: var(--fg);
-  font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   text-transform: uppercase;
   letter-spacing: -0.02em;
 }
@@ -19,7 +20,8 @@
   opacity: 0.85;
   margin-bottom: 1rem;
   margin-top: -1rem;
-  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.6;
 }
 .cards {
@@ -39,7 +41,11 @@
 
   &.active {
     border-color: var(--accent);
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(124, 58, 237, 0.05) 0%,
+      rgba(124, 58, 237, 0.02) 100%
+    );
     box-shadow: 15px 15px 0 rgba(124, 58, 237, 0.2);
 
     h3 {
@@ -63,13 +69,18 @@
     }
 
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.1), transparent);
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(124, 58, 237, 0.1),
+        transparent
+      );
       transition: left 0.6s ease;
     }
 
@@ -115,14 +126,16 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin: 0 0 8px 0;
-    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter",
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   p {
     color: rgba(11, 11, 11, 0.7);
     font-size: 0.9rem;
     margin: 0;
-    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 }
 
@@ -142,8 +155,11 @@
   border: 1px solid rgba(11, 11, 11, 0.1);
   border-radius: 0;
   overflow: hidden;
-  background: 
-    linear-gradient(90deg, rgba(11, 11, 11, 0.05) 1px, transparent 1px),
+  background: linear-gradient(
+      90deg,
+      rgba(11, 11, 11, 0.05) 1px,
+      transparent 1px
+    ),
     linear-gradient(rgba(11, 11, 11, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
 }
@@ -184,7 +200,8 @@
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
-    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter",
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 }
 
@@ -194,7 +211,8 @@
   gap: 8px;
   color: rgba(11, 11, 11, 0.7);
   font-size: 0.8rem;
-  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .status-indicator {
@@ -205,7 +223,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -230,13 +249,15 @@
 .metric-label {
   color: rgba(11, 11, 11, 0.7);
   font-size: 0.85rem;
-  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .metric-value {
   font-weight: 600;
   font-size: 0.9rem;
-  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   &.positive {
     color: #10b981;
@@ -274,13 +295,15 @@
   color: rgba(11, 11, 11, 0.7);
   font-size: 0.8rem;
   margin-bottom: 8px;
-  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .summary-value {
   font-size: 1.8rem;
   font-weight: 700;
-  font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   &.positive {
     color: #10b981;
@@ -349,7 +372,8 @@
   margin-top: 0;
   color: var(--accent);
   font-weight: 500;
-  font-family: "AvantGarde", "ITC Avant Garde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "AvantGarde", "ITC Avant Garde", "Orbitron", "Inter",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   transition: all 0.3s ease;
 }
 

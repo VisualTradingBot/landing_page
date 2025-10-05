@@ -43,30 +43,75 @@ const baseData = [
 const ANIMATION_DURATION = 900;
 
 function percentageChange(value, baseline = 10000) {
+  if (!baseline) return "0.0";
   return ((value / baseline - 1) * 100).toFixed(1);
 }
 
-function CustomTooltip({ active, payload, label }) {
+function DefaultValueFormatter(value) {
+  if (value === undefined || value === null) return "-";
+  return `$${value.toLocaleString()}`;
+}
+
+function formatWithSign(formatter, value) {
+  if (value === undefined || value === null) return formatter?.(value) ?? "";
+  const formattedAbsolute = formatter(Math.abs(value));
+  const cleaned =
+    typeof formattedAbsolute === "string"
+      ? formattedAbsolute.replace(/^[+\-]/, "")
+      : formattedAbsolute;
+  if (value === 0) {
+    return formattedAbsolute;
+  }
+  return `${value >= 0 ? "+" : "-"}${cleaned}`;
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  baseline = 10000,
+  valueFormatter = DefaultValueFormatter,
+}) {
   if (!active || !payload?.length) return null;
 
   const [{ value }] = payload;
-  const change = ((value / 10000 - 1) * 100).toFixed(1);
-  const isPositive = change >= 0;
-  
+  const change = percentageChange(value, baseline);
+  const numericChange = parseFloat(change);
+  const isPositive = !Number.isNaN(numericChange) && numericChange >= 0;
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
       <p className="text-gray-600 text-xs mb-1">{label}</p>
       <p className="text-gray-900 font-semibold">
-        ${value?.toLocaleString()}
-        <span className={`ml-2 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-          {isPositive ? '+' : ''}{change}%
-        </span>
+        {valueFormatter(value)}
+        {!Number.isNaN(numericChange) && (
+          <span
+            className={`ml-2 ${isPositive ? "text-green-600" : "text-red-600"}`}
+          >
+            {isPositive ? "+" : ""}
+            {change}%
+          </span>
+        )}
       </p>
     </div>
   );
 }
 
-export default function PerformanceChart({ customData, lineColor = palette.portfolio, mode = 'backtest', description = '' }) {
+export default function PerformanceChart({
+  customData,
+  lineColor = palette.portfolio,
+  mode = "backtest",
+  description = "",
+  title = "Performance Dashboard",
+  baselineValue,
+  valueFormatter = DefaultValueFormatter,
+  metricsConfig,
+  summaryConfig,
+  metricsTitle = "Performance Metrics",
+  usePercentageScale,
+  showMetrics = true,
+  className,
+}) {
   const dataToUse = customData || baseData;
   const INITIAL_VISIBLE_POINTS = Math.max(
     2,
@@ -76,6 +121,11 @@ export default function PerformanceChart({ customData, lineColor = palette.portf
   const [chartInstanceKey, setChartInstanceKey] = useState(0);
   const animationFrameRef = useRef(null);
   const animationStartRef = useRef(null);
+  const resolvedBaseline = baselineValue ?? dataToUse[0]?.portfolio ?? 10000;
+  const shouldUsePercentScale =
+    typeof usePercentageScale === "boolean"
+      ? usePercentageScale
+      : baselineValue === undefined;
 
   const cancelAnimation = useCallback(() => {
     if (animationFrameRef.current) {
@@ -145,48 +195,138 @@ export default function PerformanceChart({ customData, lineColor = palette.portf
     const values = dataToUse.map((point) => point.portfolio);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    return [minValue - 150, maxValue + 150];
+    if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+      return [0, 1];
+    }
+    const range = maxValue - minValue;
+    const padding = Math.max(range * 0.08, 50);
+    return [minValue - padding, maxValue + padding];
   }, [dataToUse]);
 
   // Calculate final metrics
   const finalMetrics = useMemo(() => {
     const firstValue = dataToUse[0]?.portfolio || 10000;
     const lastValue = dataToUse[dataToUse.length - 1]?.portfolio || 10000;
-    const maxValue = Math.max(...dataToUse.map(p => p.portfolio));
-    const minValue = Math.min(...dataToUse.map(p => p.portfolio));
-    
-    const totalReturn = ((lastValue / firstValue - 1) * 100);
-    const maxDrawdown = ((maxValue - minValue) / maxValue * 100);
-    const sharpeRatio = totalReturn > 0 ? (totalReturn / 10).toFixed(2) : '0.00';
-    const winRate = dataToUse.filter((_, i) => i > 0 && dataToUse[i].portfolio > dataToUse[i-1].portfolio).length / (dataToUse.length - 1) * 100;
-    
+    const maxValue = Math.max(...dataToUse.map((p) => p.portfolio));
+    const minValue = Math.min(...dataToUse.map((p) => p.portfolio));
+
+    const totalReturn = (lastValue / firstValue - 1) * 100;
+    const maxDrawdown = ((maxValue - minValue) / maxValue) * 100;
+    const sharpeRatio =
+      totalReturn > 0 ? (totalReturn / 10).toFixed(2) : "0.00";
+    const winRate =
+      (dataToUse.filter(
+        (_, i) => i > 0 && dataToUse[i].portfolio > dataToUse[i - 1].portfolio
+      ).length /
+        (dataToUse.length - 1)) *
+      100;
+
     return {
       totalReturn: totalReturn.toFixed(1),
       maxDrawdown: maxDrawdown.toFixed(1),
       sharpeRatio,
       winRate: winRate.toFixed(0),
       finalValue: lastValue,
-      initialValue: firstValue
+      initialValue: firstValue,
     };
   }, [dataToUse]);
 
+  const metricsToRender = useMemo(() => {
+    if (metricsConfig?.length) {
+      return metricsConfig.map((metric) => ({
+        id: metric.id ?? metric.label,
+        ...metric,
+      }));
+    }
+
+    return [
+      {
+        id: "total-return",
+        label: "Total Return",
+        value: `${finalMetrics.totalReturn >= 0 ? "+" : ""}${
+          finalMetrics.totalReturn
+        }%`,
+        tone: finalMetrics.totalReturn >= 0 ? "positive" : "negative",
+      },
+      {
+        id: "final-value",
+        label: "Final Value",
+        value: valueFormatter(finalMetrics.finalValue),
+        tone: "primary",
+      },
+      {
+        id: "max-drawdown",
+        label: "Max Drawdown",
+        value: `-${finalMetrics.maxDrawdown}%`,
+        tone: "negative",
+      },
+      {
+        id: "win-rate",
+        label: "Win Rate",
+        value: `${finalMetrics.winRate}%`,
+        tone: "info",
+      },
+      {
+        id: "sharpe-ratio",
+        label: "Sharpe Ratio",
+        value: finalMetrics.sharpeRatio,
+        tone: "warning",
+      },
+    ];
+  }, [metricsConfig, finalMetrics, valueFormatter]);
+
+  const summaryToRender = useMemo(() => {
+    if (summaryConfig === null) {
+      return null;
+    }
+
+    if (summaryConfig) {
+      return summaryConfig;
+    }
+
+    const profitLoss = finalMetrics.finalValue - finalMetrics.initialValue;
+
+    return {
+      label: "Profit/Loss",
+      value: formatWithSign(valueFormatter, profitLoss),
+      tone: profitLoss >= 0 ? "positive" : "negative",
+    };
+  }, [summaryConfig, finalMetrics, valueFormatter]);
+
+  const tooltipRenderer = useCallback(
+    (props) => (
+      <CustomTooltip
+        {...props}
+        baseline={resolvedBaseline}
+        valueFormatter={valueFormatter}
+      />
+    ),
+    [resolvedBaseline, valueFormatter]
+  );
+
+  const wrapperClassName = ["chart-wrapper", className]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="chart-wrapper">
+    <div className={wrapperClassName}>
       <div className="chart-container">
         <div className="chart-header">
           <div className="chart-title">
-            <h3>Performance Dashboard</h3>
+            <h3>{title}</h3>
             <p>{description}</p>
           </div>
         </div>
-        
-        <div className="chart-content">
+
+        <div
+          className={`chart-content ${
+            showMetrics ? "has-metrics" : "no-metrics"
+          }`}
+        >
           {/* Chart Section */}
           <div className="chart-section">
             <div className="chart-area">
-              <div
-                className="chart-interactive"
-              >
+              <div className="chart-interactive">
                 <div className="chart-overlay" />
                 <ResponsiveContainer width="100%" height={360}>
                   <LineChart
@@ -195,13 +335,27 @@ export default function PerformanceChart({ customData, lineColor = palette.portf
                     margin={{ left: 40, right: 40, top: 20, bottom: 40 }}
                   >
                     <defs>
-                      <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(11, 11, 11, 0.1)" stopOpacity="0.5" />
-                        <stop offset="100%" stopColor="rgba(11, 11, 11, 0.05)" stopOpacity="0" />
+                      <linearGradient
+                        id="gridGradient"
+                        x1="0"
+                        x2="0"
+                        y1="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="rgba(11, 11, 11, 0.1)"
+                          stopOpacity="0.5"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="rgba(11, 11, 11, 0.05)"
+                          stopOpacity="0"
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid 
-                      stroke="url(#gridGradient)" 
+                    <CartesianGrid
+                      stroke="url(#gridGradient)"
                       strokeDasharray="3 3"
                       vertical={true}
                       horizontal={true}
@@ -219,12 +373,19 @@ export default function PerformanceChart({ customData, lineColor = palette.portf
                       tick={{ fill: "rgba(11, 11, 11, 0.7)", fontSize: 12 }}
                       axisLine={true}
                       tickLine={true}
-                      tickFormatter={(value) => `${percentageChange(value)}%`}
-                      width={60}
+                      tickFormatter={(value) =>
+                        shouldUsePercentScale
+                          ? `${percentageChange(value, resolvedBaseline)}%`
+                          : valueFormatter(value)
+                      }
+                      width={shouldUsePercentScale ? 60 : 80}
                     />
                     <Tooltip
-                      content={<CustomTooltip />}
-                      cursor={{ stroke: "rgba(11, 11, 11, 0.2)", strokeWidth: 1 }}
+                      content={tooltipRenderer}
+                      cursor={{
+                        stroke: "rgba(11, 11, 11, 0.2)",
+                        strokeWidth: 1,
+                      }}
                     />
                     <Line
                       type="monotone"
@@ -242,57 +403,39 @@ export default function PerformanceChart({ customData, lineColor = palette.portf
           </div>
 
           {/* Metrics Panel */}
-          <div className="metrics-panel">
-            <div className="metrics-header">
-              <h4>Performance Metrics</h4>
-            </div>
-            
-            <div className="metrics-grid">
-              <div className="metric-item">
-                <span className="metric-label">Total Return</span>
-                <span className={`metric-value ${finalMetrics.totalReturn >= 0 ? 'positive' : 'negative'}`}>
-                  {finalMetrics.totalReturn >= 0 ? '+' : ''}{finalMetrics.totalReturn}%
-                </span>
+          {showMetrics && (
+            <div className="metrics-panel">
+              <div className="metrics-header">
+                <h4>{metricsTitle}</h4>
               </div>
-              
-              <div className="metric-item">
-                <span className="metric-label">Final Value</span>
-                <span className="metric-value primary">
-                  ${finalMetrics.finalValue?.toLocaleString()}
-                </span>
-              </div>
-              
-              <div className="metric-item">
-                <span className="metric-label">Max Drawdown</span>
-                <span className="metric-value negative">
-                  -{finalMetrics.maxDrawdown}%
-                </span>
-              </div>
-              
-              <div className="metric-item">
-                <span className="metric-label">Win Rate</span>
-                <span className="metric-value info">
-                  {finalMetrics.winRate}%
-                </span>
-              </div>
-              
-              <div className="metric-item">
-                <span className="metric-label">Sharpe Ratio</span>
-                <span className="metric-value warning">
-                  {finalMetrics.sharpeRatio}
-                </span>
-              </div>
-            </div>
 
-            <div className="metrics-summary">
-              <div className="summary-item">
-                <span className="summary-label">Profit/Loss</span>
-                <span className={`summary-value ${finalMetrics.totalReturn >= 0 ? 'positive' : 'negative'}`}>
-                  ${((finalMetrics.finalValue - finalMetrics.initialValue)).toLocaleString()}
-                </span>
+              <div className="metrics-grid">
+                {metricsToRender.map((metric) => (
+                  <div className="metric-item" key={metric.id ?? metric.label}>
+                    <span className="metric-label">{metric.label}</span>
+                    <span className={`metric-value ${metric.tone ?? ""}`}>
+                      {metric.value}
+                    </span>
+                  </div>
+                ))}
               </div>
+
+              {summaryToRender && (
+                <div className="metrics-summary">
+                  <div className="summary-item">
+                    <span className="summary-label">
+                      {summaryToRender.label}
+                    </span>
+                    <span
+                      className={`summary-value ${summaryToRender.tone ?? ""}`}
+                    >
+                      {summaryToRender.value}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
