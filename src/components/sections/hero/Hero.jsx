@@ -51,7 +51,7 @@ export default function Hero({ onOpenModal }) {
                 setShowButtons(true);
               }, 500);
             }
-          }, 50); // Faster typing for tagline
+          }, 30); // Faster typing for tagline
 
           return () => clearInterval(typingTagline);
         }, 1000);
