@@ -1,10 +1,30 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap");
+
+@font-face {
+  font-family: "AvantGarde";
+  src: url("../assets/font/ITCAvantGardeStd-Md.woff2") format("woff2"),
+       url("../assets/font/ITC Avant Garde Gothic Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 @font-face {
   font-family: "ITC Avant Garde";
-  src: url("../assets/font/ITC Avant Garde Gothic Medium.otf") format("opentype");
-  font-weight: 500;
+  src: url("../assets/font/ITCAvantGardeStd-Bold.woff2") format("woff2"),
+       url("../assets/font/ITCAvantGardeStd-Md.woff2") format("woff2"),
+       url("../assets/font/ITC Avant Garde Gothic Medium.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ShareTechMono";
+  src: url("../assets/font/ShareTechMono-Regular.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -22,7 +42,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -32,7 +52,7 @@ body {
   padding-top: 60px; /* Account for fixed header */
   background: var(--bg);
   color: var(--fg);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -68,3 +88,4 @@ h3 {
   margin: 0 auto;
   padding: 0 18px;
 }
+

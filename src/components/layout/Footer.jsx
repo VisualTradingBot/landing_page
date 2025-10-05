@@ -10,7 +10,6 @@ export default function Footer() {
             <div className="brand">VTrade — Visual Trading Studio</div>
             <div className="contact-info">
               <div className="address">123 Trading Street, Finance District, NY 10001</div>
-              <div className="email">contact@vtrade.com</div>
             </div>
           </div>
           <div className="footer-right">
@@ -25,7 +24,7 @@ export default function Footer() {
                 TikTok
               </a>
             </div>
-            <button className="contact-btn">Contact Us</button>
+            <a href="mailto:contact@vtrade.com" className="email">contact@vtrade.com</a>
           </div>
         </div>
         <div className="footer-bottom">
