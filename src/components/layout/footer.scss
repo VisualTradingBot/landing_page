@@ -1,26 +1,127 @@
 .site-footer {
   border-top: 6px solid var(--border);
-  padding: 24px 18px;
   background: var(--fg);
   color: #fff;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
-.site-footer .inner {
+.footer-inner {
   max-width: 1100px;
   margin: 0 auto;
+  padding: 40px 18px 20px;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 40px;
+}
+
+.footer-left {
+  flex: 1;
+}
+
+.brand {
+  font-weight: 900;
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.address, .email {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.social-links {
+  display: flex;
+  gap: 24px;
+}
+
+.social-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.social-link:hover {
+  color: var(--accent);
+}
+
+.contact-btn {
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+}
+
+.contact-btn:hover {
+  background: #fff;
+  color: var(--fg);
+}
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
-.site-footer .brand {
-  font-weight: 900;
+.legal-links {
+  display: flex;
+  gap: 24px;
 }
-.site-footer .links a {
-  color: #fff;
-  margin-left: 14px;
+.legal-links a {
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  padding-left: 12px;
+  font-size: 12px;
+  transition: color 0.2s ease;
 }
-.site-footer .links a:hover {
+.legal-links a:hover {
   color: var(--accent);
+}
+.copyright {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .footer-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .footer-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
