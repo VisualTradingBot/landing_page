@@ -290,6 +290,14 @@ export default function Build() {
         </div>
 
         <div className="build-main">
+          {/* Duplicate header for media query layout */}
+          <div className="build-header-duplicate">
+            <h2 className="build-title">Build</h2>
+            <p className="build-subtitle">
+              Create sophisticated trading algorithms with our visual drag-and-drop interface
+            </p>
+          </div>
+          
           <div className="build-features">
             <div className={`feature-item ${activeFeature === 'visual' ? 'active' : ''}`} onClick={() => setActiveFeature('visual')}>
               <span className="feature-label">Visual Programming</span>
