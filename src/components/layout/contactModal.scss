@@ -203,6 +203,55 @@
   }
 }
 
+/* Small tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .modal-overlay {
+    padding: 15px;
+  }
+
+  .modal-content {
+    max-width: 90%;
+  }
+
+  .modal-header {
+    padding: 22px 22px 0;
+
+    h2 {
+      font-size: 1.375rem;
+    }
+  }
+
+  .modal-form {
+    padding: 0 22px 22px;
+
+    .form-group {
+      margin-bottom: 22px;
+    }
+  }
+
+  .toggle-group {
+    gap: 7px;
+    flex-wrap: wrap;
+    flex-direction: row;
+
+    .toggle-button {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+  }
+
+  .form-actions {
+    flex-direction: row;
+    gap: 14px;
+
+    button {
+      flex: 1;
+    }
+  }
+}
+
+/* Mobile (≤480px) */
 @media (max-width: 480px) {
   .modal-overlay {
     padding: 10px;

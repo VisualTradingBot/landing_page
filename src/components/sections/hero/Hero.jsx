@@ -65,57 +65,31 @@ export default function Hero({ onOpenModal }) {
   return (
     <section id="hero" className="hero">
       {/* Main Content */}
-      <motion.div
-        className="hero-contents"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.5 }}
-      >
-        <motion.h1
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
+      <div className="hero-contents">
+        <h1 className="hero-title">
           {heroText}
-        </motion.h1>
+          <span className="cursor">_</span>
+        </h1>
 
-        {showTagline && (
-          <motion.div
-            className="hero-tagline"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <p>{taglineText}</p>
-          </motion.div>
-        )}
+        <div className={`hero-tagline ${showTagline ? 'visible' : 'hidden'}`}>
+          <p>{taglineText}</p>
+        </div>
 
-        <motion.div
-          className="hero-cta"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: showButtons ? 1 : 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <motion.button
+        <div className={`hero-cta ${showButtons ? 'visible' : 'hidden'}`}>
+          <button
             className="cta-button"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
             onClick={onOpenModal}
           >
             Get Started
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             className="secondary-button"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
             onClick={scrollToBuild}
           >
             Learn More
-          </motion.button>
-        </motion.div>
-      </motion.div>
+          </button>
+        </div>
+      </div>
 
       {/* Moving Tile Wall Animation */}
       <TileWall />

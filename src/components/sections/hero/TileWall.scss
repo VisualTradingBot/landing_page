@@ -14,6 +14,16 @@
   gap: 8px;
   padding: 20px;
 
+  // Hide pattern for screens smaller than 1440px
+  @media (max-width: 1439px) {
+    display: none;
+  }
+
+  // Show pattern only on large screens (≥1440px)
+  @media (min-width: 1440px) {
+    display: grid;
+  }
+
   // Responsive grid configurations
   @media (min-width: 1920px) {
     grid-template-columns: repeat(5, 1fr);

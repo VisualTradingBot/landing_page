@@ -12,18 +12,71 @@
   background: transparent;
   
   
-  .hero-contents {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    flex: 1;
-    width: 100%;
-    text-align: center;
-    z-index: 2;
-    position: relative;
-    min-height: 80vh; // Reserve space to prevent shifts
-    min-width: 600px; // Prevent horizontal shifts
+   .hero-contents {
+     display: flex;
+     flex-direction: column;
+     align-items: flex-start;
+     justify-content: center;
+     flex: 1;
+     width: 100%;
+     text-align: center;
+     z-index: 2;
+     position: relative;
+     height: 80vh; // Fixed height for all screen sizes
+     min-width: 600px; // Prevent horizontal shifts
+     
+     // Reduce min-width for smaller screens to prevent overflow
+     @media (max-width: 767px) {
+       min-width: 320px; // Much smaller min-width for mobile
+     }
+     
+     // Adjust min-width for 560-768px range
+     @media (min-width: 560px) and (max-width: 767px) {
+       min-width: 400px; // Medium min-width for small tablets
+     }
+     
+     // Even smaller min-width for mobile screens <560px
+     @media (max-width: 559px) {
+       min-width: 280px; // Very small min-width for mobile
+     }
+    
+    // Center content when pattern is hidden (screens < 1024px)
+    @media (max-width: 1023px) {
+      align-items: center;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+      height: 80vh; // Fixed height to prevent movement
+      justify-content: center; // Center vertically
+    }
+    
+    // Align title more to the left at 1024px-1439px
+    @media (min-width: 1024px) and (max-width: 1439px) {
+      align-items: flex-start;
+      text-align: left;
+      max-width: none;
+      margin: 0;
+      padding-left: 5vw;
+      height: 80vh; // Fixed height to prevent movement
+      justify-content: center; // Center vertically
+    }
+    
+     // Center content when pattern is completely hidden (screens < 768px)
+     @media (max-width: 767px) {
+       align-items: center;
+       text-align: center;
+       max-width: 800px;
+       margin: 0 auto;
+     }
+     
+     // Ensure centering for mobile screens <560px
+     @media (max-width: 559px) {
+       align-items: center;
+       text-align: center;
+       max-width: 100%;
+       margin: 0 auto;
+       padding: 0 20px;
+     }
 
     h1 {
       font-size: clamp(4rem, 10vw, 10rem);
@@ -36,6 +89,22 @@
       min-height: 1.2em; // Prevent layout shift
       min-width: 400px; // Prevent width shifts
       
+       // Increase text size for smaller screens
+       @media (max-width: 1023px) {
+         font-size: clamp(6rem, 15vw, 15rem); // 1.5x larger
+       }
+       
+       // Make title 1.5x bigger at 560-768px
+       @media (min-width: 560px) and (max-width: 767px) {
+         font-size: clamp(6rem, 12vw, 12rem); // 1.5x bigger than current
+       }
+       
+       // Return to original size at <560px
+       @media (max-width: 559px) {
+         font-size: clamp(4rem, 10vw, 10rem); // Original size
+       }
+      
+     
       .cursor {
         color: var(--accent);
         font-weight: 300;
@@ -43,33 +112,141 @@
     }
   }
   
-  .hero-tagline {
-    margin-bottom: 3rem;
-    min-height: 2.5em; // Prevent layout shift
-    min-width: 600px; // Prevent width shifts
+   .hero-tagline {
+     margin-bottom: 3rem;
+     min-height: 2.5em; // Prevent layout shift
+     min-width: 600px; // Prevent width shifts
+     
+     // Reduce min-width for smaller screens
+     @media (max-width: 767px) {
+       min-width: 280px; // Much smaller min-width for mobile
+     }
+     
+     // Adjust min-width for 560-768px range
+     @media (min-width: 560px) and (max-width: 767px) {
+       min-width: 350px; // Medium min-width for small tablets
+     }
+     
+     // Even smaller min-width for mobile screens <560px
+     @media (max-width: 559px) {
+       min-width: 200px; // Very small min-width for mobile
+     }
     
+
+
     text-align: end;
-    p {
-      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-      color: rgba(11, 11, 11, 0.8);
-      font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-weight: 400;
-      line-height: 1.4;
-      margin: 0;
-      max-width: 700px;
-      min-width: 500px; // Prevent width shifts
+       p {
+         font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+         color: rgba(11, 11, 11, 0.8);
+         font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         font-weight: 400;
+         line-height: 1.4;
+         margin: 0;
+         max-width: 700px;
+         min-width: 500px; // Prevent width shifts
+
+         @media (max-width: 1439px) {
+           min-width: none;
+           max-width: none;
+         }
+         
+         // Reduce min-width for smaller screens
+         @media (max-width: 767px) {
+           min-width: 200px; // Much smaller min-width for mobile
+         }
+         
+         // Adjust min-width for 560-768px range
+         @media (min-width: 560px) and (max-width: 767px) {
+           min-width: 250px; // Medium min-width for small tablets
+         }
+         
+         // Even smaller min-width for mobile screens <560px
+         @media (max-width: 559px) {
+           min-width: 150px; // Very small min-width for mobile
+         }
+      
+       // Increase text size for smaller screens
+       @media (max-width: 1023px) {
+         font-size: clamp(1.8rem, 3.75vw, 2.7rem); // 1.5x larger
+       }
+       
+       // Increase height for 768-1024px range to accommodate wrapped text
+       @media (min-width: 768px) and (max-width: 1023px) {
+         height: 5em; // Much more space for wrapped text
+         min-height: 5em;
+         align-items: flex-start; // Align to top instead of center
+       }
+       
+       // Make tagline 1.1x bigger at 560-768px
+       @media (min-width: 560px) and (max-width: 767px) {
+         font-size: clamp(1.32rem, 2.75vw, 1.98rem); // 1.1x bigger than current
+         text-align: center;
+       }
+       
+       // Reduce text size at <560px
+       @media (max-width: 559px) {
+         font-size: clamp(1.2rem, 2.5vw, 1.8rem); // Original size
+         max-width: 250px; // Force text to wrap to second line
+         text-align: center; // Center text for mobile
+       }
+      
     }
   }
   
-  .hero-cta {
-    display: flex;
-    padding-left: 10vw;
-    gap: 2rem;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-    min-height: 4rem; // Prevent layout shift
-    min-width: 600px; // Prevent width shifts
+   .hero-cta {
+     display: flex;
+     padding-left: 10vw;
+     gap: 2rem;
+     flex-wrap: wrap;
+     justify-content: flex-start;
+     align-items: flex-start;
+     min-height: 4rem; // Prevent layout shift
+     min-width: 600px; // Prevent width shifts
+     
+     // Reduce min-width for smaller screens
+     @media (max-width: 767px) {
+       min-width: 280px; // Much smaller min-width for mobile
+     }
+     
+     // Adjust min-width for 560-768px range
+     @media (min-width: 560px) and (max-width: 767px) {
+       min-width: 350px; // Medium min-width for small tablets
+     }
+     
+     // Even smaller min-width for mobile screens <560px
+     @media (max-width: 559px) {
+       min-width: 200px; // Very small min-width for mobile
+     }
+    
+    // Center buttons when pattern is hidden (screens < 1024px)
+    @media (max-width: 1023px) {
+      padding-left: 0;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    
+    // Make buttons smaller to fit horizontally at 768-1024px
+    @media (min-width: 768px) and (max-width: 1023px) {
+      margin-top: 2rem; // Push buttons lower
+      gap: 1rem; // Smaller gap between buttons
+      
+      .cta-button,
+      .secondary-button {
+        padding: 16px 24px; // Smaller buttons
+        font-size: 18px; // Smaller text
+        min-width: 200px; // Smaller minimum width
+        max-width: 250px; // Smaller maximum width
+        flex: 1; // Allow buttons to shrink
+      }
+    }
+    
+    // Align buttons to the left at 1024px-1439px
+    @media (min-width: 1024px) and (max-width: 1439px) {
+      padding-left: 5vw;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
    
     
     .cta-button {
@@ -84,10 +261,11 @@
       font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-transform: uppercase;
       letter-spacing: 1px;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
       box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.06);
+      transform: translateY(0);
       
       &::before {
         content: '';
@@ -103,10 +281,17 @@
       &:hover {
         background: transparent;
         color: var(--fg);
+        transform: translateY(-2px);
+        box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.1);
         
         &::before {
           left: 0;
         }
+      }
+      
+      &:active {
+        transform: translateY(0);
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.1);
       }
     }
     
@@ -122,10 +307,11 @@
       font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-transform: uppercase;
       letter-spacing: 1px;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
       box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.06);
+      transform: translateY(0);
       
       &::before {
         content: '';
@@ -141,10 +327,17 @@
       
       &:hover {
         color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.1);
         
         &::before {
           left: 0;
         }
+      }
+      
+      &:active {
+        transform: translateY(0);
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.1);
       }
     }
   }
@@ -174,6 +367,119 @@
   }
 }
 
+// Blinking cursor for screens < 1440px
+@media (max-width: 1439px) {
+  .cursor {
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--accent);
+    animation: blink 1.6s steps(2, end) infinite;
+  }
+  
+  // Disable all motion animations for stable layout
+  .hero-contents {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .hero-title {
+    animation: none !important;
+    transform: none !important;
+    position: relative;
+    top: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    height: 1.2em; // Fixed height for h1
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  // Fixed dimensions for tagline to prevent movement
+  .hero-tagline {
+    height: 2.5em; // Fixed height instead of min-height
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3rem;
+    animation: none !important;
+    transform: none !important;
+    
+    // Hidden state - invisible but takes up space
+    &.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    
+    // Visible state - appears instantly
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+// Hide cursor on large screens (≥1440px)
+@media (min-width: 1440px) {
+  .cursor {
+    display: none;
+  }
+}
+
+// Global stable layout for all screen sizes
+.hero-tagline {
+  height: 2.5em; // Fixed height for all screen sizes
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // More space for 768-1024px range to accommodate wrapped text
+  @media (min-width: 768px) and (max-width: 1023px) {
+    height: 5em;
+    min-height: 5em;
+    align-items: flex-start; // Align to top instead of center
+    padding-top: 0.5em; // Add some top padding
+  }
+  
+  // Hidden state - invisible but takes up space
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(15px);
+  }
+  
+  // Visible state - appears with smooth animation
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+.hero-cta {
+  height: 4rem; // Fixed height for all screen sizes
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // Hidden state - invisible but takes up space
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px) scale(0.95);
+  }
+  
+  // Visible state - appears with smooth animation
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 768px) {
   .hero {
     padding: 20px 5%;
@@ -186,18 +492,22 @@
     
     .hero-tagline {
       margin-bottom: 2rem;
+      height: 4em; // Increased height to accommodate two lines
+      min-height: 4em; // Ensure space for wrapped text
     }
     
     .hero-cta {
       flex-direction: column;
       gap: 1.5rem;
-      align-items: flex-start;
+      align-items: center;
+      height: auto; // Override fixed height for mobile
+      min-height: auto; // Allow natural height
       
       .cta-button,
       .secondary-button {
         width: auto;
         min-width: 300px;
-        text-align: left;
+        text-align: center;
         padding: 18px 36px;
         font-size: 21px;
       }
