@@ -4,7 +4,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: #111;
-  background-color: #ffffff;
+  background-color: transparent;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,7 +20,22 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #ffffff;
+  background: linear-gradient(
+      45deg,
+      transparent 48%,
+      rgba(124, 58, 237, 0.03) 49%,
+      rgba(124, 58, 237, 0.03) 51%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      rgba(124, 58, 237, 0.03) 49%,
+      rgba(124, 58, 237, 0.03) 51%,
+      transparent 52%
+    );
+  background-size: 20px 20px, 30px 30px;
+  background-attachment: fixed;
   color: inherit;
 }
 

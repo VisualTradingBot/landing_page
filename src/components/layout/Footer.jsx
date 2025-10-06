@@ -1,4 +1,3 @@
-import React from "react";
 import "./footer.scss";
 
 export default function Footer() {
@@ -7,24 +6,41 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-top">
           <div className="footer-left">
-            <div className="brand">CriptiQ — Visual Trading Studio</div>
+            <div className="brand">CRYPTIQ — Visual Trading Studio</div>
             <div className="contact-info">
-              <div className="address">123 Trading Street, Finance District, NY 10001</div>
+              <div className="address">Enschede, Netherlands</div>
             </div>
           </div>
           <div className="footer-right">
             <div className="social-links">
-              <a href="https://instagram.com/vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://www.instagram.com/cryptiq_startup/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 Instagram
               </a>
-              <a href="https://x.com/vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://x.com/Cryptiq_startUp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 X
               </a>
-              <a href="https://tiktok.com/@vtrade" target="_blank" rel="noopener noreferrer" className="social-link">
+              <a
+                href="https://www.tiktok.com/@cryptiq_startup"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+              >
                 TikTok
               </a>
             </div>
-            <a href="mailto:contact@vtrade.com" className="email">contact@vtrade.com</a>
+            <a href="mailto:contact@cryptiq.com" className="email">
+              contact@cryptiq.trade
+            </a>
           </div>
         </div>
         <div className="footer-bottom">
@@ -33,7 +49,7 @@ export default function Footer() {
             <a href="#terms">Terms of Service</a>
             <a href="#cookies">Cookie Policy</a>
           </div>
-          <div className="copyright">© 2025 CriptiQ. All rights reserved.</div>
+          <div className="copyright">© 2024 CRYPTIQ. All rights reserved.</div>
         </div>
       </div>
     </footer>
