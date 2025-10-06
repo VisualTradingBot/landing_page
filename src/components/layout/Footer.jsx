@@ -8,15 +8,13 @@ export default function Footer() {
           <div className="footer-left">
             <div className="brand">CRYPTIQ — Visual Trading Studio</div>
             <div className="contact-info">
-              <div className="address">
-                123 Trading Street, Finance District, NY 10001
-              </div>
+              <div className="address">Enschede, Netherlands</div>
             </div>
           </div>
           <div className="footer-right">
             <div className="social-links">
               <a
-                href="https://instagram.com/vtrade"
+                href="https://www.instagram.com/cryptiq_startup/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
@@ -24,7 +22,7 @@ export default function Footer() {
                 Instagram
               </a>
               <a
-                href="https://x.com/vtrade"
+                href="https://x.com/Cryptiq_startUp"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
@@ -32,7 +30,7 @@ export default function Footer() {
                 X
               </a>
               <a
-                href="https://tiktok.com/@vtrade"
+                href="https://www.tiktok.com/@cryptiq_startup"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
@@ -41,7 +39,7 @@ export default function Footer() {
               </a>
             </div>
             <a href="mailto:contact@cryptiq.com" className="email">
-              contact@cryptiq.com
+              contact@cryptiq.trade
             </a>
           </div>
         </div>
