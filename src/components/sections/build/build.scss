@@ -475,40 +475,6 @@
 
     .indicators-animation {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-
-      .indicator-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-
-        .grid-item {
-          width: 30px;
-          height: 30px;
-          border: 1px solid var(--accent);
-          background: rgba(124, 58, 237, 0.1);
-          animation: gridPulse 1.5s ease-in-out infinite;
-
-          &:nth-child(1) { animation-delay: 0s; }
-          &:nth-child(2) { animation-delay: 0.3s; }
-          &:nth-child(3) { animation-delay: 0.6s; }
-          &:nth-child(4) { animation-delay: 0.9s; }
-        }
-      }
-
-      .custom-shape {
-        width: 40px;
-        height: 40px;
-        background: var(--accent);
-        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-        animation: rotateShape 2s linear infinite;
-      }
-    }
-
-    .indicators-animation {
-      display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
@@ -645,8 +611,694 @@
       }
     }
   }
+/* Medium Desktop (1024px - 1440px) - Custom Layout */
+@media (min-width: 1024px) and (max-width: 1440px) {
+  padding: 40px 24px;
+  
+  .build-contents {
+    max-width: 100%;
+    gap: 2rem;
+  }
 
+  .build-header {
+    display: none; /* Hide the original header */
+  }
+
+  .build-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+    max-width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  /* Left column - Title and Tagline */
+  .build-main::before {
+    content: '';
+    grid-column: 1;
+    grid-row: 1;
+
+    .animation-area {
+      margin-top: -6rem;
+    }
+  }
+
+  .build-main .build-header-left {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    
+    .build-title {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      margin-bottom: 0.8rem;
+      text-align: left;
+      color: var(--fg);
+      font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    .build-subtitle {
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      max-width: 400px;
+      margin: 0;
+      text-align: left;
+      line-height: 1.5;
+      color: rgba(11, 11, 11, 0.8);
+      font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 400;
+    }
+  }
+
+  /* Right column - Features */
+  .build-features {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 100%;
+    
+    .feature-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      &:hover {
+        border-bottom-color: var(--accent);
+        background: rgba(124, 58, 237, 0.02);
+        padding-left: 0.5rem;
+      }
+
+      &.active {
+        border-bottom-color: var(--accent);
+        background: rgba(124, 58, 237, 0.05);
+        
+        .feature-label {
+          color: var(--accent);
+        }
+      }
+
+      .feature-label {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+        transition: color 0.3s ease;
+      }
+
+      .feature-description {
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+    }
+  }
+
+   /* Animation area - Full width underneath */
+   .animation-area {
+     grid-column: 1 / -1;
+     grid-row: 2;
+     width: 100%;
+     height: 350px;
+     position: relative;
+     margin-top: -2rem;
+   }
+
+   /* Scale up indicators animation for 1024-1439px */
+    .advanced-animation {
+     transform: scale(1.4);
+     transform-origin: center;
+
+     }
+
+
+.build-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  max-width: 600px;
+
+      .feature-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.3s ease;
+        cursor: pointer;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          border-bottom-color: var(--accent);
+          background: rgba(124, 58, 237, 0.02);
+        }
+
+        &.active {
+          border-bottom-color: var(--accent);
+          background: rgba(124, 58, 237, 0.05);
+          box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+          
+          .feature-label {
+            color: var(--accent);
+          }
+        }
+
+        .feature-label {
+          font-size: 1.1rem;
+          color: var(--fg);
+          font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .feature-description {
+          font-size: 0.9rem;
+          color: rgba(11, 11, 11, 0.6);
+          font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          line-height: 1.4;
+        }
+      }
 }
+
+.scale-indicator {
+  position: fixed;
+  left: 2%;
+  top: 0;
+  width: 40px;
+  height: 100vh;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2rem;
+
+  .vertical-scale {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 20px;
+
+    .scale-tick {
+      width: 20px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.8);
+      position: relative;
+      transition: all 0.1s ease;
+
+      &:nth-child(5n) {
+        width: 30px;
+        background: rgba(255, 255, 255, 1);
+        height: 2px;
+      }
+
+      &:nth-child(10n) {
+        width: 35px;
+        background: rgba(255, 255, 255, 1);
+        height: 3px;
+        
+        &::after {
+          content: attr(data-value);
+          position: absolute;
+          left: 40px;
+          top: -8px;
+          font-size: 10px;
+          color: rgba(255, 255, 255, 1);
+          font-family: "ShareTechMono", monospace;
+        }
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 1);
+        width: 25px;
+      }
+    }
+  }
+
+  // Override colors for light sections (like hero)
+  &.light-bg {
+    .vertical-scale .scale-tick {
+      background: rgba(0, 0, 0, 0.8);
+
+      &:nth-child(5n),
+      &:nth-child(10n) {
+        background: rgba(0, 0, 0, 1);
+      }
+
+      &:nth-child(10n)::after {
+        color: rgba(0, 0, 0, 1);
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 1);
+      }
+    }
+  }
+}
+
+.animation-area {
+  flex: 1;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  .visual-animation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    .floating-block {
+      width: 200px;
+      height: 120px;
+      background: rgba(124, 58, 237, 0.1);
+      border: 4px solid var(--accent);
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 8px 8px 0 var(--accent);
+      transition: all 0.3s ease;
+      position: relative;
+
+      &.source-block {
+        // Position source block 70px higher (was 50px)
+        transform: translateY(-70px);
+      }
+
+      &.target-block {
+        // Starts at right side, gets dragged to final position
+        transform: translateX(150px) translateY(-70px);
+      }
+
+      .block-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        .block-icon {
+          width: 32px;
+          height: 32px;
+          background: var(--accent);
+          border-radius: 4px;
+          position: relative;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            background: #ffffff;
+            border-radius: 2px;
+          }
+        }
+      }
+    }
+
+    .cursor-drag {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+
+      .cursor-icon {
+        width: 24px;
+        height: 24px;
+        background: var(--accent);
+        clip-path: polygon(0 0, 0 20px, 16px 20px, 20px 12px, 16px 0);
+        position: relative;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 12px;
+          height: 12px;
+          background: #ffffff;
+          clip-path: polygon(0 0, 0 16px, 10px 16px, 14px 8px, 10px 0);
+        }
+      }
+
+      .drag-line {
+        position: absolute;
+        width: 300px;
+        height: 120px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        
+        svg {
+          width: 100%;
+          height: 100%;
+        }
+      }
+    }
+  }
+
+  .advanced-animation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    .control-panel {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      padding: 30px;
+      background: rgba(124, 58, 237, 0.05);
+      border: 2px solid var(--accent);
+      border-radius: 0;
+      box-shadow: 8px 8px 0 var(--accent);
+      opacity: 0;
+      width: 90%;
+      max-width: 600px;
+      visibility: hidden;
+
+      .control-column {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        flex: 1;
+        opacity: 1;
+        visibility: visible;
+
+        &.left-column {
+          align-items: flex-start;
+        }
+
+        &.center-column {
+          align-items: center;
+        }
+
+        &.right-column {
+          align-items: flex-end;
+        }
+
+        .control-group {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .control-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          max-width: 140px;
+          opacity: 1;
+          visibility: visible;
+
+          .control-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-align: center;
+          }
+
+          // Toggle Switch
+          .toggle-switch {
+            .toggle-track {
+              width: 48px;
+              height: 24px;
+              background: rgba(124, 58, 237, 0.4);
+              border: 2px solid var(--accent);
+              border-radius: 0;
+              position: relative;
+              cursor: pointer;
+              box-shadow: 2px 2px 0 var(--accent);
+              opacity: 1;
+              visibility: visible;
+
+              .toggle-thumb {
+                width: 16px;
+                height: 16px;
+                background: var(--accent);
+                border-radius: 0;
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+                transition: transform 0.2s ease;
+                opacity: 1;
+                visibility: visible;
+              }
+            }
+          }
+
+          // Slider Container
+          .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            opacity: 1;
+            visibility: visible;
+
+            .slider-track {
+              width: 100px;
+              height: 8px;
+              background: rgba(124, 58, 237, 0.3);
+              border: 1px solid var(--accent);
+              border-radius: 0;
+              position: relative;
+              opacity: 1;
+              visibility: visible;
+
+              .slider-thumb {
+                width: 20px;
+                height: 20px;
+                background: var(--accent);
+                border-radius: 0;
+                position: absolute;
+                top: -6px;
+                left: 0;
+                box-shadow: 3px 3px 0 rgba(124, 58, 237, 0.5);
+                opacity: 1;
+                visibility: visible;
+              }
+            }
+
+            .slider-value {
+              font-size: 10px;
+              font-weight: 600;
+              color: var(--accent);
+              font-family: "ShareTechMono", "JetBrains Mono", "Consolas", monospace;
+              text-align: center;
+            }
+          }
+
+          // Input Container
+          .input-container {
+            display: flex;
+            align-items: center;
+            background: rgba(124, 58, 237, 0.1);
+            border: 2px solid var(--accent);
+            border-radius: 0;
+            padding: 4px 8px;
+            gap: 6px;
+
+            .control-input {
+              width: 60px;
+              height: 24px;
+              border: none;
+              background: transparent;
+              font-size: 10px;
+              font-weight: 600;
+              color: var(--accent);
+              font-family: "ShareTechMono", "JetBrains Mono", "Consolas", monospace;
+              text-align: center;
+              outline: none;
+              transition: background 0.2s ease;
+            }
+
+            .input-unit {
+              font-size: 8px;
+              font-weight: 600;
+              color: var(--accent);
+              font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .indicators-animation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin-top: -4rem;
+
+    .modular-block {
+      width: 110px;
+      height: 81px;
+      background: rgba(124, 58, 237, 0.1);
+      border: 3px solid var(--accent);
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 4px 4px 0 var(--accent);
+      position: absolute;
+      z-index: 2;
+
+        &.block-1 {
+          left: 47%;
+          top: 35%;
+          transform: translate(-50%, -50%);
+        }
+
+        &.block-2 {
+          left: 30%;
+          top: 55%;
+          transform: translate(-50%, -50%);
+        }
+
+        &.block-3 {
+          right: 25%;
+          top: 55%;
+          transform: translate(50%, -50%);
+        }
+
+      .block-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .block-icon {
+          width: 16px;
+          height: 16px;
+          background: var(--accent);
+          border-radius: 2px;
+          position: relative;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: #ffffff;
+            border-radius: 1px;
+          }
+        }
+      }
+    }
+  }
+}
+
+    .selection-box {
+      position: absolute !important;
+      left: 23% !important;
+      top: 22% !important;
+      transform-origin: top left !important;
+      width: 680px !important;
+      height: 270px !important;
+      border: 2px dashed var(--accent) !important;
+      border-radius: 0 !important;
+      background: rgba(124, 58, 237, 0.05) !important;
+      z-index: 2 !important;
+      opacity: 0 !important;
+      scale: 0 !important;
+      pointer-events: none !important;
+      
+      // Debug - make it visible
+      opacity: 1 !important;
+      scale: 1 !important;
+      
+      // Animated dashed border effect
+      &::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px dashed var(--accent);
+        border-radius: 0;
+        opacity: 0.6;
+        animation: dashMove 2s linear infinite;
+      }
+    }
+
+    .container-block {
+      position: absolute !important;
+      left: 23% !important;
+      top: 22% !important;
+      transform: translate(-50%, -50%);
+      width: 680px !important;
+      height: 270px !important;
+      background: rgba(124, 58, 237, 0.15) !important;
+      border: 4px solid var(--accent) !important;
+      border-radius: 0 !important;
+      box-shadow: 8px 8px 0 var(--accent) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 3 !important;
+      opacity: 0;
+
+      .container-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .container-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--accent);
+          font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+      }
+    }
+  }
+}
+
+
+
+
 
 // Animation keyframes
 @keyframes rotateScale {
@@ -709,181 +1361,7 @@
   }
 }
 
-@media (max-width: 768px) {
-  .build {
-    padding: 32px 18px;
 
-    .build-contents {
-      gap: 2rem;
-    }
-
-    .build-features {
-      max-width: 100%;
-      margin: 0 auto;
-
-      .feature-item {
-        .feature-label {
-          font-size: 1rem;
-        }
-
-        .feature-description {
-          font-size: 0.85rem;
-        }
-      }
-    }
-
-    .scale-indicator {
-      position: fixed;
-      left: 1%;
-      width: 30px;
-      height: 100vh;
-
-      .vertical-scale {
-        .scale-tick {
-          width: 15px;
-
-          &:nth-child(5n) {
-            width: 20px;
-          }
-
-          &:nth-child(10n) {
-            width: 25px;
-            
-            &::after {
-              left: 30px;
-              font-size: 8px;
-            }
-          }
-
-          &:hover {
-            width: 18px;
-          }
-        }
-      }
-    }
-
-    .animation-area {
-      position: relative;
-      left: auto;
-      top: auto;
-      transform: none;
-      width: 100%;
-      height: 150px;
-      margin: 1rem auto;
-      margin-left: auto;
-
-      .visual-animation {
-        gap: 1rem;
-
-        .drag-icon,
-        .drop-zone {
-          font-size: 1.5rem;
-        }
-      }
-
-      .chart-bars .bar {
-        width: 15px;
-
-        &:nth-child(1) { height: 30px; }
-        &:nth-child(2) { height: 45px; }
-        &:nth-child(3) { height: 60px; }
-        &:nth-child(4) { height: 35px; }
-        &:nth-child(5) { height: 50px; }
-      }
-
-      .indicator-grid {
-        .grid-item {
-          width: 25px;
-          height: 25px;
-        }
-      }
-
-      .custom-shape {
-        width: 30px;
-        height: 30px;
-      }
-
-      .selection-box {
-        width: 300px;
-        height: 120px;
-        left: 20%;
-        top: 35%;
-      }
-    }
-
-    // Advanced Metrics Control Animation - Mobile responsive styles
-    .advanced-animation {
-      .control-panel {
-        gap: 20px;
-        padding: 20px;
-        width: 95%;
-        max-width: 500px;
-
-        .control-column {
-          gap: 20px;
-
-          .control-item {
-            max-width: 120px;
-
-            .control-label {
-              font-size: 8px;
-              letter-spacing: 0.6px;
-            }
-
-            // Toggle Switch - Mobile
-            .toggle-switch {
-              .toggle-track {
-                width: 40px;
-                height: 20px;
-
-                .toggle-thumb {
-                  width: 14px;
-                  height: 14px;
-                  top: 1px;
-                  left: 1px;
-                }
-              }
-            }
-
-            // Slider Container - Mobile
-            .slider-container {
-              .slider-track {
-                width: 80px;
-                height: 6px;
-
-                .slider-thumb {
-                  width: 16px;
-                  height: 16px;
-                  top: -5px;
-                }
-              }
-
-              .slider-value {
-                font-size: 9px;
-              }
-            }
-
-            // Input Container - Mobile
-            .input-container {
-              padding: 3px 6px;
-
-              .control-input {
-                width: 50px;
-                height: 20px;
-                font-size: 9px;
-              }
-
-              .input-unit {
-                font-size: 7px;
-                letter-spacing: 0.3px;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 // Animations now handled by animate library in JavaScript
 
