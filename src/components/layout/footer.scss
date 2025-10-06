@@ -5,7 +5,7 @@
   font-family: "ShareTechMono", "JetBrains Mono", "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 .footer-inner {
-  max-width: calc(100vw - 500px);
+  max-width: 100%;
   margin: 0 auto;
   padding: 40px 18px 20px;
 }
@@ -136,17 +136,164 @@
   font-size: 12px;
 }
 
-@media (max-width: 768px) {
+/* Mobile and Small Tablets (<768px) - Complete Redesign */
+@media (max-width: 767px) {
+  .footer-inner {
+    margin: 0 20px;
+    padding: 32px 0 20px;
+  }
+
   .footer-top {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 32px;
+    margin-bottom: 32px;
   }
+
+  .footer-left {
+    order: 1;
+    align-items: center;
+    text-align: center;
+  }
+
+  .brand {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .contact-info {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .address {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-top: 0;
+    max-width: 280px;
+  }
+
+  .email {
+    font-size: 16px;
+    margin-top: 0;
+  }
+
   .footer-right {
-    align-items: flex-start;
+    order: 2;
+    align-items: center;
     width: 100%;
+    gap: 24px;
   }
+
+  .social-links {
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .social-link {
+    font-size: 14px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .social-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent);
+  }
+
+  .site-footer .contact-btn {
+    padding: 14px 28px;
+    font-size: 14px;
+    border-radius: 4px;
+  }
+
   .footer-bottom {
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding-top: 24px;
+  }
+
+  .legal-links {
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .legal-links a {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .copyright {
+    font-size: 13px;
+    text-align: center;
+  }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .footer-inner {
+    margin: 0 32px;
+    padding: 40px 0 20px;
+  }
+
+  .footer-top {
+    flex-direction: row;
     align-items: flex-start;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  .footer-right {
+    align-items: center;
+    width: auto;
+    gap: 20px;
+  }
+
+  .footer-bottom {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+/* Medium Desktop (1024px - 1440px) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+  .footer-inner {
+    margin: 0 50px;
+    padding: 40px 0 20px;
+  }
+
+  .footer-top {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+    margin-bottom: 32px;
+  }
+
+  .footer-right {
+    align-items: center;
+    width: auto;
+    gap: 20px;
+  }
+
+  .footer-bottom {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+/* Large Desktop (1441px+) */
+@media (min-width: 1441px) {
+  .footer-inner {
+    margin: 0 calc((100vw - 1440px)*0.2); /* Same formula as navbar */
+    padding: 40px 18px 20px;
   }
 }
