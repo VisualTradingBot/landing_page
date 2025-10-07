@@ -10,13 +10,10 @@ const marketPresets = {
     timeframes: {
       "1H": {
         label: "1H",
-        description: "Fast trading that finds the best prices across exchanges.",
+        description:
+          "Fast trading that finds the best prices across exchanges.",
         latency: "3.2ms",
         data: [
-          { time: "06:00", portfolio: 46510 },
-          { time: "07:00", portfolio: 46640 },
-          { time: "08:00", portfolio: 46420 },
-          { time: "09:00", portfolio: 46890 },
           { time: "10:00", portfolio: 47220 },
           { time: "11:00", portfolio: 47080 },
           { time: "12:00", portfolio: 47460 },
@@ -90,14 +87,8 @@ const marketPresets = {
           "Medium-term trading that balances between different market types.",
         latency: "4.6ms",
         data: [
-          { time: "Mon 00:00", portfolio: 44210 },
-          { time: "Mon 04:00", portfolio: 44640 },
-          { time: "Mon 08:00", portfolio: 45120 },
-          { time: "Mon 12:00", portfolio: 44820 },
-          { time: "Mon 16:00", portfolio: 45480 },
-          { time: "Mon 20:00", portfolio: 46240 },
-          { time: "Tue 00:00", portfolio: 45850 },
-          { time: "Tue 04:00", portfolio: 46730 },
+          { time: "Mon 16:00", portfolio: 45846 },
+          { time: "Mon 20:00", portfolio: 45998 },
           { time: "Tue 08:00", portfolio: 47210 },
           { time: "Tue 12:00", portfolio: 46980 },
           { time: "Tue 16:00", portfolio: 47660 },
@@ -167,8 +158,6 @@ const marketPresets = {
           "Long-term trading that follows market trends with protection against losses.",
         latency: "5.0ms",
         data: [
-          { time: "Jul 01", portfolio: 41890 },
-          { time: "Jul 02", portfolio: 42510 },
           { time: "Jul 03", portfolio: 43240 },
           { time: "Jul 04", portfolio: 42780 },
           { time: "Jul 05", portfolio: 43660 },
@@ -252,10 +241,6 @@ const marketPresets = {
           "Smart trading that takes advantage of Ethereum price movements.",
         latency: "2.7ms",
         data: [
-          { time: "06:00", portfolio: 3320 },
-          { time: "07:00", portfolio: 3348 },
-          { time: "08:00", portfolio: 3312 },
-          { time: "09:00", portfolio: 3365 },
           { time: "10:00", portfolio: 3398 },
           { time: "11:00", portfolio: 3382 },
           { time: "12:00", portfolio: 3420 },
@@ -329,12 +314,6 @@ const marketPresets = {
           "Trading that adjusts positions based on market direction and risk.",
         latency: "3.4ms",
         data: [
-          { time: "Mon 00:00", portfolio: 2980 },
-          { time: "Mon 04:00", portfolio: 3025 },
-          { time: "Mon 08:00", portfolio: 3090 },
-          { time: "Mon 12:00", portfolio: 3062 },
-          { time: "Mon 16:00", portfolio: 3138 },
-          { time: "Mon 20:00", portfolio: 3204 },
           { time: "Tue 00:00", portfolio: 3176 },
           { time: "Tue 04:00", portfolio: 3248 },
           { time: "Tue 08:00", portfolio: 3310 },
@@ -406,8 +385,6 @@ const marketPresets = {
           "Long-term strategy that combines staking rewards with trading profits.",
         latency: "3.1ms",
         data: [
-          { time: "Jul 01", portfolio: 2760 },
-          { time: "Jul 02", portfolio: 2825 },
           { time: "Jul 03", portfolio: 2890 },
           { time: "Jul 04", portfolio: 2840 },
           { time: "Jul 05", portfolio: 2950 },
@@ -486,10 +463,6 @@ const marketPresets = {
           "Ultra-fast trading that captures quick price movements in SOL.",
         latency: "1.9ms",
         data: [
-          { time: "06:00", portfolio: 146 },
-          { time: "07:00", portfolio: 147 },
-          { time: "08:00", portfolio: 145 },
-          { time: "09:00", portfolio: 148 },
           { time: "10:00", portfolio: 152 },
           { time: "11:00", portfolio: 151 },
           { time: "12:00", portfolio: 155 },
@@ -562,17 +535,11 @@ const marketPresets = {
         description: "Trading that finds price differences between exchanges.",
         latency: "2.5ms",
         data: [
-          { time: "Mon 00:00", portfolio: 128 },
-          { time: "Mon 04:00", portfolio: 131 },
-          { time: "Mon 08:00", portfolio: 135 },
-          { time: "Mon 12:00", portfolio: 133 },
-          { time: "Mon 16:00", portfolio: 138 },
-          { time: "Mon 20:00", portfolio: 142 },
-          { time: "Tue 00:00", portfolio: 140 },
-          { time: "Tue 04:00", portfolio: 145 },
+          { time: "Tue 00:00", portfolio: 130 },
+          { time: "Tue 04:00", portfolio: 135 },
           { time: "Tue 08:00", portfolio: 149 },
           { time: "Tue 12:00", portfolio: 147 },
-          { time: "Tue 16:00", portfolio: 152 },
+          { time: "Tue 16:00", portfolio: 142 },
           { time: "Tue 20:00", portfolio: 156 },
         ],
         metrics: [
@@ -639,8 +606,6 @@ const marketPresets = {
           "Trading that provides liquidity and follows momentum in SOL markets.",
         latency: "2.2ms",
         data: [
-          { time: "Jul 01", portfolio: 114 },
-          { time: "Jul 02", portfolio: 118 },
           { time: "Jul 03", portfolio: 123 },
           { time: "Jul 04", portfolio: 119 },
           { time: "Jul 05", portfolio: 126 },
@@ -761,11 +726,13 @@ export default function Trade() {
   useEffect(() => {
     scopeRef.current = createScope({ root }).add(() => {
       // Check screen size for different animation behaviors
-      const isMediumScreen = window.innerWidth >= 768 && window.innerWidth < 1024;
-      const isLargeDesktop = window.innerWidth >= 1024 && window.innerWidth <= 1440;
+      const isMediumScreen =
+        window.innerWidth >= 768 && window.innerWidth < 1024;
+      const isLargeDesktop =
+        window.innerWidth >= 1024 && window.innerWidth <= 1440;
       const isExtraLargeDesktop = window.innerWidth > 1440;
       const isSmallScreen = window.innerWidth < 768;
-      
+
       // Title and subtitle animations - responsive
       if (isSmallScreen) {
         // Mobile: Side slide animations
@@ -1030,7 +997,8 @@ export default function Trade() {
         <div className="trade-header">
           <h2 className="trade-title">Trade</h2>
           <p className="trade-subtitle">
-            Professional trading tools that work across all major cryptocurrency exchanges with real-time monitoring.
+            Professional trading tools that work across all major cryptocurrency
+            exchanges with real-time monitoring.
           </p>
         </div>
 
