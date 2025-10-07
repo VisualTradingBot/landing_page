@@ -10,33 +10,121 @@ export default function Build() {
 
   useEffect(() => {
     scopeRef.current = createScope({ root }).add(() => {
-      // Main title animation - moves to left position and stops
-      animate(".build-title", {
-        translateX: [0, "-60%"],
-        opacity: [0, 1],
-        easing: "easeOut",
-        duration: 800,
-        autoplay: onScroll({
-          target: ".build-title",
-          enter: "bottom center",
-          leave: "center top",
-          sync: true,
-        }),
-      });
+      // Check screen size for different animation behaviors
+      const isMediumScreen = window.innerWidth >= 768 && window.innerWidth < 1024;
+      const isLargeDesktop = window.innerWidth >= 1024 && window.innerWidth <= 1440;
+      const isExtraLargeDesktop = window.innerWidth > 1440;
+      const isSmallScreen = window.innerWidth < 768;
+      
+      if (isSmallScreen) {
+        // Same scroll animations as other ranges but for original header on small screens
+        animate(".build-header .build-title", {
+          translateX: [-50, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
 
-      // Subtitle animation - moves to right position and stops
-      animate(".build-subtitle", {
-        translateX: [0, "40%"],
-        opacity: [0, 1],
-        easing: "easeOut",
-        duration: 600,
-        autoplay: onScroll({
-          target: ".build-subtitle",
-          enter: "bottom center",
-          leave: "center top",
-          sync: true,
-        }),
-      });
+        animate(".build-header .build-subtitle", {
+          translateX: [30, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isMediumScreen) {
+        // Same scroll animations as 1024-1440px range but for original header
+        animate(".build-header .build-title", {
+          translateX: [-50, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".build-header .build-subtitle", {
+          translateX: [30, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isLargeDesktop) {
+        // Duplicate header animations for 1024-1440px range
+        animate(".build-header-duplicate .build-title", {
+          translateX: [-50, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".build-header-duplicate",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".build-header-duplicate .build-subtitle", {
+          translateX: [30, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-header-duplicate",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isExtraLargeDesktop) {
+        // Animation for screens > 1440px - use original header
+        animate(".build-header .build-title", {
+          translateX: [-200, -350],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".build-header .build-subtitle", {
+          translateX: [200, 350],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      }
 
       // Feature items animation - all appear together
       animate(".feature-item", {
@@ -51,6 +139,7 @@ export default function Build() {
           sync: true,
         }),
       });
+
 
       // Visual animation - drag and drop sequence
       if (activeFeature === 'visual') {
@@ -459,9 +548,8 @@ export default function Build() {
 
           </div>
         </div>
-        
+        </div>
         <div className="divider"></div>
-      </div>
     </section>
   );
 }
