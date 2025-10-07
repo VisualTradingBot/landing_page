@@ -99,6 +99,7 @@ export default function Test() {
         {/* Performance Chart Section */}
       <div className="min-h-screen w-full bg-[#05070d] text-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12">
+          <div className="chart-section-wrapper">
           
           <PerformanceChart 
             customData={getChartData()?.data} 
@@ -106,6 +107,7 @@ export default function Test() {
             mode={activeMode}
             description={getChartData()?.description}
           />
+          </div>
         </div>
         <div className="divider"></div>
       </div>

@@ -905,7 +905,7 @@
 }
 
 /* Medium Desktop (1024px - 1440px) - Custom Layout */
-@media (min-width: 1024px) and (max-width: 1440px) {
+@media (min-width: 1024px) and (max-width: 1439px) {
   padding: 40px 24px;
   .divider {
     margin: 50px auto 0 auto;
@@ -1240,7 +1240,7 @@
 }
 
 /* Mobile styles for build section */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .build {
     .build-features {
       display: grid;
