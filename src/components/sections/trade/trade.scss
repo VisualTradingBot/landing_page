@@ -97,6 +97,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  min-width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     border-color: var(--accent);
@@ -455,6 +458,14 @@
     flex-direction: row !important;
   }
   
+  .toggle-button {
+    min-width: fit-content !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 9px 16px !important;
+    font-size: 0.87rem !important;
+  }
+  
   .trade-highlights {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -523,6 +534,14 @@
     gap: 8px;
     width: 100% !important;
     flex-direction: row !important;
+  }
+  
+  .toggle-button {
+    min-width: fit-content !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 0.85rem !important;
   }
 
   .trade-highlights {

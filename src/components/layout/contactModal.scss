@@ -290,11 +290,11 @@
   }
 
   .form-actions {
-    flex-direction: column;
+    flex-direction: row;
     gap: 12px;
 
     button {
-      width: 100%;
+      flex: 1;
     }
   }
 }
