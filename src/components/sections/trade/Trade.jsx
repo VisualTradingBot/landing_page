@@ -760,19 +760,126 @@ export default function Trade() {
 
   useEffect(() => {
     scopeRef.current = createScope({ root }).add(() => {
-      animate(".trade-title", {
-        opacity: [0, 1],
-        translateY: [20, 0],
-        easing: "easeOutExpo",
-        duration: 800,
-        autoplay: onScroll({
-          target: ".trade-header",
-          enter: "bottom center",
-          leave: "center top",
-          sync: true,
-        }),
-      });
+      // Check screen size for different animation behaviors
+      const isMediumScreen = window.innerWidth >= 768 && window.innerWidth < 1024;
+      const isLargeDesktop = window.innerWidth >= 1024 && window.innerWidth <= 1440;
+      const isExtraLargeDesktop = window.innerWidth > 1440;
+      const isSmallScreen = window.innerWidth < 768;
+      
+      // Title and subtitle animations - responsive
+      if (isSmallScreen) {
+        // Mobile: Side slide animations
+        animate(".trade-title", {
+          translateX: [-50, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
 
+        animate(".trade-subtitle", {
+          translateX: [50, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isMediumScreen) {
+        // Tablet portrait: Side slide animations
+        animate(".trade-title", {
+          translateX: [-60, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".trade-subtitle", {
+          translateX: [60, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isLargeDesktop) {
+        // Medium desktop: Side slide animations
+        animate(".trade-title", {
+          translateX: [-80, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".trade-subtitle", {
+          translateX: [80, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          delay: 200,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else if (isExtraLargeDesktop) {
+        // Large desktop: Dynamic slide animations
+        animate(".trade-title", {
+          translateX: [-120, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 800,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".trade-subtitle", {
+          translateX: [120, 0],
+          opacity: [0, 1],
+          easing: "easeOut",
+          duration: 600,
+          delay: 300,
+          autoplay: onScroll({
+            target: ".trade-header",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      }
+
+      // Toggle buttons animation
       animate(".toggle-button", {
         opacity: [0, 1],
         translateY: [16, 0],
@@ -787,6 +894,7 @@ export default function Trade() {
         }),
       });
 
+      // Trade orders animation
       animate(".trade-order", {
         opacity: [0, 1],
         translateX: [-20, 0],
@@ -801,19 +909,82 @@ export default function Trade() {
         }),
       });
 
-      animate(".feature-row", {
-        translateY: [30, 0],
-        opacity: [0, 1],
-        easing: "easeOutExpo",
-        duration: 600,
-        autoplay: onScroll({
-          target: ".trade-highlights",
-          enter: "bottom center",
-          leave: "center top",
-          sync: true,
-        }),
-      });
+      // Feature rows animation - responsive
+      if (isSmallScreen) {
+        // Mobile: Different rotation angles for each block (same as build section)
+        animate(".feature-row:nth-child(1)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, -1],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-highlights",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
 
+        animate(".feature-row:nth-child(2)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, 1.5],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-highlights",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".feature-row:nth-child(3)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, -0.5],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-highlights",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".feature-row:nth-child(4)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, 1],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".trade-highlights",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else {
+        // Desktop: Standard slide up animation
+        animate(".feature-row", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          easing: "easeOutExpo",
+          duration: 600,
+          delay: (el, i) => i * 100,
+          autoplay: onScroll({
+            target: ".trade-highlights",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      }
+
+      // Chart animation
       animate(".trade-chart .chart-container", {
         opacity: [0, 1],
         translateY: [32, 0],

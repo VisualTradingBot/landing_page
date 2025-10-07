@@ -394,14 +394,15 @@
   transform-origin: left;
 }
 
-// 1024px - 1180px (tablet landscape) - preserve original design
+// 1024px - 1180px (tablet landscape) - keep 2 columns, adjust sizing
 @media (max-width: 1180px) and (min-width: 1024px) {
   .trade-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr); // Shrink left, keep chart size
+    gap: 32px; // Reduce gap for smaller screens
   }
 
   .trade-chart {
-    order: -1;
+    order: 0; // Keep original order
   }
 
   .trade-left {
@@ -426,14 +427,32 @@
 @media (max-width: 1024px) and (min-width: 768px) {
   .trade-grid {
     grid-template-columns: 1fr;
-  }
-
-  .trade-chart {
-    order: -1;
+    grid-template-rows: auto 1fr;
   }
 
   .trade-left {
+    display: grid;
+    grid-template-columns: 2fr 3fr; // Fixed 2/5 for buttons, 3/5 for execution feed
+    gap: 20px;
     height: auto;
+  }
+
+  .trade-chart {
+    order: 1; // Chart below the left column
+  }
+  
+  .toggle-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px; // Reduce gap between label and buttons
+  }
+  
+  .toggle-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px;
+    width: 100% !important;
+    flex-direction: row !important;
   }
   
   .trade-highlights {
@@ -470,19 +489,40 @@
 
   .trade-grid {
     grid-template-columns: 1fr;
-  }
-
-  .trade-chart {
-    order: -1;
+    grid-template-rows: auto 1fr;
   }
 
   .trade-left {
+    display: flex;
+    flex-direction: column;
     height: auto;
   }
 
-  .trade-switchers,
-  .trade-activity {
+  .trade-switchers {
     padding: 20px;
+    order: 0; // Buttons above chart
+  }
+
+  .trade-activity {
+    display: none; // Hide execution feed
+  }
+
+  .trade-chart {
+    order: 1; // Chart below buttons
+  }
+  
+  .toggle-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px;
+  }
+  
+  .toggle-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px;
+    width: 100% !important;
+    flex-direction: row !important;
   }
 
   .trade-highlights {
