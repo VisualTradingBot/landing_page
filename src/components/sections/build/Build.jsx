@@ -126,19 +126,65 @@ export default function Build() {
         });
       }
 
-      // Feature items animation - all appear together
-      animate(".feature-item", {
-        translateY: [30, 0],
-        opacity: [0, 1],
-        easing: "easeOutExpo",
-        duration: 600,
-        autoplay: onScroll({
-          target: ".build-features",
-          enter: "bottom center",
-          leave: "center top",
-          sync: true,
-        }),
-      });
+      // Feature items animation - responsive
+      if (isSmallScreen) {
+        // Mobile: different rotation angles for each block
+        animate(".feature-item:nth-child(1)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, -1],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-features",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".feature-item:nth-child(2)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, 1.5],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-features",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+
+        animate(".feature-item:nth-child(3)", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          rotate: [0, -0.5],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-features",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      } else {
+        // Desktop: all appear together without rotations
+        animate(".feature-item", {
+          translateY: [30, 0],
+          opacity: [0, 1],
+          easing: "easeOutExpo",
+          duration: 600,
+          autoplay: onScroll({
+            target: ".build-features",
+            enter: "bottom center",
+            leave: "center top",
+            sync: true,
+          }),
+        });
+      }
 
 
       // Visual animation - drag and drop sequence

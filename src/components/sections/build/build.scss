@@ -1239,5 +1239,76 @@
   }
 }
 
+/* Mobile styles for build section */
+@media (max-width: 767px) {
+  .build {
+    .build-features {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin: 0 auto;
+      
+      .feature-item {
+        border: 6px solid var(--border);
+        background: #ffffff;
+        padding: 28px;
+        box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.08);
+        border-radius: 0;
+        transition: all 0.3s ease;
+        cursor: default; /* Make unclickable */
+        position: relative;
+        overflow: hidden;
+        pointer-events: none; /* Disable all interactions */
+        
+        /* Different border styles and rotations for each item */
+        &:nth-child(1) {
+          border: 8px dashed var(--border);
+          box-shadow: 15px 15px 0 rgba(0, 0, 0, 0.1);
+          transform: rotate(-1deg);
+          
+        }
+        
+        &:nth-child(2) {
+          border: 6px double var(--border);
+          box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.12);
+          transform: rotate(1.5deg);
+        }
+        
+        &:nth-child(3) {
+          border: 6px solid var(--border);
+          box-shadow: 18px 18px 0 rgba(0, 0, 0, 0.15);
+          transform: rotate(-0.5deg);
+        }
+        
+        /* Remove hover effects for mobile */
+        &:hover {
+          transform: rotate(-1deg); /* Keep original rotation */
+        }
+        
+        &:nth-child(2):hover {
+          transform: rotate(1.5deg);
+        }
+        
+        &:nth-child(3):hover {
+          transform: rotate(-0.5deg);
+        }
+        
+        /* Remove active states for mobile */
+        &.active {
+          border-color: var(--border);
+          background: #ffffff;
+          box-shadow: 15px 15px 0 rgba(0, 0, 0, 0.1);
+        }
+      
+      }
+    }
+    
+    /* Hide animations on mobile */
+    .animation-area {
+      display: none;
+    }
+  }
+}
+
 
 
