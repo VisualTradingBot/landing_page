@@ -87,12 +87,12 @@ const marketPresets = {
           "Medium-term trading that balances between different market types.",
         latency: "4.6ms",
         data: [
-          { time: "Mon 16:00", portfolio: 45846 },
-          { time: "Mon 20:00", portfolio: 45998 },
-          { time: "Tue 08:00", portfolio: 47210 },
-          { time: "Tue 12:00", portfolio: 46980 },
-          { time: "Tue 16:00", portfolio: 47660 },
-          { time: "Tue 20:00", portfolio: 48190 },
+          { time: "16:00", portfolio: 45846 },
+          { time: "20:00", portfolio: 45998 },
+          { time: "08:00", portfolio: 47210 },
+          { time: "12:00", portfolio: 46980 },
+          { time: "16:00", portfolio: 47660 },
+          { time: "20:00", portfolio: 48190 },
         ],
         metrics: [
           {
@@ -314,12 +314,12 @@ const marketPresets = {
           "Trading that adjusts positions based on market direction and risk.",
         latency: "3.4ms",
         data: [
-          { time: "Tue 00:00", portfolio: 3176 },
-          { time: "Tue 04:00", portfolio: 3248 },
-          { time: "Tue 08:00", portfolio: 3310 },
-          { time: "Tue 12:00", portfolio: 3286 },
-          { time: "Tue 16:00", portfolio: 3354 },
-          { time: "Tue 20:00", portfolio: 3398 },
+          { time: "00:00", portfolio: 3176 },
+          { time: "04:00", portfolio: 3248 },
+          { time: "08:00", portfolio: 3310 },
+          { time: "12:00", portfolio: 3286 },
+          { time: "16:00", portfolio: 3354 },
+          { time: "20:00", portfolio: 3398 },
         ],
         metrics: [
           {
@@ -535,12 +535,12 @@ const marketPresets = {
         description: "Trading that finds price differences between exchanges.",
         latency: "2.5ms",
         data: [
-          { time: "Tue 00:00", portfolio: 130 },
-          { time: "Tue 04:00", portfolio: 135 },
-          { time: "Tue 08:00", portfolio: 149 },
-          { time: "Tue 12:00", portfolio: 147 },
-          { time: "Tue 16:00", portfolio: 142 },
-          { time: "Tue 20:00", portfolio: 156 },
+          { time: "00:00", portfolio: 130 },
+          { time: "04:00", portfolio: 135 },
+          { time: "08:00", portfolio: 149 },
+          { time: "12:00", portfolio: 147 },
+          { time: "16:00", portfolio: 142 },
+          { time: "20:00", portfolio: 156 },
         ],
         metrics: [
           {
