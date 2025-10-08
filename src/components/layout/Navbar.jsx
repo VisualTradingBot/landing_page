@@ -30,6 +30,30 @@ export default function Navbar({ onOpenModal }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMobileMenuOpen) {
+        const mobileMenu = document.querySelector('.mobile-links');
+        const menuToggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (mobileMenu && menuToggle && 
+            !mobileMenu.contains(event.target) && 
+            !menuToggle.contains(event.target)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
