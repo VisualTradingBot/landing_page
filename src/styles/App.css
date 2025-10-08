@@ -89,3 +89,25 @@ h3 {
   padding: 0 18px;
 }
 
+/* Custom text selection colors */
+::selection {
+  background: #000;
+  color: #fff;
+}
+
+::-moz-selection {
+  background: #000;
+  color: #fff;
+}
+
+/* Footer selection - reverse colors */
+.site-footer ::selection {
+  background: #fff;
+  color: #000;
+}
+
+.site-footer ::-moz-selection {
+  background: #fff;
+  color: #000;
+}
+
