@@ -1,6 +1,9 @@
+import { useTrackInteraction } from "../../hooks/useAnalytics";
 import "./footer.scss";
 
 export default function Footer() {
+  const { trackClick } = useTrackInteraction();
+
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -18,6 +21,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
+                onClick={() => trackClick('social-instagram')}
               >
                 Instagram
               </a>
@@ -26,6 +30,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
+                onClick={() => trackClick('social-twitter')}
               >
                 X
               </a>
@@ -34,11 +39,16 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-link"
+                onClick={() => trackClick('social-tiktok')}
               >
                 TikTok
               </a>
             </div>
-            <a href="mailto:contact@cryptiq.com" className="email">
+            <a 
+              href="mailto:contact@cryptiq.com" 
+              className="email"
+              onClick={() => trackClick('email-footer')}
+            >
               contact@cryptiq.trade
             </a>
           </div>

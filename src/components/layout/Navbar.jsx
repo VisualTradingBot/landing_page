@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTrackInteraction } from "../../hooks/useAnalytics";
 import "./navbar.scss";
 
 export default function Navbar({ onOpenModal }) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { trackClick } = useTrackInteraction();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,6 +39,7 @@ export default function Navbar({ onOpenModal }) {
 
   const handleContactClick = (e) => {
     e.preventDefault();
+    trackClick('navbar-contact-us');
     if (onOpenModal) {
       onOpenModal();
     }

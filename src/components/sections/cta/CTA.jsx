@@ -1,7 +1,10 @@
 import React from "react";
+import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import "./cta.scss";
 
 export default function CTA({ onOpenModal }) {
+  const { trackClick } = useTrackInteraction();
+
   return (
     <section id="cta" className="cta">
       <div className="container">
@@ -9,7 +12,13 @@ export default function CTA({ onOpenModal }) {
         <p className="sub">
           Help us shape the future of visual trading. Leave your contact details to participate in our questionnaires and be notified when CRYPTIQ is deployed.
         </p>
-        <button className="contact-btn" onClick={onOpenModal}>
+        <button 
+          className="contact-btn" 
+          onClick={() => {
+            trackClick('cta-get-in-touch');
+            onOpenModal();
+          }}
+        >
           Get In Touch
         </button>
        

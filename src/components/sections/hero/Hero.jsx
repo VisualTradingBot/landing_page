@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import TileWall from "./TileWall";
 import "./hero.scss";
 
@@ -8,6 +9,7 @@ export default function Hero({ onOpenModal }) {
   const [taglineText, setTaglineText] = useState("");
   const [showTagline, setShowTagline] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const { trackClick } = useTrackInteraction();
 
   const scrollToBuild = () => {
     const buildSection = document.getElementById("build");
@@ -78,13 +80,19 @@ export default function Hero({ onOpenModal }) {
         <div className={`hero-cta ${showButtons ? 'visible' : 'hidden'}`}>
           <button
             className="cta-button"
-            onClick={onOpenModal}
+            onClick={() => {
+              trackClick('hero-get-started');
+              onOpenModal();
+            }}
           >
             Get Started
           </button>
           <button
             className="secondary-button"
-            onClick={scrollToBuild}
+            onClick={() => {
+              trackClick('hero-learn-more');
+              scrollToBuild();
+            }}
           >
             Learn More
           </button>

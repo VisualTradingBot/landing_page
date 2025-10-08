@@ -8,6 +8,7 @@ import FAQ from "./components/sections/faq/FAQ";
 import CTA from "./components/sections/cta/CTA";
 import Footer from "./components/layout/Footer";
 import ContactModal from "./components/layout/ContactModal";
+import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import "./styles/App.css";
 
 function App() {
@@ -30,6 +31,9 @@ function App() {
 
       <Footer />
       <ContactModal isOpen={isModalOpen} onClose={closeModal} />
+      
+      {/* Analytics Dashboard - Only visible in development */}
+      {import.meta.env.DEV && <AnalyticsDashboard />}
     </div>
   );
 }
