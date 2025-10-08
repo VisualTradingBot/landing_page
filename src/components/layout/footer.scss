@@ -71,12 +71,13 @@
   gap: 20px;
 }
 
-.social-links {
+/* Footer Social Links - Separate from navbar mobile menu */
+.footer-social-links {
   display: flex;
   gap: 24px;
 }
 
-.social-link {
+.footer-social-link {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-size: 18px;
@@ -87,7 +88,7 @@
   padding: 8px 16px;
 }
 
-.social-link:hover {
+.footer-social-link:hover {
   color: var(--accent);
 }
 
@@ -186,13 +187,13 @@
     gap: 24px;
   }
 
-  .social-links {
+  .footer-social-links {
     gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
   }
 
-  .social-link {
+  .footer-social-link {
     font-size: 14px;
     padding: 8px 16px;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -200,7 +201,7 @@
     transition: all 0.2s ease;
   }
 
-  .social-link:hover {
+  .footer-social-link:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--accent);
   }

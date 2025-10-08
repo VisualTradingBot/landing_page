@@ -15,12 +15,12 @@ export default function Footer() {
             </div>
           </div>
           <div className="footer-right">
-            <div className="social-links">
+            <div className="footer-social-links">
               <a
                 href="https://www.instagram.com/cryptiq_startup/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="social-link"
+                className="footer-social-link"
                 onClick={() => trackClick('social-instagram')}
               >
                 Instagram
@@ -29,7 +29,7 @@ export default function Footer() {
                 href="https://x.com/Cryptiq_startUp"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="social-link"
+                className="footer-social-link"
                 onClick={() => trackClick('social-twitter')}
               >
                 X
@@ -38,7 +38,7 @@ export default function Footer() {
                 href="https://www.tiktok.com/@cryptiq_startup"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="social-link"
+                className="footer-social-link"
                 onClick={() => trackClick('social-tiktok')}
               >
                 TikTok
