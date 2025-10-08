@@ -111,3 +111,80 @@ h3 {
   color: #000;
 }
 
+/* Custom scrollbar - Edgy Striped Design with Auto-Hide (Desktop only > 1024px) */
+:root {
+  --scrollbar-opacity: 1;
+  --scrollbar-track-color: transparent;
+}
+
+/* Custom scrollbar only for screens > 1024px */
+@media (min-width: 1025px) {
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track-color);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: 
+      repeating-linear-gradient(
+        54deg,
+        rgba(0, 0, 0, var(--scrollbar-opacity)) 0px,
+        rgba(0, 0, 0, var(--scrollbar-opacity)) 2px,
+        transparent 2px,
+        transparent 5px
+      ),
+      rgba(255, 255, 255, var(--scrollbar-opacity));
+    border: 2px solid rgba(0, 0, 0, var(--scrollbar-opacity));
+    border-radius: 0;
+    transition: all 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: 
+      repeating-linear-gradient(
+        54deg,
+        var(--accent) 0px,
+        var(--accent) 2px,
+        transparent 2px,
+        transparent 5px
+      ),
+      #fff;
+    border-color: var(--accent);
+    box-shadow: -4px 0 0 0 rgba(124, 58, 237, 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: 
+      repeating-linear-gradient(
+        54deg,
+        var(--accent) 0px,
+        var(--accent) 2px,
+        transparent 2px,
+        transparent 5px
+      ),
+      #fff;
+    border-color: var(--accent);
+    box-shadow: -6px 0 0 0 rgba(124, 58, 237, 0.3);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Cover scrollbar under navbar - Desktop only */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 60px;
+    background: #fff;
+    z-index: 99;
+    pointer-events: none;
+  }
+}
+

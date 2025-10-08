@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "./components/layout/Navbar";
 import Hero from "./components/sections/hero/Hero";
 import Build from "./components/sections/build/Build";
@@ -9,6 +9,7 @@ import CTA from "./components/sections/cta/CTA";
 import Footer from "./components/layout/Footer";
 import ContactModal from "./components/layout/ContactModal";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
+import { initScrollbarAutoHide } from "./utils/scrollbarAutoHide";
 import "./styles/App.css";
 
 function App() {
@@ -16,6 +17,11 @@ function App() {
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Initialize scrollbar auto-hide
+  useEffect(() => {
+    initScrollbarAutoHide();
+  }, []);
 
   return (
     <div className="app-root">
