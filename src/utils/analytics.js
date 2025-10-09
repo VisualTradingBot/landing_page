@@ -107,7 +107,13 @@ class Analytics {
    */
   getReferrer() {
     const referrer = document.referrer;
-    if (!referrer) return 'direct';
+    if (!referrer) {
+      // Check for UTM parameters as backup
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      if (utmSource) return `utm:${utmSource}`;
+      return 'direct';
+    }
     
     try {
       const referrerUrl = new URL(referrer);
@@ -118,8 +124,22 @@ class Analytics {
         return 'internal';
       }
       
+      const hostname = referrerUrl.hostname.toLowerCase();
+      
+      // Detect social media platforms specifically
+      // Instagram often uses l.instagram.com (link wrapper) or lm.instagram.com (mobile)
+      if (hostname.includes('instagram.com')) return 'instagram.com';
+      if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'facebook.com';
+      if (hostname.includes('twitter.com') || hostname.includes('t.co')) return 'twitter.com';
+      if (hostname.includes('x.com')) return 'x.com';
+      if (hostname.includes('tiktok.com')) return 'tiktok.com';
+      if (hostname.includes('linkedin.com') || hostname.includes('lnkd.in')) return 'linkedin.com';
+      if (hostname.includes('reddit.com')) return 'reddit.com';
+      if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) return 'youtube.com';
+      if (hostname.includes('pinterest.com')) return 'pinterest.com';
+      
       // Return just the domain, not full URL (for privacy)
-      return referrerUrl.hostname;
+      return hostname;
     } catch (e) {
       return 'unknown';
     }
@@ -181,7 +201,20 @@ class Analytics {
       device: this.getDeviceInfo(),
     };
 
-    this.sendEvent(event);
+    // Use sendBeacon for critical events that might happen before navigation
+    const isCriticalEvent = eventName === 'click' && properties.element?.includes('social');
+    
+    // Log social media clicks specifically for debugging
+    if (isCriticalEvent) {
+      console.log(`[Analytics] 🎯 Social click tracked: ${properties.element}`, event);
+    }
+    
+    if (isCriticalEvent && !import.meta.env.DEV) {
+      this.sendEventWithBeacon(event);
+    } else {
+      this.sendEvent(event);
+    }
+    
     return event;
   }
 
@@ -263,6 +296,76 @@ class Analytics {
     } else {
       console.warn('[Analytics] ⚠️ Supabase not available, storing locally');
       // Store in localStorage if Supabase not configured
+      this.storeEventLocally(event);
+    }
+  }
+
+  /**
+   * Send event using navigator.sendBeacon for events that happen before navigation
+   * This ensures the event is sent even if the page unloads
+   */
+  sendEventWithBeacon(event) {
+    if (!this.supabase || !this.isInitialized) {
+      console.warn('[Analytics] ⚠️ Supabase not ready, cannot use sendBeacon');
+      this.storeEventLocally(event);
+      return;
+    }
+
+    try {
+      // Create the payload for Supabase
+      const payload = {
+        event_type: event.type,
+        session_id: event.sessionId,
+        timestamp: event.timestamp,
+        page_path: event.page?.path || null,
+        page_title: event.page?.title || null,
+        page_url: event.page?.url || null,
+        referrer: event.referrer || null,
+        device_type: event.device?.deviceType || null,
+        browser: event.device?.browser || null,
+        screen_width: event.device?.screenWidth || null,
+        screen_height: event.device?.screenHeight || null,
+        viewport: event.device?.viewport || null,
+        session_duration: event.sessionDuration || null,
+        pages_in_session: event.pagesInSession || event.pagesViewed || null,
+        event_name: event.eventName || null,
+        properties: event.properties || null,
+      };
+
+      // Get Supabase URL and key
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase credentials');
+      }
+
+      // Use Supabase REST API with sendBeacon
+      const url = `${supabaseUrl}/rest/v1/analytics_events`;
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      
+      const headers = {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      };
+
+      // Note: sendBeacon doesn't support custom headers well, so we'll use fetch with keepalive instead
+      fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+        keepalive: true, // This is the key - sends even after page unload
+      }).then(() => {
+        console.log(`[Analytics] ✅ Critical event sent (keepalive): ${event.type}`, event.eventName || '');
+      }).catch((error) => {
+        console.error('[Analytics] Failed to send critical event:', error);
+        this.storeEventLocally(event);
+      });
+
+    } catch (error) {
+      console.error('[Analytics] sendBeacon failed:', error);
       this.storeEventLocally(event);
     }
   }
