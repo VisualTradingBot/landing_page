@@ -39,3 +39,5 @@ export function isSupabaseConfigured() {
 
 export default { getSupabaseClient, isSupabaseConfigured };
 
+
+

@@ -52,3 +52,4 @@ Desktop.ini
 # Analytics and tracking
 *.analytics
 analytics-data/
+ANALYTICS_SETUP.md

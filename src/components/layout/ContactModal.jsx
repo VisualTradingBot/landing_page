@@ -48,33 +48,37 @@ export default function ContactModal({ isOpen, onClose }) {
       // Get analytics context for enriched data
       const sessionContext = window.__analytics ? window.__analytics.getSessionSummary() : {};
       
-      // 1. Save to Supabase database (if configured)
-      const supabase = await getSupabaseClient();
-      if (supabase) {
-        try {
-          const { error: supabaseError } = await supabase
-            .from('contact_submissions')
-            .insert([{
-              name: formData.name || null,
-              email: formData.email,
-              trading_experience: formData.tradingExperience,
-              bot_experience: formData.botExperience,
-              session_id: sessionContext.sessionId || null,
-              referrer: sessionContext.referrer || null,
-              device_type: sessionContext.device?.deviceType || null,
-              browser: sessionContext.device?.browser || null,
-            }]);
+      // 1. Save to Supabase database (only in production)
+      if (!import.meta.env.DEV) {
+        const supabase = await getSupabaseClient();
+        if (supabase) {
+          try {
+            const { error: supabaseError } = await supabase
+              .from('contact_submissions')
+              .insert([{
+                name: formData.name || null,
+                email: formData.email,
+                trading_experience: formData.tradingExperience,
+                bot_experience: formData.botExperience,
+                session_id: sessionContext.sessionId || null,
+                referrer: sessionContext.referrer || null,
+                device_type: sessionContext.device?.deviceType || null,
+                browser: sessionContext.device?.browser || null,
+              }]);
 
-          if (supabaseError) {
-            console.error('Supabase save error:', supabaseError);
-            // Continue to email anyway - don't fail the whole submission
-          } else {
-            console.log('✅ Submission saved to Supabase database');
+            if (supabaseError) {
+              console.error('Supabase save error:', supabaseError);
+              // Continue to email anyway - don't fail the whole submission
+            } else {
+              console.log('✅ Submission saved to Supabase database');
+            }
+          } catch (supabaseException) {
+            console.error('Supabase exception:', supabaseException);
+            // Continue to email anyway
           }
-        } catch (supabaseException) {
-          console.error('Supabase exception:', supabaseException);
-          // Continue to email anyway
         }
+      } else {
+        console.log('[DEV MODE] Contact form submission - not saving to Supabase');
       }
 
       // 2. Send email notification via FormSubmit (existing functionality)

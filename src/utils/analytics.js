@@ -12,9 +12,23 @@ class Analytics {
     this.sessionStartTime = Date.now();
     this.pageViewCount = 0;
     this.supabase = null;
+    this.isInitialized = false;
+    this.eventQueue = [];
     
-    // Initialize Supabase client if configured
-    this.initializeSupabase();
+    // Initialize Supabase client if configured, then start tracking
+    this.initialize();
+  }
+
+  /**
+   * Initialize analytics (async wrapper for constructor)
+   */
+  async initialize() {
+    // Initialize Supabase first
+    await this.initializeSupabase();
+    this.isInitialized = true;
+    
+    // Process any queued events
+    await this.processEventQueue();
     
     // Initialize session tracking
     this.initializeTracking();
@@ -28,16 +42,17 @@ class Analytics {
       try {
         this.supabase = await getSupabaseClient();
         
-        if (this.supabase && import.meta.env.DEV) {
-          console.log('[Analytics] ✅ Supabase connected');
+        if (this.supabase) {
+          console.log('[Analytics] ✅ Supabase connected successfully');
         }
       } catch (error) {
         console.warn('[Analytics] Supabase not available. Install with: npm install @supabase/supabase-js');
         console.warn('[Analytics] Falling back to localStorage only');
       }
-    } else if (import.meta.env.DEV) {
-      console.log('[Analytics] 📦 Using localStorage (dev mode)');
-      console.log('[Analytics] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env for database storage');
+    } else {
+      console.warn('[Analytics] ⚠️ Supabase not configured - missing environment variables');
+      console.warn('[Analytics] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment');
+      console.log('[Analytics] 📦 Using localStorage only');
     }
   }
 
@@ -171,15 +186,45 @@ class Analytics {
   }
 
   /**
+   * Process queued events after initialization
+   */
+  async processEventQueue() {
+    if (this.eventQueue.length > 0) {
+      console.log(`[Analytics] Processing ${this.eventQueue.length} queued events`);
+      for (const event of this.eventQueue) {
+        await this.sendEventToSupabase(event);
+      }
+      this.eventQueue = [];
+    }
+  }
+
+  /**
    * Send event to Supabase or store locally
    */
   async sendEvent(event) {
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.log('[Analytics]', event);
+      console.log('[Analytics] [DEV MODE - Not sending to Supabase]', event);
+      // Only store locally in dev mode, don't send to Supabase
+      this.storeEventLocally(event);
+      return;
     }
 
-    // Send to Supabase if configured
+    // If not initialized yet, queue the event
+    if (!this.isInitialized) {
+      this.eventQueue.push(event);
+      return;
+    }
+
+    await this.sendEventToSupabase(event);
+  }
+
+  /**
+   * Actually send event to Supabase
+   */
+  async sendEventToSupabase(event) {
+
+    // Send to Supabase only in production
     if (this.supabase) {
       try {
         const { error } = await this.supabase
@@ -207,6 +252,8 @@ class Analytics {
           console.error('[Analytics] Supabase error:', error);
           // Fall back to localStorage on error
           this.storeEventLocally(event);
+        } else {
+          console.log(`[Analytics] ✅ Event sent to Supabase: ${event.type}`, event.eventName || '');
         }
       } catch (error) {
         console.error('[Analytics] Failed to send to Supabase:', error);
@@ -214,7 +261,8 @@ class Analytics {
         this.storeEventLocally(event);
       }
     } else {
-      // Store in localStorage if Supabase not configured (dev/testing)
+      console.warn('[Analytics] ⚠️ Supabase not available, storing locally');
+      // Store in localStorage if Supabase not configured
       this.storeEventLocally(event);
     }
   }
