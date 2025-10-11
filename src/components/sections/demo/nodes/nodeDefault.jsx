@@ -29,6 +29,7 @@ export default function NodeDefault({
     <div className="node-default">
       {top && (
         <Handle
+          id={top}
           type="target"
           position={Position.Top}
           className="node-handle node-handle--top"
@@ -40,6 +41,7 @@ export default function NodeDefault({
       <div className="node-default-body">{children}</div>
       {bottom && (
         <Handle
+          id={bottom}
           type="source"
           position={Position.Bottom}
           className="node-handle node-handle--bottom"
@@ -49,6 +51,7 @@ export default function NodeDefault({
       )}
       {left && (
         <Handle
+          id={left}
           type="target"
           position={Position.Left}
           className="node-handle node-handle--left"
@@ -58,6 +61,7 @@ export default function NodeDefault({
       )}
       {right && (
         <Handle
+          id={right}
           type="source"
           position={Position.Right}
           className="node-handle node-handle--right"
@@ -72,8 +76,8 @@ export default function NodeDefault({
 NodeDefault.propTypes = {
   title: PropTypes.string,
   children: PropTypes.node,
-  top: PropTypes.bool,
-  bottom: PropTypes.bool,
-  left: PropTypes.bool,
-  right: PropTypes.bool,
+  top: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  bottom: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  left: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  right: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
 };

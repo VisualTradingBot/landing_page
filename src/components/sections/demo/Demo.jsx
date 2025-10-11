@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import {
   ReactFlow,
-  applyNodeChanges,
-  applyEdgeChanges,
+  useEdgesState,
+  useNodesState,
   addEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -19,31 +19,31 @@ const initialNodes = [
     id: "inputNode",
     type: "inputNode",
     position: { x: 200, y: 0 },
-    data: { label: <Input /> },
+    data: { label: Input },
   },
   {
     id: "indicatorNode",
     type: "indicatorNode",
     position: { x: 200, y: 200 },
-    data: { label: <Indicator /> },
+    data: { label: Indicator },
   },
   {
     id: "setParameterNode",
     type: "setParameterNode",
     position: { x: 200, y: 400 },
-    data: { label: <SetParameter /> },
+    data: { label: Execute },
   },
   {
     id: "ifNode",
     type: "ifNode",
     position: { x: 600, y: 200 },
-    data: { label: <If /> },
+    data: { label: If },
   },
   {
     id: "executeNode",
     type: "executeNode",
     position: { x: 600, y: 400 },
-    data: { label: <Execute /> },
+    data: { label: Execute },
   },
 ];
 
@@ -56,25 +56,17 @@ const nodeTypes = {
 };
 const initialEdges = [
   { id: "n1-n2", source: "inputNode", target: "indicatorNode" },
+  { id: "n2-n3", source: "indicatorNode", target: "ifNode" },
 ];
 
 export default function Demo() {
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  // eslint-disable-next-line no-unused-vars
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const onNodesChange = useCallback(
-    (changes) =>
-      setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-    []
-  );
-  const onEdgesChange = useCallback(
-    (changes) =>
-      setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-    []
-  );
   const onConnect = useCallback(
     (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    []
+    [setEdges]
   );
   return (
     <section id="demo" className="demo">
