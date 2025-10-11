@@ -402,24 +402,47 @@ class Analytics {
       this.trackSessionEnd();
     });
 
-    // Track visibility changes (tab switching)
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        // User switched tab or minimized
-        this.trackEvent('visibility_hidden');
-      }
-    });
+    // Track scroll depth milestones
+    this.initializeScrollTracking();
 
-    // Track window resize (useful for responsive design analytics)
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        this.trackEvent('window_resize', {
-          viewport: `${window.innerWidth}x${window.innerHeight}`,
+    // Note: Removed window resize and visibility tracking to reduce database clutter
+    // These events created too much noise without actionable insights
+  }
+
+  /**
+   * Initialize scroll depth tracking
+   * Tracks when users scroll to 25%, 50%, 75%, and 100% of the page
+   */
+  initializeScrollTracking() {
+    const milestones = [25, 50, 75, 100];
+    const reached = new Set();
+    
+    let scrollTimeout;
+    const handleScroll = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrolled = window.scrollY;
+        const scrollPercent = Math.round((scrolled / scrollHeight) * 100);
+        
+        // Check each milestone
+        milestones.forEach(milestone => {
+          if (scrollPercent >= milestone && !reached.has(milestone)) {
+            reached.add(milestone);
+            this.trackEvent('scroll_depth', {
+              depth: milestone,
+              reached_at: new Date().toISOString(),
+            });
+            
+            if (import.meta.env.DEV) {
+              console.log(`[Analytics] 📜 Scroll depth: ${milestone}%`);
+            }
+          }
         });
-      }, 500);
-    });
+      }, 200); // Debounce scroll events
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
   }
 
   /**
