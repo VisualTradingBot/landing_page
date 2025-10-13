@@ -20,17 +20,17 @@ function addActiveWhilePointerDown(e) {
 export default function NodeDefault({
   title = "Default Node",
   children,
-  top = false,
-  bottom = false,
-  left = false,
-  right = false,
+  top = { active: false, type: "target", id: `top-handle-${title}` },
+  bottom = { active: false, type: "source", id: `bottom-handle-${title}` },
+  left = { active: false, type: "target", id: `left-handle-${title}` },
+  right = { active: false, type: "source", id: `right-handle-${title}` },
 }) {
   return (
     <div className="node-default">
-      {top && (
+      {top.active && (
         <Handle
-          id={top}
-          type="target"
+          id={top.id}
+          type={top.type}
           position={Position.Top}
           className="node-handle node-handle--top"
           onPointerDown={addActiveWhilePointerDown}
@@ -39,30 +39,30 @@ export default function NodeDefault({
       )}
       <div className="node-default-header">{title}</div>
       <div className="node-default-body">{children}</div>
-      {bottom && (
+      {bottom.active && (
         <Handle
-          id={bottom}
-          type="source"
+          id={bottom.id}
+          type={bottom.type}
           position={Position.Bottom}
           className="node-handle node-handle--bottom"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-from-${title}-bottom`}
         />
       )}
-      {left && (
+      {left.active && (
         <Handle
-          id={left}
-          type="target"
+          id={left.id}
+          type={left.type}
           position={Position.Left}
           className="node-handle node-handle--left"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-to-${title}-left`}
         />
       )}
-      {right && (
+      {right.active && (
         <Handle
-          id={right}
-          type="source"
+          id={right.id}
+          type={right.type}
           position={Position.Right}
           className="node-handle node-handle--right"
           onPointerDown={addActiveWhilePointerDown}
@@ -76,8 +76,8 @@ export default function NodeDefault({
 NodeDefault.propTypes = {
   title: PropTypes.string,
   children: PropTypes.node,
-  top: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
-  bottom: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
-  left: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
-  right: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  top: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
+  bottom: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
+  left: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
+  right: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
 };

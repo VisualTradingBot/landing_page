@@ -4,6 +4,7 @@ import {
   useEdgesState,
   useNodesState,
   addEdge,
+  Panel,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -42,7 +43,7 @@ const initialNodes = [
   {
     id: "executeNode",
     type: "executeNode",
-    position: { x: 600, y: 400 },
+    position: { x: 800, y: 400 },
     data: { label: Execute },
   },
 ];
@@ -57,6 +58,7 @@ const nodeTypes = {
 const initialEdges = [
   { id: "n1-n2", source: "inputNode", target: "indicatorNode" },
   { id: "n2-n3", source: "indicatorNode", target: "ifNode" },
+  { id: "n3-n4", source: "ifNode", target: "executeNode" },
 ];
 
 export default function Demo() {
@@ -91,7 +93,9 @@ export default function Demo() {
             [0, 0],
             [1200, 800],
           ]}
-        />
+        >
+          <Panel position="top-left">top-left</Panel>
+        </ReactFlow>
       </div>
 
       <div className="divider"></div>
