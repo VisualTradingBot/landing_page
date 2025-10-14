@@ -18,66 +18,78 @@ function addActiveWhilePointerDown(e) {
 }
 
 export default function NodeDefault({
+  id: nodeId,
   title = "Default Node",
   children,
-  top = { active: false, type: "target", id: `top-handle-${title}` },
-  bottom = { active: false, type: "source", id: `bottom-handle-${title}` },
-  left = { active: false, type: "target", id: `left-handle-${title}` },
-  right = { active: false, type: "source", id: `right-handle-${title}` },
+  top = { active: false, type: "target" },
+  bottom = { active: false, type: "source" },
+  left = { active: false, type: "target" },
+  right = { active: false, type: "source" },
 }) {
+  // Use nodeId if provided; otherwise fallback to a slugified title
+  const baseId = nodeId || title.toLowerCase().replace(/\s+/g, "-");
+
+  const topHandle = { ...top, id: top.id || `${baseId}-top` };
+  const bottomHandle = { ...bottom, id: bottom.id || `${baseId}-bottom` };
+  const leftHandle = { ...left, id: left.id || `${baseId}-left` };
+  const rightHandle = { ...right, id: right.id || `${baseId}-right` };
+
+  console.log(topHandle, bottomHandle, leftHandle, rightHandle);
   return (
     <div className="node-default">
-      {top.active && (
+      {topHandle.active && (
         <Handle
-          id={top.id}
-          type={top.type}
+          id={topHandle.id}
+          type={topHandle.type}
           position={Position.Top}
           className="node-handle node-handle--top"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-to-${title}-top`}
         />
       )}
-      <div className="node-default-header">{title}</div>
-      <div className="node-default-body">{children}</div>
       {bottom.active && (
         <Handle
-          id={bottom.id}
-          type={bottom.type}
+          id={bottomHandle.id}
+          type={bottomHandle.type}
           position={Position.Bottom}
           className="node-handle node-handle--bottom"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-from-${title}-bottom`}
         />
       )}
-      {left.active && (
+      {leftHandle.active && (
         <Handle
-          id={left.id}
-          type={left.type}
+          id={leftHandle.id}
+          type={leftHandle.type}
           position={Position.Left}
           className="node-handle node-handle--left"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-to-${title}-left`}
         />
       )}
-      {right.active && (
+      {rightHandle.active && (
         <Handle
-          id={right.id}
-          type={right.type}
+          id={rightHandle.id}
+          type={rightHandle.type}
           position={Position.Right}
           className="node-handle node-handle--right"
           onPointerDown={addActiveWhilePointerDown}
           aria-label={`connect-from-${title}-right`}
         />
       )}
+
+      <div className="node-default-header">{title}</div>
+      <div className="node-default-body">{children}</div>
     </div>
   );
 }
 
 NodeDefault.propTypes = {
+  id: PropTypes.string,
   title: PropTypes.string,
   children: PropTypes.node,
-  top: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
-  bottom: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
-  left: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
-  right: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
+  top: PropTypes.object,
+  bottom: PropTypes.object,
+  left: PropTypes.object,
+  right: PropTypes.object,
 };

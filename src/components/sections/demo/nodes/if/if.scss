@@ -1,0 +1,20 @@
+.condition-row {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  div {
+    width: 30%;
+    height: 25px;
+    background-color: #ececec;
+    border: 1px dashed #444;
+    border-radius: 4px;
+    text-align: center;
+    //text is too long
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 20px;
+    font-size: 12px;
+  }
+}

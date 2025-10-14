@@ -2,8 +2,9 @@ import "./input.scss";
 import NodeDefault from "../nodeDefault";
 import { useState } from "react";
 import { useReactFlow } from "@xyflow/react";
+import PropTypes from "prop-types";
 
-export default function Input() {
+export default function Input({ id, data }) {
   const [inputType, setInputType] = useState("");
 
   const handleImport = () => {
@@ -18,7 +19,11 @@ export default function Input() {
   };
 
   return (
-    <NodeDefault title="Input Node" bottom={{ active: true, type: "source" }}>
+    <NodeDefault
+      id={id}
+      title={data.label}
+      right={{ active: true, type: "source" }}
+    >
       <div className="switch-case">
         <label className="input-type-label">Input Type:</label>
         <select
@@ -28,7 +33,7 @@ export default function Input() {
             handleChange(e);
           }}
         >
-          <option value="" disabled selected>
+          <option value="" disabled>
             Select your option:
           </option>
           <option value="data">data</option>
@@ -43,3 +48,8 @@ export default function Input() {
     </NodeDefault>
   );
 }
+
+Input.propTypes = {
+  id: PropTypes.string,
+  data: PropTypes.object,
+};

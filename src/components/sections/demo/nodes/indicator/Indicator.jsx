@@ -1,37 +1,41 @@
 import "./indicator.scss";
 import NodeDefault from "../nodeDefault";
 import { useReactFlow, useNodeConnections, useNodesData } from "@xyflow/react";
+import { useState } from "react";
+import PropTypes from "prop-types";
 
-export default function Indicator() {
+export default function Indicator({ data, id }) {
   const { updateNodeData } = useReactFlow();
+  const [selectType, setSelectType] = useState("");
 
   const handleChange = (event) => {
-    updateNodeData("indicatorNode", { type: event.target.value });
+    setSelectType(event.target.value);
+    updateNodeData("indicatorNode", { type: selectType });
   };
 
   const getConnection = useNodeConnections();
-  const sourceData = useNodesData(getConnection?.[0].source);
-  console.log("Input node source data:", sourceData);
+  //const sourceData = useNodesData(getConnection?.[0].source);
 
   return (
     <NodeDefault
-      title="Indicator Node"
+      id={id}
+      title={data.label}
       bottom={{ active: true, type: "source" }}
-      top={{ active: true, type: "target" }}
+      left={{ active: true, type: "target" }}
     >
       <div className="switch-case">
-        <select onChange={handleChange}>
-          <option value="" disabled selected>
+        <select onChange={handleChange} value={selectType}>
+          <option value="" disabled>
             Select your option:
           </option>
-          <option value="average">Average</option>
-          <option value="sum">Sum</option>
-          <option value="min">Min</option>
-          <option value="max">Max</option>
-          <option value="count">Count</option>
+          <option value="average">30-day rolling high</option>
         </select>
-        <p>{sourceData?.data.input}</p>
       </div>
     </NodeDefault>
   );
 }
+
+Indicator.propTypes = {
+  id: PropTypes.string,
+  data: PropTypes.object,
+};
