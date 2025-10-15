@@ -13,6 +13,7 @@ import If from "./nodes/if/If";
 import SetParameter from "./nodes/setParameter/SetParameter";
 import Input from "./nodes/input/Input";
 import Indicator from "./nodes/indicator/Indicator";
+import IntroductionMask from "./IntroductionMask";
 import "./demo.scss";
 
 const initialNodes = [
@@ -140,34 +141,40 @@ export default function Demo() {
 
   return (
     <section id="demo" className="demo">
-      <div style={{ width: "100%", height: "50vh" }}>
-        <ReactFlow
-          defaultViewport={{ x: 0, y: 0, zoom: 0.9 }} // DO NOT REMOVE THE ZOOM PROPERTY, EVERYTHING WILL GO TO HELL FOR SOME UNKNOWN REASON
-          nodes={nodes}
-          nodeTypes={nodeTypes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          preventScrolling={false}
-          autoPanOnNodeDrag={false}
-          maxZoom={0.9}
-          minZoom={0.9}
-          panOnDrag={false}
-          panOnScroll={false}
-          zoomOnScroll={false}
-          zoomOnPinch={false}
-          translateExtent={[
-            [0, 0],
-            [1200, 800],
-          ]}
-        >
-          {/*<Panel position="top-left">
+      <div className="demo-container">
+        <IntroductionMask targetSectionId="demo" />
+        <div className="demo-header">
+          <h2 className="demo-title">Demo</h2>
+        </div>
+        <div style={{ width: "100%", height: "50vh" }}>
+          <ReactFlow
+            defaultViewport={{ x: 0, y: 0, zoom: 0.9 }} // DO NOT REMOVE THE ZOOM PROPERTY, EVERYTHING WILL GO TO HELL FOR SOME UNKNOWN REASON
+            nodes={nodes}
+            nodeTypes={nodeTypes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            preventScrolling={false}
+            autoPanOnNodeDrag={false}
+            maxZoom={0.9}
+            minZoom={0.9}
+            panOnDrag={false}
+            panOnScroll={false}
+            zoomOnScroll={false}
+            zoomOnPinch={false}
+            translateExtent={[
+              [0, 0],
+              [1200, 800],
+            ]}
+          >
+            {/*<Panel position="top-left">
             <div className="parameter-table">
               <h1>Parameters</h1>
             </div>
           </Panel>*/}
-        </ReactFlow>
+          </ReactFlow>
+        </div>
       </div>
 
       <div className="divider"></div>
