@@ -146,9 +146,9 @@ export default function Demo() {
         <div className="demo-header">
           <h2 className="demo-title">Demo</h2>
         </div>
-        <div style={{ width: "100%", height: "50vh" }}>
+        <div style={{ width: "100%", height: "600px" }}>
           <ReactFlow
-            defaultViewport={{ x: 0, y: 0, zoom: 0.9 }} // DO NOT REMOVE THE ZOOM PROPERTY, EVERYTHING WILL GO TO HELL FOR SOME UNKNOWN REASON
+            defaultViewport={{ x: 50, y: 50, zoom: 0.9 }} // DO NOT REMOVE THE ZOOM PROPERTY, EVERYTHING WILL GO TO HELL FOR SOME UNKNOWN REASON
             nodes={nodes}
             nodeTypes={nodeTypes}
             edges={edges}
@@ -157,15 +157,15 @@ export default function Demo() {
             onConnect={onConnect}
             preventScrolling={false}
             autoPanOnNodeDrag={false}
-            maxZoom={0.9}
-            minZoom={0.9}
-            panOnDrag={false}
+            maxZoom={1.0}
+            minZoom={0.5}
+            panOnDrag={true}
             panOnScroll={false}
             zoomOnScroll={false}
             zoomOnPinch={false}
             translateExtent={[
-              [0, 0],
-              [1200, 800],
+              [-200, -200],
+              [1400, 1000],
             ]}
           >
             {/*<Panel position="top-left">
