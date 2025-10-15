@@ -24,7 +24,7 @@ export default function IntroductionMask({ targetSectionId = "demo" }) {
         });
       },
       {
-        threshold: 0.3,
+        threshold: 0.5,
         rootMargin: "-50px 0px -50px 0px",
       }
     );
