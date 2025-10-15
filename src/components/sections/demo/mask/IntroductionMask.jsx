@@ -8,7 +8,6 @@ export default function IntroductionMask({ targetSectionId = "demo" }) {
   const observerRef = useRef(null);
 
   useEffect(() => {
-    // Skip if already shown
     if (hasShown) return;
 
     const targetSection = document.getElementById(targetSectionId);
@@ -20,14 +19,13 @@ export default function IntroductionMask({ targetSectionId = "demo" }) {
           if (entry.isIntersecting && !hasShown) {
             setShowMask(true);
             setHasShown(true);
-            // Stop observing once shown
             observer.disconnect();
           }
         });
       },
       {
-        threshold: 0.3, // Trigger when 30% of the section is visible
-        rootMargin: "-50px 0px -50px 0px", // Adjust trigger point
+        threshold: 0.3,
+        rootMargin: "-50px 0px -50px 0px",
       }
     );
 
@@ -47,7 +45,6 @@ export default function IntroductionMask({ targetSectionId = "demo" }) {
 
   const handleGetStarted = () => {
     setShowMask(false);
-    // Optional: scroll to ensure the demo section is fully visible
     const targetSection = document.getElementById(targetSectionId);
     if (targetSection) {
       targetSection.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -111,10 +108,23 @@ export default function IntroductionMask({ targetSectionId = "demo" }) {
           </p>
 
           <ul className="instruction-list">
-            <li>Connect nodes by dragging from outputs to inputs</li>
-            <li>Click nodes to configure parameters and conditions</li>
-            <li>Build strategies by chaining indicators and logic</li>
-            <li>Test how data flows through your strategy</li>
+            <li>
+              <span className="bold-text">Connect nodes</span> by dragging from
+              outputs to inputs
+            </li>
+            <li>
+              Click nodes to{" "}
+              <span className="bold-text">configure parameters</span> and
+              conditions
+            </li>
+            <li>
+              Build strategies by{" "}
+              <span className="bold-text">chaining indicators and logic</span>
+            </li>
+            <li>
+              Test your strategy through the{" "}
+              <span className="bold-text">back testing</span> functionality
+            </li>
           </ul>
 
           <div className="introduction-mask-actions">

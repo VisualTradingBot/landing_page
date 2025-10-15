@@ -13,7 +13,7 @@ import If from "./nodes/if/If";
 import SetParameter from "./nodes/setParameter/SetParameter";
 import Input from "./nodes/input/Input";
 import Indicator from "./nodes/indicator/Indicator";
-import IntroductionMask from "./IntroductionMask";
+import IntroductionMask from "./mask/IntroductionMask";
 import "./demo.scss";
 
 const initialNodes = [
