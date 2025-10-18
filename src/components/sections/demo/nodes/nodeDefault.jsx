@@ -34,7 +34,6 @@ export default function NodeDefault({
   const leftHandle = { ...left, id: left.id || `${baseId}-left` };
   const rightHandle = { ...right, id: right.id || `${baseId}-right` };
 
-  console.log(topHandle, bottomHandle, leftHandle, rightHandle);
   return (
     <div className="node-default">
       {topHandle.active && (
