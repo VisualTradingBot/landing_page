@@ -122,7 +122,25 @@ export function runBreakoutBacktest(prices, opts = {}) {
 
 // Helper to convert coinGecko prices array [[ts, price], ...] to our format
 export function mapCoinGeckoPricesToOHLC(prices) {
-  return prices.map((p) => ({ time: new Date(p[0]), close: p[1] }));
+  if (!Array.isArray(prices)) return [];
+
+  const out = prices
+    .map((p) => {
+      // p expected as [timestamp, price]
+      const ts = Number(p && p[0]);
+      let tsMs = ts;
+      // If timestamp looks like seconds (10 digits), convert to ms
+      if (ts > 0 && ts < 1e12) tsMs = ts * 1000;
+      const time = new Date(tsMs);
+      const close = Number(p && p[1]);
+      return { time, close };
+    })
+    // filter out invalid entries
+    .filter((d) => d.time instanceof Date && !Number.isNaN(d.time.getTime()) && typeof d.close === 'number' && !Number.isNaN(d.close))
+    // sort by time ascending to ensure monotonic series
+    .sort((a, b) => a.time - b.time);
+
+  return out;
 }
 
 // Simple geometric random walk generator for fallback/demo data
