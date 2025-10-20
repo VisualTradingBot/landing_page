@@ -6,11 +6,12 @@ import { useReactFlow } from "@xyflow/react";
 
 export default function Execute({ data, id }) {
   const { updateNodeData } = useReactFlow();
-  const [selectType, setSelectType] = useState("");
+  const [selectType, setSelectType] = useState(data?.action || "");
 
   const handleChange = (event) => {
-    setSelectType(event.target.value);
-    updateNodeData("indicatorNode", { type: selectType });
+    const value = event.target.value;
+    setSelectType(value);
+    updateNodeData(id, { action: value });
   };
 
   return (
@@ -19,6 +20,13 @@ export default function Execute({ data, id }) {
       title={data.label}
       left={{ active: true, type: "target" }}
     >
+      <div
+        className="hint-line"
+        title="Bind an 'action' parameter with value 'buy' or 'sell' to override the dropdown."
+      >
+        <span className="hint-icon">i</span>
+        Action
+      </div>
       <div className="switch-case">
         <select onChange={handleChange} value={selectType}>
           <option value="" disabled>
