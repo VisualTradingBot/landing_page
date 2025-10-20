@@ -172,32 +172,43 @@ export function calculateIndicator(prices, type, window) {
 
   switch (type) {
     case "30d_high":
-      for (let i = window; i < prices.length; i++) {
+      // Use progressive lookback for early days, full window after
+      for (let i = 0; i < prices.length; i++) {
         let highest = -Infinity;
-        for (let j = i - window; j < i; j++) {
+        const startIdx = Math.max(0, i - window);
+        for (let j = startIdx; j < i; j++) {
           if (prices[j].close > highest) highest = prices[j].close;
         }
-        series[i] = highest;
+        // Only set if we have at least one previous day
+        if (i > 0) {
+          series[i] = highest;
+        }
       }
       break;
 
     case "30d_low":
-      for (let i = window; i < prices.length; i++) {
+      // Use progressive lookback for early days
+      for (let i = 0; i < prices.length; i++) {
         let lowest = Infinity;
-        for (let j = i - window; j < i; j++) {
+        const startIdx = Math.max(0, i - window);
+        for (let j = startIdx; j < i; j++) {
           if (prices[j].close < lowest) lowest = prices[j].close;
         }
-        series[i] = lowest;
+        if (i > 0) {
+          series[i] = lowest;
+        }
       }
       break;
 
     case "sma": // Simple Moving Average
-      for (let i = window; i < prices.length; i++) {
+      for (let i = 0; i < prices.length; i++) {
+        const startIdx = Math.max(0, i - window + 1);
+        const actualWindow = i - startIdx + 1;
         let sum = 0;
-        for (let j = i - window; j < i; j++) {
+        for (let j = startIdx; j <= i; j++) {
           sum += prices[j].close;
         }
-        series[i] = sum / window;
+        series[i] = sum / actualWindow;
       }
       break;
 
@@ -244,62 +255,69 @@ export function calculateIndicator(prices, type, window) {
       break;
 
     case "bollinger_upper": // Bollinger Upper Band (SMA + 2*StdDev)
-      for (let i = window; i < prices.length; i++) {
+      for (let i = 0; i < prices.length; i++) {
+        const startIdx = Math.max(0, i - window + 1);
+        const actualWindow = i - startIdx + 1;
         let sum = 0;
-        for (let j = i - window; j < i; j++) {
+        for (let j = startIdx; j <= i; j++) {
           sum += prices[j].close;
         }
-        const sma = sum / window;
+        const sma = sum / actualWindow;
         let variance = 0;
-        for (let j = i - window; j < i; j++) {
+        for (let j = startIdx; j <= i; j++) {
           variance += Math.pow(prices[j].close - sma, 2);
         }
-        const stdDev = Math.sqrt(variance / window);
+        const stdDev = Math.sqrt(variance / actualWindow);
         series[i] = sma + 2 * stdDev;
       }
       break;
 
     case "bollinger_lower": // Bollinger Lower Band (SMA - 2*StdDev)
-      for (let i = window; i < prices.length; i++) {
+      for (let i = 0; i < prices.length; i++) {
+        const startIdx = Math.max(0, i - window + 1);
+        const actualWindow = i - startIdx + 1;
         let sum = 0;
-        for (let j = i - window; j < i; j++) {
+        for (let j = startIdx; j <= i; j++) {
           sum += prices[j].close;
         }
-        const sma = sum / window;
+        const sma = sum / actualWindow;
         let variance = 0;
-        for (let j = i - window; j < i; j++) {
+        for (let j = startIdx; j <= i; j++) {
           variance += Math.pow(prices[j].close - sma, 2);
         }
-        const stdDev = Math.sqrt(variance / window);
+        const stdDev = Math.sqrt(variance / actualWindow);
         series[i] = sma - 2 * stdDev;
       }
       break;
 
     case "atr": // Average True Range
       {
-        for (let i = window; i < prices.length; i++) {
+        for (let i = 1; i < prices.length; i++) {
+          const startIdx = Math.max(1, i - window + 1);
+          const actualWindow = i - startIdx + 1;
           let sum = 0;
-          for (let j = i - window + 1; j <= i; j++) {
-            if (j > 0) {
-              const h = prices[j].close;
-              const l = prices[j].close;
-              const pc = prices[j - 1].close;
-              sum += Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
-            }
+          for (let j = startIdx; j <= i; j++) {
+            const h = prices[j].close;
+            const l = prices[j].close;
+            const pc = prices[j - 1].close;
+            sum += Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
           }
-          series[i] = sum / window;
+          series[i] = sum / actualWindow;
         }
       }
       break;
 
     default:
-      // Default to rolling high
-      for (let i = window; i < prices.length; i++) {
+      // Default to rolling high with progressive lookback
+      for (let i = 0; i < prices.length; i++) {
         let highest = -Infinity;
-        for (let j = i - window; j < i; j++) {
+        const startIdx = Math.max(0, i - window);
+        for (let j = startIdx; j < i; j++) {
           if (prices[j].close > highest) highest = prices[j].close;
         }
-        series[i] = highest;
+        if (i > 0) {
+          series[i] = highest;
+        }
       }
   }
 
