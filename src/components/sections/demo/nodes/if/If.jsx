@@ -6,11 +6,8 @@ import { VariableFieldStandalone } from "../components";
 import { useReactFlow } from "@xyflow/react";
 
 export default function If({ data, id }) {
-  // connections if needed in the future
-  // const getConnection = useNodeConnections();
   const parameters = useMemo(() => data?.parameters || [], [data?.parameters]);
-  //const sourceData = useNodesData(getConnection?.[0].source);
-
+  const { updateNodeData, getNodes, getEdges } = useReactFlow();
   // Initialize variables either from node data (persisted) or fallback to defaults
   const defaultVars = [
     { label: "var-1", id: `var-${Date.now()}`, parameterData: {} },
@@ -21,14 +18,66 @@ export default function If({ data, id }) {
   const [variable, setVariable] = useState(
     () => data?.variables || defaultVars
   );
-  const { updateNodeData } = useReactFlow();
+  const [isMaster, setIsMaster] = useState(() => data?.isMaster ?? false);
 
-  // Persist variables into the node's data so parent (Demo) can read them
+  // Check if this node is reachable from any master node
+  const isConnectedToMaster = useMemo(() => {
+    const nodes = getNodes();
+    const edges = getEdges();
+
+    // Find all master nodes
+    const masterNodes = nodes.filter(
+      (n) => n.type === "ifNode" && n.data?.isMaster === true && n.id !== id // Exclude self
+    );
+
+    if (masterNodes.length === 0) return false;
+
+    // Build reverse edge map (to traverse backwards from this node)
+    const reverseEdgeMap = new Map();
+    edges.forEach((e) => {
+      if (!reverseEdgeMap.has(e.target)) reverseEdgeMap.set(e.target, []);
+      reverseEdgeMap.get(e.target).push(e.source);
+    });
+
+    // BFS backwards from current node to see if we can reach a master
+    const visited = new Set();
+    const queue = [id];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (visited.has(current)) continue;
+      visited.add(current);
+
+      // Check if current is a master
+      if (masterNodes.some((m) => m.id === current)) {
+        return true; // Found a master node in our ancestry
+      }
+
+      // Add incoming edges to queue
+      const incoming = reverseEdgeMap.get(current) || [];
+      incoming.forEach((source) => {
+        if (!visited.has(source)) {
+          queue.push(source);
+        }
+      });
+    }
+
+    return false;
+  }, [getNodes, getEdges, id]);
+
+  // If connected to master, cannot be master itself
+  useEffect(() => {
+    if (isConnectedToMaster && isMaster) {
+      setIsMaster(false);
+    }
+  }, [isConnectedToMaster, isMaster]);
+
+  // Persist variables and isMaster into the node's data
   useEffect(() => {
     if (updateNodeData && id) {
-      updateNodeData(id, { variables: variable });
+      updateNodeData(id, { variables: variable, isMaster });
     }
-  }, [variable, id, updateNodeData]);
+  }, [variable, isMaster, id, updateNodeData]);
 
   return (
     <NodeDefault
@@ -38,12 +87,35 @@ export default function If({ data, id }) {
       bottom={{ active: true, type: "source" }}
       right={{ active: true, type: "source" }}
     >
-      <div
-        className="hint-line"
-        title="Bind left/right values and the operator via parameters. Operator accepts one of >, <, ==, >=, <=. Left/right can be numbers, 'close', or expressions like 'entry * 0.95'."
-      >
-        <span className="hint-icon">i</span>
-        If condition
+      <div className="node-header-controls">
+        <div
+          className="hint-line"
+          title="Bind left/right values and the operator via parameters. Operator accepts one of >, <, ==, >=, <=. Left/right can be numbers, 'close', or expressions like 'entry * 0.95'."
+        >
+          <span className="hint-icon">i</span>
+          If condition
+        </div>
+        {!isConnectedToMaster && (
+          <label
+            className="master-checkbox"
+            title="Master nodes start execution trees. Only one master node should be active."
+          >
+            <input
+              type="checkbox"
+              checked={isMaster}
+              onChange={(e) => setIsMaster(e.target.checked)}
+            />
+            <span className="checkbox-label">Master</span>
+          </label>
+        )}
+        {isConnectedToMaster && (
+          <span
+            className="slave-badge"
+            title="This node is connected to a master node"
+          >
+            Slave
+          </span>
+        )}
       </div>
       <div className="condition-row">
         <VariableFieldStandalone

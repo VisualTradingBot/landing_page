@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
-  runBreakoutBacktest,
   generateSyntheticPrices,
   mapCoinGeckoPricesToOHLC,
-  runGraphBacktest,
   calculateIndicator,
 } from "../../../../utils/backtest";
+import { executeGraphStrategy } from "../../../../utils/graphExecutor";
 
 export default function BacktestView({
   options,
@@ -18,8 +17,30 @@ export default function BacktestView({
 
   const asset = options?.asset ?? "bitcoin";
   const lookback = options?.lookback ?? 30;
-  const stopLossPercent = options?.stopLossPercent ?? 5;
   const feePercent = options?.feePercent ?? 0.05;
+
+  // Extract stop-loss from graph nodes (for visualization only)
+  const stopLossPercent = useMemo(() => {
+    if (!options?.nodes) return 5;
+    const ifNodes = options.nodes.filter((n) => n.type === "ifNode");
+    for (const ifNode of ifNodes) {
+      const vars = ifNode.data?.variables || [];
+      const rightVar = vars[1];
+      const stopLossValue = rightVar?.parameterData?.value;
+      if (
+        typeof stopLossValue === "string" &&
+        stopLossValue.includes("entry") &&
+        stopLossValue.includes("*")
+      ) {
+        const match = stopLossValue.match(/entry\s*\*\s*([0-9.]+)/);
+        if (match && match[1]) {
+          const multiplier = parseFloat(match[1]);
+          return parseFloat(((1 - multiplier) * 100).toFixed(2));
+        }
+      }
+    }
+    return 5;
+  }, [options]);
 
   const syntheticRef = useRef(null);
   if (syntheticRef.current === null) {
@@ -77,22 +98,48 @@ export default function BacktestView({
       return;
     }
 
-    const maxWindow = Math.max(1, storedPrices.length - 1);
-    const effectiveWindow = Math.min(lookback, maxWindow);
-
-    const useGraph = options && options.graph;
-    const result = useGraph
-      ? runGraphBacktest(storedPrices, options.graph, {
-          lookback: effectiveWindow,
-          feePercent,
-        })
-      : runBreakoutBacktest(storedPrices, {
-          window: effectiveWindow,
-          stopLossPercent,
-          feePercent,
-        });
+    // Use graph-based executor
+    const result = executeGraphStrategy(
+      storedPrices,
+      options.nodes,
+      options.edges,
+      {
+        feePercent,
+      }
+    );
     setStats(result);
-  }, [storedPrices, lookback, feePercent, options, stopLossPercent]);
+  }, [storedPrices, feePercent, options]);
+
+  // Check if indicator is connected to the graph (reachable from Input)
+  const isIndicatorConnected = useMemo(() => {
+    if (!options?.nodes || !options?.edges) return false;
+
+    const inputNode = options.nodes.find((n) => n.type === "inputNode");
+    const indicatorNode = options.nodes.find((n) => n.type === "indicatorNode");
+
+    if (!inputNode || !indicatorNode) return false;
+
+    // Build reachability from input
+    const reachable = new Set();
+    const queue = [inputNode.id];
+    const edgeMap = new Map();
+
+    options.edges.forEach((e) => {
+      if (!edgeMap.has(e.source)) edgeMap.set(e.source, []);
+      edgeMap.get(e.source).push(e.target);
+    });
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (reachable.has(current)) continue;
+      reachable.add(current);
+
+      const neighbors = edgeMap.get(current) || [];
+      neighbors.forEach((n) => queue.push(n));
+    }
+
+    return reachable.has(indicatorNode.id);
+  }, [options]);
 
   if (!stats || !storedPrices || storedPrices.length === 0)
     return <div>Backtest unavailable</div>;
@@ -110,13 +157,11 @@ export default function BacktestView({
   const equityH = 120;
   const gapV = 10;
 
-  // Compute indicator for visualization (matching backtest logic)
+  // Compute indicator for visualization only if connected
   const indicatorType = options?.graph?.indicatorType || "30d_high";
-  const indicatorSeries = calculateIndicator(
-    storedPrices,
-    indicatorType,
-    effectiveLookback
-  );
+  const indicatorSeries = isIndicatorConnected
+    ? calculateIndicator(storedPrices, indicatorType, effectiveLookback)
+    : null;
 
   // For backwards compatibility, also reference as highestSeries
   const highestSeries = indicatorSeries;
@@ -137,7 +182,9 @@ export default function BacktestView({
   const priceValues = storedPrices
     .map((p) => Number(p.close))
     .filter((v) => typeof v === "number" && !Number.isNaN(v));
-  const highOverlayVals = highestSeries.filter((v) => v != null);
+  const highOverlayVals = highestSeries
+    ? highestSeries.filter((v) => v != null)
+    : [];
 
   const priceMin = Math.min(
     ...priceValues,
@@ -156,16 +203,18 @@ export default function BacktestView({
   });
 
   const highPoints = highestSeries
-    .map((v, i) =>
-      v == null
-        ? null
-        : {
-            x: (i / (storedPrices.length - 1)) * w,
-            y: priceH - ((v - priceMin) / priceSpan) * priceH,
-          }
-    )
-    .filter(Boolean)
-    .map((pt) => `${pt.x},${pt.y}`);
+    ? highestSeries
+        .map((v, i) =>
+          v == null
+            ? null
+            : {
+                x: (i / (storedPrices.length - 1)) * w,
+                y: priceH - ((v - priceMin) / priceSpan) * priceH,
+              }
+        )
+        .filter(Boolean)
+        .map((pt) => `${pt.x},${pt.y}`)
+    : [];
 
   // --- START OF CHANGES ---
   // 4. Stop-loss line visualization now correctly uses the stopLossPercent from props.
@@ -220,6 +269,29 @@ export default function BacktestView({
         height={priceH}
         style={{ background: "#0b1220", display: "block", marginBottom: gapV }}
       >
+        {/* Y-axis label (Price) */}
+        <text x={10} y={15} fill="#94a3b8" fontSize={11} fontWeight="600">
+          Price (€)
+        </text>
+        {/* Y-axis values */}
+        <text x={5} y={25} fill="#64748b" fontSize={9}>
+          {priceMax.toFixed(0)}
+        </text>
+        <text x={5} y={priceH - 5} fill="#64748b" fontSize={9}>
+          {priceMin.toFixed(0)}
+        </text>
+
+        {/* X-axis label (Time) */}
+        <text
+          x={w - 35}
+          y={priceH - 5}
+          fill="#94a3b8"
+          fontSize={11}
+          fontWeight="600"
+        >
+          Time
+        </text>
+
         <polyline
           fill="none"
           stroke="#60a5fa"
@@ -285,6 +357,29 @@ export default function BacktestView({
         height={equityH}
         style={{ background: "#0f1720", display: "block", marginBottom: 8 }}
       >
+        {/* Y-axis label (Equity) */}
+        <text x={10} y={15} fill="#94a3b8" fontSize={11} fontWeight="600">
+          Equity (€)
+        </text>
+        {/* Y-axis values */}
+        <text x={5} y={25} fill="#64748b" fontSize={9}>
+          {eqMax.toFixed(0)}
+        </text>
+        <text x={5} y={equityH - 5} fill="#64748b" fontSize={9}>
+          {eqMin.toFixed(0)}
+        </text>
+
+        {/* X-axis label (Time) */}
+        <text
+          x={w - 35}
+          y={equityH - 5}
+          fill="#94a3b8"
+          fontSize={11}
+          fontWeight="600"
+        >
+          Time
+        </text>
+
         <polyline
           fill="none"
           stroke="#10b981"
@@ -445,9 +540,10 @@ BacktestView.propTypes = {
   options: PropTypes.shape({
     asset: PropTypes.string,
     lookback: PropTypes.number,
-    stopLossPercent: PropTypes.number,
     feePercent: PropTypes.number,
     graph: PropTypes.object,
+    nodes: PropTypes.array,
+    edges: PropTypes.array,
   }),
   externalControl: PropTypes.bool,
   useSynthetic: PropTypes.bool,

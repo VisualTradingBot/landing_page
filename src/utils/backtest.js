@@ -152,7 +152,7 @@ export function mapCoinGeckoPricesToOHLC(prices) {
 }
 
 // Simple geometric random walk generator for fallback/demo data
-export function generateSyntheticPrices(days = 365 * 2, startPrice = 20000) {
+export function generateSyntheticPrices(days = 365, startPrice = 20000) {
   const out = [];
   let price = startPrice;
   for (let i = 0; i < days; i++) {
