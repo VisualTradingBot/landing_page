@@ -386,10 +386,12 @@ export default function BacktestView({
         </div>
       </div>
 
-      {/* Price Chart */}
-      <div className="backtest-chart-container">
-        <div className="chart-title">Price & Indicators</div>
-        <ResponsiveContainer width="100%" height={300}>
+      {/* Charts Row Container */}
+      <div className="backtest-charts-row">
+        {/* Price Chart */}
+        <div className="backtest-chart-container">
+          <div className="chart-title">Price & Indicators</div>
+          <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={priceChartData}
             margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
@@ -505,13 +507,13 @@ export default function BacktestView({
               />
             ))}
           </LineChart>
-        </ResponsiveContainer>
-      </div>
+          </ResponsiveContainer>
+        </div>
 
-      {/* Equity Chart */}
-      <div className="backtest-chart-container">
-        <div className="chart-title">Equity Curve</div>
-        <ResponsiveContainer width="100%" height={200}>
+        {/* Equity Chart */}
+        <div className="backtest-chart-container">
+          <div className="chart-title">Equity Curve</div>
+          <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={equityChartData}
             margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
@@ -575,7 +577,8 @@ export default function BacktestView({
               isAnimationActive={false}
             />
           </LineChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Legend */}

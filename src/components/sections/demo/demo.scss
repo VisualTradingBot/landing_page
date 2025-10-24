@@ -2,9 +2,28 @@
   padding: 0px 18px 64px 18px;
   background: transparent;
   color: var(--fg);
+  position: relative;
+  
   .container {
     max-width: 1100px;
     margin: 0 auto;
+  }
+
+  // Demo flow visualization
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      var(--accent) 20%, 
+      var(--accent) 80%, 
+      transparent 100%
+    );
+    opacity: 0.3;
   }
 }
 
@@ -12,13 +31,208 @@
   width: 100%;
   height: 3px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  margin-top: 60px;
+  margin: 40px 0;
   transform-origin: left;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .parameter-table {
-  background-color: rgb(238, 238, 238);
-  padding: 10px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.9) 0%, 
+    rgba(248, 250, 252, 0.8) 100%
+  );
+  padding: 16px;
   border-radius: 12px;
   border: 1px var(--accent) dashed;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  color: #1e293b;
+
+  &:hover {
+    border-color: var(--accent);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(248, 250, 252, 0.9) 100%
+    );
+  }
+}
+
+// ReactFlow container styling
+.react-flow {
+  background: transparent;
+  
+  .react-flow__node {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+  }
+  
+  .react-flow__edge {
+    transition: all 0.3s ease;
+    stroke-width: 2;
+    
+    &:hover {
+      stroke-width: 4;
+      filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+    }
+  }
+
+  // Custom edge styling for all connections
+  .react-flow__edge-path {
+    stroke: var(--accent);
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: all 0.3s ease;
+    stroke-dasharray: 5, 5;
+    animation: dataFlow 2s linear infinite;
+  }
+
+  // All connections use the same purple accent styling
+  .react-flow__edge {
+    .react-flow__edge-path {
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-dasharray: 5, 5;
+      animation: dataFlow 2s linear infinite;
+    }
+  }
+
+  // Edge labels styling
+  .react-flow__edge-text {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--accent);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8));
+  }
+
+  // Animated data flow effect
+  @keyframes dataFlow {
+    0% {
+      stroke-dashoffset: 0;
+    }
+    100% {
+      stroke-dashoffset: -20;
+    }
+  }
+
+  // Edge hover effects
+  .react-flow__edge:hover {
+    .react-flow__edge-path {
+      stroke-width: 4;
+      filter: drop-shadow(0 0 8px var(--accent));
+    }
+  }
+
+  // Connection line styling (when creating new connections)
+  .react-flow__connection-line {
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-dasharray: 5, 5;
+    animation: dataFlow 1s linear infinite;
+  }
+
+  // Edge selection styling
+  .react-flow__edge.selected {
+    .react-flow__edge-path {
+      stroke-width: 4;
+      filter: drop-shadow(0 0 12px var(--accent));
+    }
+  }
+  
+  // White theme specific adjustments
+  .react-flow__controls {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .react-flow__minimap {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Backtest integration styling
+.backtest {
+  margin-top: 40px;
+  padding: 20px 0;
+  
+  .backtest-panel {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(248, 250, 252, 0.9) 100%
+    );
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .demo {
+    padding: 0px 12px 48px 12px;
+  }
+  
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.9);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .demo {
+    padding: 0px 8px 32px 8px;
+    
+    &::before {
+      height: 1px;
+      opacity: 0.2;
+    }
+  }
+  
+  .divider {
+    margin: 24px 0;
+    height: 2px;
+  }
+  
+  .parameter-table {
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.8);
+    }
+  }
+  
+  .backtest {
+    margin-top: 24px;
+    padding: 12px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .demo {
+    padding: 0px 4px 24px 4px;
+  }
+  
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.7);
+    }
+  }
 }

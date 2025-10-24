@@ -51,20 +51,23 @@ const initialParameters = [
 const getParam = (label) => initialParameters.find((p) => p.label === label);
 
 // 2. Pre-configure nodes with data linked to the initial parameters.
+// Organized in logical flow: Input → Indicator → Decision Logic → Execution
 const initialNodes = [
+  // Data Input Layer
   {
     id: "inputNode",
     type: "inputNode",
-    position: { x: 50, y: 200 },
+    position: { x: -200, y: 0 },
     data: {
       label: "Input",
       parameters: initialParameters,
     },
   },
+  // Analysis Layer
   {
     id: "indicatorNode",
     type: "indicatorNode",
-    position: { x: 250, y: 200 },
+    position: { x: 50, y: 200 },
     data: {
       label: "Indicator",
       parameters: initialParameters,
@@ -88,10 +91,11 @@ const initialNodes = [
       ],
     },
   },
+  // Decision Logic Layer - Entry Decision
   {
     id: "ifNode-1",
     type: "ifNode",
-    position: { x: 500, y: 100 },
+    position: { x: 300, y: 20 },
     data: {
       label: "If Entry",
       parameters: initialParameters,
@@ -117,16 +121,18 @@ const initialNodes = [
       ],
     },
   },
+  // Execution Layer - Entry Action
   {
     id: "executeNode-1",
     type: "executeNode",
-    position: { x: 500, y: 250 },
+    position: { x: 580, y: 180 },
     data: { label: "Execute Buy", action: "buy" },
   },
+  // Decision Logic Layer - Exit Decisions
   {
     id: "ifNode-2",
     type: "ifNode",
-    position: { x: 750, y: 100 },
+    position: { x: 780, y: 150 },
     data: {
       label: "If Exit (Stop-Loss)",
       parameters: initialParameters,
@@ -154,13 +160,13 @@ const initialNodes = [
   {
     id: "executeNode-2",
     type: "executeNode",
-    position: { x: 750, y: 250 },
+    position: { x: 1000, y: 320 },
     data: { label: "Execute Sell (Stop-Loss)", action: "sell" },
   },
   {
     id: "ifNode-3",
     type: "ifNode",
-    position: { x: 1000, y: 100 },
+    position: { x: 1200, y: 280 },
     data: {
       label: "If Exit (Profit)",
       parameters: initialParameters,
@@ -188,7 +194,7 @@ const initialNodes = [
   {
     id: "executeNode-3",
     type: "executeNode",
-    position: { x: 1000, y: 250 },
+    position: { x: 1430, y: 450 },
     data: { label: "Execute Sell (Profit)", action: "sell" },
   },
 ];
@@ -202,13 +208,22 @@ const nodeTypes = {
 };
 
 const initialEdges = [
+  // Data flow connection (Input → Indicator)
   {
     id: "n1-n2",
     source: "inputNode",
     sourceHandle: "inputNode-right",
     target: "indicatorNode",
     targetHandle: "indicatorNode-left",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
   },
+  // Entry decision - True path
   {
     id: "n3.1-n4.1",
     source: "ifNode-1",
@@ -216,7 +231,19 @@ const initialEdges = [
     target: "executeNode-1",
     targetHandle: "executeNode-1-left",
     label: "True",
+    type: "execution",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+    labelStyle: {
+      fill: "var(--accent)",
+      fontWeight: 600,
+    },
   },
+  // Entry decision - False path
   {
     id: "n3.1-n3.2",
     source: "ifNode-1",
@@ -224,7 +251,19 @@ const initialEdges = [
     target: "ifNode-2",
     targetHandle: "ifNode-2-top",
     label: "False",
+    type: "logic",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+    labelStyle: {
+      fill: "var(--accent)",
+      fontWeight: 600,
+    },
   },
+  // Stop-loss decision - True path
   {
     id: "n3.2-n4.2",
     source: "ifNode-2",
@@ -232,7 +271,19 @@ const initialEdges = [
     target: "executeNode-2",
     targetHandle: "executeNode-2-left",
     label: "True",
+    type: "execution",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+    labelStyle: {
+      fill: "var(--accent)",
+      fontWeight: 600,
+    },
   },
+  // Stop-loss decision - False path
   {
     id: "n3.2-n3.3",
     source: "ifNode-2",
@@ -240,7 +291,19 @@ const initialEdges = [
     target: "ifNode-3",
     targetHandle: "ifNode-3-top",
     label: "False",
+    type: "logic",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+    labelStyle: {
+      fill: "var(--accent)",
+      fontWeight: 600,
+    },
   },
+  // Profit decision - True path
   {
     id: "n3.3-n4.3",
     source: "ifNode-3",
@@ -248,6 +311,17 @@ const initialEdges = [
     target: "executeNode-3",
     targetHandle: "executeNode-3-left",
     label: "True",
+    type: "execution",
+    animated: true,
+    style: {
+      stroke: "var(--accent)",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+    labelStyle: {
+      fill: "var(--accent)",
+      fontWeight: 600,
+    },
   },
 ];
 
@@ -266,7 +340,7 @@ export default function Demo() {
   const containerRef = useRef(null);
   const [translateExtent, setTranslateExtent] = useState([
     [0, 0],
-    [1200, 800],
+    [1400, 600],
   ]);
 
   useEffect(() => {
@@ -274,11 +348,11 @@ export default function Demo() {
     if (!el) return;
 
     function updateExtent() {
-      const width = el.clientWidth || 1200;
-      const height = el.clientHeight || 800;
+      const width = el.clientWidth || 1400;
+      const height = el.clientHeight || 600;
       setTranslateExtent([
         [0, 0],
-        [Math.max(1200, width), Math.max(800, height)],
+        [Math.max(1400, width), Math.max(600, height)],
       ]);
     }
 
@@ -382,9 +456,9 @@ export default function Demo() {
 
   return (
     <section id="demo" className="demo">
-      <div ref={containerRef} style={{ width: "100%", height: "50vh" }}>
+      <div ref={containerRef} style={{ width: "100%", height: "60vh", minHeight: "500px" }}>
         <ReactFlow
-          defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           nodes={nodes}
           nodeTypes={memoizedNodeTypes}
           edges={edges}
@@ -393,13 +467,14 @@ export default function Demo() {
           onConnect={onConnect}
           preventScrolling={false}
           autoPanOnNodeDrag={false}
-          maxZoom={0.9}
-          minZoom={0.9}
+          maxZoom={1.0}
+          minZoom={0.7}
           panOnDrag={false}
           panOnScroll={false}
           zoomOnScroll={false}
           zoomOnPinch={false}
           translateExtent={translateExtent}
+          fitView={false}
         >
           <Panel position="bottom-left">
             <ParameterBlock
