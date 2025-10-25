@@ -1,15 +1,2 @@
-.box {
-  height: 100px;
-  background: #f0f0f0;
-}
-
-ul {
-  list-style: none;
-  li {
-    color: #f0f0f0;
-    background-color: rgb(156, 156, 156);
-    width: fit-content;
-    padding: 5px 10px;
-    border-radius: 5px;
-  }
-}
+// SetParameter node specific styles - inherits from base nodeDefault.scss
+// Add any specific overrides here if needed

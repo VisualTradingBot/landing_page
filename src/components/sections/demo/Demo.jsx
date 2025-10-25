@@ -339,8 +339,8 @@ export default function Demo() {
 
   const containerRef = useRef(null);
   const [translateExtent, setTranslateExtent] = useState([
-    [0, 0],
-    [1400, 600],
+    [-400, -200],
+    [1600, 800],
   ]);
 
   useEffect(() => {
@@ -351,8 +351,8 @@ export default function Demo() {
       const width = el.clientWidth || 1400;
       const height = el.clientHeight || 600;
       setTranslateExtent([
-        [0, 0],
-        [Math.max(1400, width), Math.max(600, height)],
+        [-400, -200],
+        [Math.max(1600, width + 200), Math.max(800, height + 200)],
       ]);
     }
 
@@ -456,7 +456,7 @@ export default function Demo() {
 
   return (
     <section id="demo" className="demo">
-      <div ref={containerRef} style={{ width: "100%", height: "60vh", minHeight: "500px" }}>
+      <div ref={containerRef} style={{ width: "100%", height: "75vh", minHeight: "650px", position: "relative", background: "transparent" }}>
         <ReactFlow
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           nodes={nodes}
@@ -466,17 +466,17 @@ export default function Demo() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           preventScrolling={false}
-          autoPanOnNodeDrag={false}
-          maxZoom={1.0}
-          minZoom={0.7}
-          panOnDrag={false}
+          autoPanOnNodeDrag={true}
+          maxZoom={1.2}
+          minZoom={0.6}
+          panOnDrag={true}
           panOnScroll={false}
-          zoomOnScroll={false}
-          zoomOnPinch={false}
+          zoomOnScroll={true}
+          zoomOnPinch={true}
           translateExtent={translateExtent}
           fitView={false}
         >
-          <Panel position="bottom-left">
+          <Panel position="top-center">
             <ParameterBlock
               handleRemoveParameter={handleRemoveParameter}
               handleAddParameter={handleAddParameter}
