@@ -5,34 +5,19 @@
     rgba(255, 255, 255, 0.95) 100%
   );
   padding: 40px;
+  border-radius: 12px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.08),
     0 4px 16px rgba(0, 0, 0, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   margin: 32px 0;
-  border: 2px solid var(--accent);
+  border: 2px solid #000000;
   backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
 
-  // Enhanced border styling with purplish background
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(135deg, 
-      var(--accent) 0%, 
-      rgba(147, 51, 234, 0.1) 50%, 
-      var(--accent) 100%
-    );
-    z-index: -1;
-    opacity: 0.3;
-  }
 
-  // Inner border accent with purplish moving animation
+  // Inner border accent with black/white theme
   &::after {
     content: '';
     position: absolute;
@@ -43,9 +28,9 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
     background: linear-gradient(45deg, 
       transparent 0%, 
-      rgba(147, 51, 234, 0.1) 25%, 
+      rgba(0, 0, 0, 0.1) 25%, 
       transparent 50%, 
-      rgba(147, 51, 234, 0.1) 75%, 
+      rgba(0, 0, 0, 0.1) 75%, 
       transparent 100%
     );
     opacity: 0.3;
@@ -69,10 +54,40 @@
       letter-spacing: -0.025em;
     }
 
-    .backtest-params {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.6;
+    .backtest-params-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+
+      .param-block {
+        background: #ffffff;
+        border: 1px solid #000000;
+        border-radius: 4px;
+        padding: 8px 12px;
+        min-width: 70px;
+        text-align: center;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #f8f9fa;
+        }
+
+        .param-label {
+          font-size: 11px;
+          color: #64748b;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
+        }
+
+        .param-value {
+          font-size: 14px;
+          color: #000000;
+          font-weight: 600;
+        }
+      }
     }
   }
 
@@ -91,44 +106,25 @@
 
   .backtest-chart-container {
     background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.9) 0%, 
-      rgba(248, 250, 252, 0.8) 100%
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(248, 250, 252, 0.9) 100%
     );
     padding: 28px;
-    border: 2px solid var(--accent);
+    border: 2px solid #000000;
+    border-radius: 8px;
     transition: all 0.4s ease;
     position: relative;
     overflow: hidden;
-
-    // Subtle inner glow with purple accent
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, 
-        var(--accent) 0%, 
-        transparent 50%, 
-        var(--accent) 100%
-      );
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 0, 0, 0.08);
 
     &:hover {
-      border-color: var(--accent);
+      border-color: #000000;
       box-shadow: 
-        0 8px 24px rgba(0, 0, 0, 0.08),
-        0 4px 12px rgba(0, 0, 0, 0.05),
-        0 0 0 1px var(--accent);
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 8px 16px rgba(0, 0, 0, 0.1);
       transform: translateY(-2px);
-
-      &::before {
-        opacity: 0.1;
-      }
     }
 
     .chart-title {
@@ -137,6 +133,45 @@
       color: #1e293b;
       margin-bottom: 16px;
       letter-spacing: -0.01em;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 8px 0;
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #475569;
+        font-weight: 500;
+
+        .legend-line {
+          width: 20px;
+          height: 2px;
+          display: inline-block;
+        }
+
+        .legend-marker {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+
+        .legend-triangle-up,
+        .legend-triangle-down {
+          font-size: 12px;
+          font-weight: bold;
+          display: inline-block;
+          width: 12px;
+          text-align: center;
+        }
+      }
     }
   }
 
@@ -174,7 +209,7 @@
       rgba(255, 255, 255, 0.9) 0%, 
       rgba(248, 250, 252, 0.8) 100%
     );
-    border: 2px solid var(--accent);
+    border: 2px solid #000000;
 
     .legend-item {
       display: inline-flex;
@@ -185,7 +220,7 @@
       transition: color 0.2s ease;
 
       &:hover {
-        color: var(--accent);
+        color: #000000;
       }
 
       .legend-color {
@@ -224,17 +259,21 @@
     .backtest-stat-card {
       background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(248, 250, 252, 0.8) 100%
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(248, 250, 252, 0.9) 100%
       );
       padding: 24px;
-      border: 2px solid var(--accent);
+      border: 2px solid #000000;
+      border-radius: 6px;
       transition: all 0.4s ease;
       position: relative;
       overflow: hidden;
       backdrop-filter: blur(10px);
+      box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.1),
+        0 3px 8px rgba(0, 0, 0, 0.06);
 
-      // Animated top border with purple accent
+      // Animated top border with black/white theme
       &::before {
         content: "";
         position: absolute;
@@ -243,42 +282,19 @@
         right: 0;
         height: 4px;
         background: linear-gradient(90deg, 
-          var(--accent) 0%, 
+          #000000 0%, 
           rgba(255, 255, 255, 0.3) 50%, 
-          var(--accent) 100%
+          #000000 100%
         );
         opacity: 0.9;
       }
 
-      // Subtle inner glow with purple accent
-      &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, 
-          var(--accent) 0%, 
-          transparent 50%, 
-          var(--accent) 100%
-        );
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-      }
-
       &:hover {
-        transform: translateY(-4px);
-        border-color: var(--accent);
+        transform: translateY(-3px);
+        border-color: #000000;
         box-shadow: 
-          0 12px 28px rgba(0, 0, 0, 0.12),
-          0 6px 16px rgba(0, 0, 0, 0.08),
-          0 0 0 1px var(--accent);
-
-        &::after {
-          opacity: 0.05;
-        }
+          0 12px 24px rgba(0, 0, 0, 0.15),
+          0 6px 12px rgba(0, 0, 0, 0.1);
       }
 
       .stat-label {
@@ -298,30 +314,30 @@
       }
 
       &.positive {
-        color: #10b981;
+        color: #000000;
         &::before {
-          background: #10b981;
+          background: #000000;
         }
       }
 
       &.negative {
-        color: #ef4444;
+        color: #000000;
         &::before {
-          background: #ef4444;
+          background: #000000;
         }
       }
 
       &.info {
-        color: #60a5fa;
+        color: #000000;
         &::before {
-          background: #60a5fa;
+          background: #000000;
         }
       }
 
       &.warning {
-        color: #f59e0b;
+        color: #000000;
         &::before {
-          background: #f59e0b;
+          background: #000000;
         }
       }
     }
@@ -333,7 +349,7 @@
       rgba(248, 250, 252, 0.8) 100%
     );
     padding: 16px 20px;
-    border: 2px solid var(--accent);
+    border: 2px solid #000000;
 
     .strategy-description {
       font-size: 13px;
@@ -341,7 +357,7 @@
       line-height: 1.6;
 
       strong {
-        color: var(--accent);
+        color: #000000;
         font-weight: 600;
       }
     }

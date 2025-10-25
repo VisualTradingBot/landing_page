@@ -72,7 +72,7 @@
 
 // ReactFlow container styling
 .react-flow {
-  background: transparent;
+  background: transparent !important;
   width: 100%;
   height: 100%;
   
@@ -127,10 +127,11 @@
     z-index: 0;
   }
   
-  // Ensure ReactFlow is visible
+  // Ensure ReactFlow is visible and transparent
   .react-flow__viewport {
     width: 100%;
     height: 100%;
+    background: transparent !important;
     
     // Make text unselectable
     -webkit-user-select: none !important;
@@ -142,6 +143,7 @@
   .react-flow__renderer {
     width: 100%;
     height: 100%;
+    background: transparent !important;
     
     // Make text unselectable
     -webkit-user-select: none !important;

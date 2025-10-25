@@ -380,9 +380,27 @@ export default function BacktestView({
     <div className="backtest-panel">
       <div className="backtest-header">
         <h3>Demo Strategy — {assetLabel} (1y)</h3>
-        <div className="backtest-params">
-          Parameters: lookback={lookback} (using window={effectiveLookback}),
-          stop-loss={stopLossPercent}%, fee={feePercent}%, asset={assetLabel}
+        <div className="backtest-params-grid">
+          <div className="param-block">
+            <div className="param-label">Lookback</div>
+            <div className="param-value">{lookback}</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Window</div>
+            <div className="param-value">{effectiveLookback}</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Stop Loss</div>
+            <div className="param-value">{stopLossPercent}%</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Fee</div>
+            <div className="param-value">{feePercent}%</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Asset</div>
+            <div className="param-value">{assetLabel}</div>
+          </div>
         </div>
       </div>
 
@@ -391,6 +409,26 @@ export default function BacktestView({
         {/* Price Chart */}
         <div className="backtest-chart-container">
           <div className="chart-title">Price & Indicators</div>
+          <div className="chart-legend">
+            <div className="legend-item">
+              <span className="legend-line" style={{ background: "#60a5fa" }}></span>
+              <span>Price</span>
+            </div>
+            {indicatorSeries && (
+              <div className="legend-item">
+                <span className="legend-line" style={{ background: "#f59e0b" }}></span>
+                <span>{indicatorLabel}</span>
+              </div>
+            )}
+            <div className="legend-item">
+              <span className="legend-triangle-up" style={{ color: "#10b981" }}>▲</span>
+              <span>Entry</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-triangle-down" style={{ color: "#ef4444" }}>▼</span>
+              <span>Exit</span>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={priceChartData}
@@ -479,31 +517,51 @@ export default function BacktestView({
               />
             )}
 
-            {/* Trade entry markers */}
+            {/* Trade entry markers - Green triangles pointing up */}
             {tradeMarkers.entries.map((entry, idx) => (
               <ReferenceDot
                 key={`entry-${idx}`}
                 x={entry.time}
                 y={entry.price}
-                r={5}
+                r={0}
                 fill="#10b981"
-                stroke="#000"
-                strokeWidth={1.5}
+                stroke="#000000"
+                strokeWidth={0}
                 isFront={true}
+                shape={(props) => (
+                  <g>
+                    <polygon
+                      points={`${props.cx},${props.cy - 5} ${props.cx - 5},${props.cy + 5} ${props.cx + 5},${props.cy + 5}`}
+                      fill="#10b981"
+                      stroke="#000000"
+                      strokeWidth={1}
+                    />
+                  </g>
+                )}
               />
             ))}
 
-            {/* Trade exit markers */}
+            {/* Trade exit markers - Red triangles pointing down */}
             {tradeMarkers.exits.map((exit, idx) => (
               <ReferenceDot
                 key={`exit-${idx}`}
                 x={exit.time}
                 y={exit.price}
-                r={5}
+                r={0}
                 fill="#ef4444"
-                stroke="#000"
-                strokeWidth={1.5}
+                stroke="#000000"
+                strokeWidth={0}
                 isFront={true}
+                shape={(props) => (
+                  <g>
+                    <polygon
+                      points={`${props.cx},${props.cy + 5} ${props.cx - 5},${props.cy - 5} ${props.cx + 5},${props.cy - 5}`}
+                      fill="#ef4444"
+                      stroke="#000000"
+                      strokeWidth={1}
+                    />
+                  </g>
+                )}
               />
             ))}
           </LineChart>
@@ -513,6 +571,12 @@ export default function BacktestView({
         {/* Equity Chart */}
         <div className="backtest-chart-container">
           <div className="chart-title">Equity Curve</div>
+          <div className="chart-legend">
+            <div className="legend-item">
+              <span className="legend-line" style={{ background: "#10b981" }}></span>
+              <span>Equity</span>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={equityChartData}
@@ -581,46 +645,6 @@ export default function BacktestView({
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="backtest-legend">
-        <div className="legend-item">
-          <span
-            className="legend-color"
-            style={{ background: "#10b981" }}
-          ></span>
-          <span>Equity curve</span>
-        </div>
-        <div className="legend-item">
-          <span
-            className="legend-color"
-            style={{ background: "#60a5fa" }}
-          ></span>
-          <span>Price</span>
-        </div>
-        {indicatorSeries && (
-          <div className="legend-item">
-            <span
-              className="legend-color"
-              style={{ background: "#f59e0b" }}
-            ></span>
-            <span>{`${indicatorLabel} (${effectiveLookback}d)`}</span>
-          </div>
-        )}
-        <div className="legend-item">
-          <span
-            className="legend-marker"
-            style={{ background: "#10b981" }}
-          ></span>
-          <span>Entry</span>
-        </div>
-        <div className="legend-item">
-          <span
-            className="legend-marker"
-            style={{ background: "#ef4444" }}
-          ></span>
-          <span>Exit</span>
-        </div>
-      </div>
 
       {/* Statistics */}
       <div className="backtest-stats">
@@ -642,16 +666,6 @@ export default function BacktestView({
         </div>
       </div>
 
-      {options?.graph && (
-        <div className="backtest-strategy-info">
-          <div className="strategy-description">
-            <strong>Strategy:</strong> If close &gt; {lookback}-day high then{" "}
-            {options.graph.actions?.firstIfTrue || "buy"}, else if close &lt;
-            entry * (1 - {stopLossPercent}%) then{" "}
-            {options.graph.actions?.secondIfTrue || "sell"}.
-          </div>
-        </div>
-      )}
     </div>
   );
 }
