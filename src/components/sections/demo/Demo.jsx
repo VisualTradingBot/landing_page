@@ -330,10 +330,52 @@ export default function Demo() {
   const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(''); // 'parameter' or 'custom'
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [parameterToDelete, setParameterToDelete] = useState(null);
+
   const onConnect = useCallback(
     (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
     [setEdges]
   );
+
+  // Modal handlers
+  const handleShowModal = useCallback((type) => {
+    setModalType(type);
+    setShowModal(true);
+  }, []);
+
+  const handleShowDeleteModal = useCallback((index) => {
+    setParameterToDelete(index);
+    setShowDeleteModal(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
+    setModalType('');
+  }, []);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setShowDeleteModal(false);
+    setParameterToDelete(null);
+  }, []);
+
+  const handleRemoveParameter = useCallback((index) => {
+    setParameters((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleAddParameter = useCallback((newParam) => {
+    setParameters((prev) => [...prev, newParam]);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (parameterToDelete !== null) {
+      handleRemoveParameter(parameterToDelete);
+    }
+    handleCloseDeleteModal();
+  }, [parameterToDelete, handleRemoveParameter, handleCloseDeleteModal]);
 
   const memoizedNodeTypes = useMemo(() => nodeTypes, []);
 
@@ -381,23 +423,6 @@ export default function Demo() {
     });
   }, [nodes, edges]);
 
-  const handleAddParameter = useCallback(() => {
-    const newParameter = {
-      label: "parameter" + (parameters.length + 1),
-      value: "value" + (parameters.length + 1),
-      family: "variable",
-      id: `${+new Date()}`,
-    };
-
-    setParameters((prev) => [...prev, newParameter]);
-  }, [parameters, setParameters]);
-
-  const handleRemoveParameter = useCallback(
-    (index) => {
-      setParameters((prev) => prev.filter((_, i) => i !== index));
-    },
-    [setParameters]
-  );
 
   // Update nodes when parameters change
   // This ensures nodes receive the updated parameters array, and individual node components
@@ -482,6 +507,8 @@ export default function Demo() {
               handleAddParameter={handleAddParameter}
               parameters={parameters}
               setParameters={setParameters}
+              onShowModal={handleShowModal}
+              onShowDeleteModal={handleShowDeleteModal}
             />
           </Panel>
         </ReactFlow>
@@ -496,6 +523,93 @@ export default function Demo() {
           useSynthetic={backtestOptions.useSynthetic}
         />
       </div>
+
+      {/* Modals - rendered at ReactFlow level */}
+      {showModal && (
+        <div className="fullscreen-modal-overlay" onClick={handleCloseModal}>
+          <div className="fullscreen-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="fullscreen-modal-header">
+              <h2>
+                {modalType === 'parameter' ? 'Add Parameter' : 'Add Custom Parameter'}
+              </h2>
+              <button className="fullscreen-modal-close" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
+            <div className="fullscreen-modal-body">
+              <div className="coming-soon-content">
+                <h3>Coming Soon</h3>
+                <p>
+                  {modalType === 'parameter' 
+                    ? 'This feature will allow you to add parameters from the library to your strategy.'
+                    : 'This feature will allow you to create custom parameters for your strategy.'
+                  }
+                </p>
+                <div className="feature-preview">
+                  <h4>Planned Features:</h4>
+                  <ul>
+                    <li>Parameter library with pre-built options</li>
+                    <li>Custom parameter creation wizard</li>
+                    <li>Parameter validation and testing</li>
+                    <li>Import/export parameter sets</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="fullscreen-modal-footer">
+              <button 
+                className="fullscreen-modal-btn fullscreen-modal-btn-primary"
+                onClick={handleCloseModal}
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fullscreen-modal-overlay" onClick={handleCloseDeleteModal}>
+          <div className="fullscreen-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="fullscreen-modal-header">
+              <h2>Delete Parameter</h2>
+              <button className="fullscreen-modal-close" onClick={handleCloseDeleteModal}>
+                ×
+              </button>
+            </div>
+            <div className="fullscreen-modal-body">
+              <div className="delete-confirmation-content">
+                <h3>Delete Parameter</h3>
+                <p>
+                  This action cannot be undone. The parameter will be permanently removed from your strategy.
+                </p>
+                {parameterToDelete !== null && (
+                  <div className="parameter-preview">
+                    <strong>Parameter:</strong> {parameters[parameterToDelete]?.label}
+                    <br />
+                    <strong>Value:</strong> {parameters[parameterToDelete]?.value}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="fullscreen-modal-footer">
+              <button 
+                className="fullscreen-modal-btn fullscreen-modal-btn-secondary"
+                onClick={handleCloseDeleteModal}
+              >
+                Cancel
+              </button>
+              <button 
+                className="fullscreen-modal-btn fullscreen-modal-btn-danger"
+                onClick={handleConfirmDelete}
+              >
+                Delete Parameter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

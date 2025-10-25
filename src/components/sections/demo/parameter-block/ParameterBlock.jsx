@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import "./ParameterBlock.scss";
 import PropTypes from "prop-types";
 
@@ -7,6 +7,8 @@ export default function ParameterBlock({
   handleAddParameter,
   parameters,
   setParameters,
+  onShowModal,
+  onShowDeleteModal,
 }) {
   // State to track which parameter and field is being edited
   const [editingIndex, setEditingIndex] = useState(null);
@@ -14,8 +16,8 @@ export default function ParameterBlock({
   const [tempValue, setTempValue] = useState("");
   const [dropdownState, setDropdownState] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'parameter' or 'custom'
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+  // Modal state will be managed by parent Demo component
 
   const startEditing = useCallback((index, field, currentValue) => {
     setEditingIndex(index);
@@ -59,21 +61,83 @@ export default function ParameterBlock({
     setDropdownState((prev) => !prev);
   }, []);
 
-  // Simple search filtering
-  const filteredParameters = useMemo(() => {
-    if (searchTerm === '') {
-      return parameters;
+  const handleDeleteClick = useCallback((index) => {
+    onShowDeleteModal(index);
+  }, [onShowDeleteModal]);
+
+  const toggleGroup = useCallback((groupType) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [groupType]: !prev[groupType]
+    }));
+  }, []);
+
+  // Parameter type detection
+  const getParameterType = useCallback((param) => {
+    const label = param.label.toLowerCase();
+    
+    // Bot-received parameters
+    if (label.includes('close') || label.includes('close price')) {
+      return { type: 'bot-received', color: 'green', icon: '●' };
+    }
+    if (label.includes('indicator') || label.includes('output')) {
+      return { type: 'bot-received', color: 'dark-blue', icon: '●' };
+    }
+    if (label.includes('entry') || label.includes('entry price')) {
+      return { type: 'bot-received', color: 'pink', icon: '●' };
     }
     
-    return parameters.filter(param => 
+    // Manually-set parameters
+    return { type: 'manual', color: 'default', icon: '○' };
+  }, []);
+
+  // Group parameters by type
+  const groupedParameters = useMemo(() => {
+    const groups = {
+      'bot-received': [],
+      'manual': []
+    };
+    
+    parameters.forEach(param => {
+      const paramType = getParameterType(param);
+      groups[paramType.type].push({ ...param, paramType });
+    });
+    
+    return groups;
+  }, [parameters, getParameterType]);
+
+  // Search filtering for grouped parameters
+  const filteredGroupedParameters = useMemo(() => {
+    if (searchTerm === '') {
+      return groupedParameters;
+    }
+    
+    const filtered = {
+      'bot-received': [],
+      'manual': []
+    };
+    
+    // Filter bot-received parameters
+    filtered['bot-received'] = groupedParameters['bot-received'].filter(param => 
       param.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
       param.value.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [parameters, searchTerm]);
+    
+    // Filter manual parameters
+    filtered['manual'] = groupedParameters['manual'].filter(param => 
+      param.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      param.value.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    return filtered;
+  }, [groupedParameters, searchTerm]);
+
+  // Check if any parameters match the search
+  const hasMatchingParameters = filteredGroupedParameters['bot-received'].length > 0 || filteredGroupedParameters['manual'].length > 0;
 
   return (
     <div
-      className={`parameters-dropdown ${dropdownState ? 'expanded' : 'collapsed'} ${filteredParameters.length === 0 ? 'empty' : ''}`}
+      className={`parameters-dropdown ${dropdownState ? 'expanded' : 'collapsed'} ${!hasMatchingParameters ? 'empty' : ''}`}
     >
       <h1 className="dropdown-title" onClick={onClickDropdownButton}>
         Parameter Dashboard
@@ -95,140 +159,214 @@ export default function ParameterBlock({
           </div>
           
           <div className="buttons">
-            <button
-              className="add-parameter-btn"
-              onClick={() => {
-                setModalType('parameter');
-                setShowModal(true);
-              }}
-            >
-              Add Parameter
-            </button>
-            <button
-              className="add-custom-parameter-btn"
-              onClick={() => {
-                setModalType('custom');
-                setShowModal(true);
-              }}
-            >
-              Add Custom Parameter
-            </button>
+                    <button
+                      className="add-parameter-btn"
+                      onClick={() => onShowModal('parameter')}
+                    >
+                      Add Parameter
+                    </button>
+                    <button
+                      className="add-custom-parameter-btn"
+                      onClick={() => onShowModal('custom')}
+                    >
+                      Add Custom Parameter
+                    </button>
           </div>
         </div>
 
-        {/* Simple Parameters List */}
+        {/* Grouped Parameters List */}
         <div className="parameters-list">
-          {filteredParameters.length === 0 ? (
+          {!hasMatchingParameters ? (
             <div className="empty-state">
-              <p>No parameters found</p>
-              <p>Use the buttons above to add parameters</p>
+              <p>{searchTerm ? 'No parameters match your search' : 'No parameters found'}</p>
+              <p>{searchTerm ? 'Try a different search term' : 'Use the buttons above to add parameters'}</p>
             </div>
           ) : (
-            <ul className="parameters-simple">
-              {filteredParameters.map((param, index) => {
-              const originalIndex = parameters.findIndex(p => p.id === param.id);
-              return (
-                <li key={param.id} className="parameter-item">
-                  <span className="parameter-label">
-                    {editingIndex === originalIndex && editingField === "label" ? (
-                      <input
-                        className="parameter-text-input"
-                        type="text"
-                        value={tempValue}
-                        onChange={(e) => setTempValue(e.target.value)}
-                        onBlur={saveEdit}
-                        onKeyDown={handleKeyPress}
-                        onFocus={() => setTempValue("")}
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        onClick={() => startEditing(originalIndex, "label", param.label)}
-                        draggable
-                        onDragStart={(event) => {
-                          const dragData = {
-                            label: param.label,
-                            value: param.value,
-                            family: "variable",
-                            id: param.id,
-                          };
-                          event.dataTransfer.setData(
-                            "application/reactflow",
-                            JSON.stringify(dragData)
-                          );
-                        }}
-                        style={{ cursor: "pointer" }}
-                        title="Click to edit"
-                      >
-                        {param.label}
-                      </span>
-                    )}
+            <div className="parameter-groups">
+              {/* Bot-Received Parameters */}
+              {filteredGroupedParameters['bot-received'].length > 0 && (
+                <div className="parameter-group">
+                  <div 
+                    className="group-header bot-received"
+                    onClick={() => toggleGroup('bot-received')}
+                  >
+                    <span className="group-title">Bot Data</span>
+                    <span className="group-count">({filteredGroupedParameters['bot-received'].length})</span>
+                    <span className="group-toggle">
+                      {collapsedGroups['bot-received'] ? '▼' : '▲'}
+                    </span>
+                  </div>
+                  {!collapsedGroups['bot-received'] && (
+                    <ul className="group-parameters">
+                    {filteredGroupedParameters['bot-received'].map((param, index) => {
+                      const originalIndex = parameters.findIndex(p => p.id === param.id);
+                      return (
+                        <li key={param.id} className={`parameter-item ${param.paramType.color}`}>
+                          <span className="parameter-label">
+                            <span className={`parameter-icon ${param.paramType.color}`}>
+                              {param.paramType.icon}
+                            </span>
+                            {editingIndex === originalIndex && editingField === "label" ? (
+                  <input
+                    className="parameter-text-input"
+                    type="text"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    onBlur={saveEdit}
+                    onKeyDown={handleKeyPress}
+                    onFocus={() => setTempValue("")}
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                                onClick={() => startEditing(originalIndex, "label", param.label)}
+                    draggable
+                    onDragStart={(event) => {
+                      const dragData = {
+                        label: param.label,
+                        value: param.value,
+                        family: "variable",
+                        id: param.id,
+                      };
+                      event.dataTransfer.setData(
+                        "application/reactflow",
+                        JSON.stringify(dragData)
+                      );
+                    }}
+                                style={{ cursor: "pointer" }}
+                                title="Click to edit"
+                              >
+                                {param.label}
+                              </span>
+                            )}
+                          </span>
+                          <span className="parameter-value">
+                            {editingIndex === originalIndex && editingField === "value" ? (
+                              <input
+                                className="parameter-number-input"
+                                type="text"
+                                placeholder="e.g. 30, close, entry * 0.95"
+                                value={tempValue}
+                                onChange={(e) => setTempValue(e.target.value)}
+                                onBlur={saveEdit}
+                                onKeyDown={handleKeyPress}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => startEditing(originalIndex, "value", param.value)}
+                                style={{ cursor: "pointer", marginRight: "8px" }}
+                                title="Click to edit"
+                              >
+                                {param.value}
+                              </span>
+                            )}
+                            <button onClick={() => handleDeleteClick(originalIndex)} className="remove-btn">
+                              ×
+                            </button>
+                          </span>
+                        </li>
+                      );
+                    })}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {/* Manual Parameters */}
+              {filteredGroupedParameters['manual'].length > 0 && (
+                <div className="parameter-group">
+                  <div 
+                    className="group-header manual"
+                    onClick={() => toggleGroup('manual')}
+                  >
+                    <span className="group-title">Manual Settings</span>
+                    <span className="group-count">({filteredGroupedParameters['manual'].length})</span>
+                    <span className="group-toggle">
+                      {collapsedGroups['manual'] ? '▼' : '▲'}
+                    </span>
+                  </div>
+                  {!collapsedGroups['manual'] && (
+                    <ul className="group-parameters">
+                    {filteredGroupedParameters['manual'].map((param, index) => {
+                      const originalIndex = parameters.findIndex(p => p.id === param.id);
+                      return (
+                        <li key={param.id} className={`parameter-item ${param.paramType.color}`}>
+                          <span className="parameter-label">
+                            <span className={`parameter-icon ${param.paramType.color}`}>
+                              {param.paramType.icon}
+                            </span>
+                            {editingIndex === originalIndex && editingField === "label" ? (
+                              <input
+                                className="parameter-text-input"
+                                type="text"
+                                value={tempValue}
+                                onChange={(e) => setTempValue(e.target.value)}
+                                onBlur={saveEdit}
+                                onKeyDown={handleKeyPress}
+                                onFocus={() => setTempValue("")}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => startEditing(originalIndex, "label", param.label)}
+                                draggable
+                                onDragStart={(event) => {
+                                  const dragData = {
+                                    label: param.label,
+                                    value: param.value,
+                                    family: "variable",
+                                    id: param.id,
+                                  };
+                                  event.dataTransfer.setData(
+                                    "application/reactflow",
+                                    JSON.stringify(dragData)
+                                  );
+                                }}
+                                style={{ cursor: "pointer" }}
+                    title="Click to edit"
+                  >
+                    {param.label}
                   </span>
-                  <span className="parameter-value">
-                    {editingIndex === originalIndex && editingField === "value" ? (
-                      <input
-                        className="parameter-number-input"
-                        type="text"
-                        placeholder="e.g. 30, close, entry * 0.95"
-                        value={tempValue}
-                        onChange={(e) => setTempValue(e.target.value)}
-                        onBlur={saveEdit}
-                        onKeyDown={handleKeyPress}
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        onClick={() => startEditing(originalIndex, "value", param.value)}
-                        style={{ cursor: "pointer", marginRight: "8px" }}
-                        title="Click to edit"
-                      >
-                        {param.value}
-                      </span>
-                    )}
-                    <button onClick={() => handleRemoveParameter(originalIndex)} className="remove-btn">
-                      ×
-                    </button>
+                )}
+              </span>
+                          <span className="parameter-value">
+                            {editingIndex === originalIndex && editingField === "value" ? (
+                  <input
+                    className="parameter-number-input"
+                    type="text"
+                    placeholder="e.g. 30, close, entry * 0.95"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    onBlur={saveEdit}
+                    onKeyDown={handleKeyPress}
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                                onClick={() => startEditing(originalIndex, "value", param.value)}
+                                style={{ cursor: "pointer", marginRight: "8px" }}
+                    title="Click to edit"
+                  >
+                    {param.value}
                   </span>
-                </li>
-              );
-            })}
-            </ul>
+                )}
+                            <button onClick={() => handleDeleteClick(originalIndex)} className="remove-btn">
+                              ×
+                            </button>
+                          </span>
+                        </li>
+                      );
+                    })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
       
-      {/* Modal for Add Parameter */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                {modalType === 'parameter' ? 'Add Parameter' : 'Add Custom Parameter'}
-              </h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <p>Coming Soon</p>
-              <p>
-                {modalType === 'parameter' 
-                  ? 'This feature will allow you to add parameters from the library to your strategy.'
-                  : 'This feature will allow you to create custom parameters for your strategy.'
-                }
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="modal-btn modal-btn-primary"
-                onClick={() => setShowModal(false)}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -245,5 +383,7 @@ ParameterBlock.propTypes = {
     })
   ).isRequired,
   setParameters: PropTypes.func.isRequired,
+  onShowModal: PropTypes.func.isRequired,
+  onShowDeleteModal: PropTypes.func.isRequired,
   dragData: PropTypes.object,
 };
