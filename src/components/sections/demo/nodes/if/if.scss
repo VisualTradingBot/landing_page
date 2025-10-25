@@ -1,24 +1,171 @@
-// If node specific styles - inherits from base nodeDefault.scss
+// If node specific styles - clean minimalist design
+.if-condition-container {
+  width: fit-content;
+  min-width: 200px;
+  margin: 0 !important;
+}
+
 .condition-row {
-  // Inherits base styles from nodeDefault.scss
-  // Override specific styling for condition operator
-  .condition-operator {
-    min-width: 60px;
-    padding: 6px 8px;
-    border: 1px solid #d1d5db;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px !important;
+  padding: 8px 0 !important;
+  width: fit-content;
+  flex-wrap: nowrap;
+  
+  .condition-parameter {
+    background: #ffffff;
     border-radius: 6px;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
+    padding: 6px 0 !important;
+    min-width: 100px;
+    width: fit-content;
     text-align: center;
-    color: #374151;
+    flex-shrink: 0;
+    
+    // Style the input field inside
+    input, select {
+      border: none;
+      background: transparent;
+      color: #000000;
+      font-weight: 600;
+      text-align: center;
+      width: 100%;
+      outline: none;
+      
+      &:focus {
+        outline: none;
+        box-shadow: none;
+      }
+    }
+  }
+  
+  .condition-operator {
+    background: #ffffff;
+    border: none !important;
+    border-radius: 6px;
+    padding: 6px 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    color: #000000;
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
+    flex-shrink: 0;
+    cursor: pointer;
+    appearance: none;
+    padding-right: 6px;
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    
+    // Prevent the select from interfering with node dragging
+    &:focus,
+    &:active,
+    &:hover {
+      transform: none !important;
+      transition: none !important;
+      animation: none !important;
+    }
     
     &:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:active {
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:hover {
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    // Override ReactFlow's default select styling
+    &.react-flow__node select:focus,
+    .react-flow__node &:focus {
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    // Style the dropdown options
+    option {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-weight: 600;
+      padding: 4px 8px;
+      
+      &:hover {
+        background: #000000 !important;
+        color: #ffffff !important;
+      }
     }
   }
 }
 
-// If node specific overrides - most styles inherit from nodeDefault.scss
-// Only add specific overrides here if needed
+// Output labels styling
+.if-outputs {
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center;
+  padding: 4px 12px !important;
+  margin-top: 0 !important;
+  
+  .output-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+}
+
+// Global override for ReactFlow select elements
+.react-flow__node select {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+// More aggressive overrides for ReactFlow interference
+.react-flow__node {
+  .condition-operator {
+    &:focus,
+    &:active,
+    &:hover {
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transform: none !important;
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+// Prevent ReactFlow from interfering with select elements
+.react-flow__node * {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}

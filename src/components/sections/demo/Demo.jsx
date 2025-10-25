@@ -4,6 +4,7 @@ import {
   useNodesState,
   addEdge,
   Panel,
+  StepEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -207,6 +208,11 @@ const nodeTypes = {
   setParameterNode: SetParameter,
 };
 
+// Edge types for ReactFlow - use step edges instead of smooth
+const edgeTypes = {
+  default: StepEdge,
+};
+
 const initialEdges = [
   // Data flow connection (Input → Indicator)
   {
@@ -218,7 +224,7 @@ const initialEdges = [
     type: "dataFlow",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
     },
@@ -227,100 +233,75 @@ const initialEdges = [
   {
     id: "n3.1-n4.1",
     source: "ifNode-1",
-    sourceHandle: "ifNode-1-bottom",
+    sourceHandle: "ifNode-1-true",
     target: "executeNode-1",
     targetHandle: "executeNode-1-left",
-    label: "True",
     type: "execution",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
-    },
-    labelStyle: {
-      fill: "var(--accent)",
-      fontWeight: 600,
     },
   },
   // Entry decision - False path
   {
     id: "n3.1-n3.2",
     source: "ifNode-1",
-    sourceHandle: "ifNode-1-right",
+    sourceHandle: "ifNode-1-false",
     target: "ifNode-2",
     targetHandle: "ifNode-2-top",
-    label: "False",
     type: "logic",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
-    },
-    labelStyle: {
-      fill: "var(--accent)",
-      fontWeight: 600,
     },
   },
   // Stop-loss decision - True path
   {
     id: "n3.2-n4.2",
     source: "ifNode-2",
-    sourceHandle: "ifNode-2-bottom",
+    sourceHandle: "ifNode-2-true",
     target: "executeNode-2",
     targetHandle: "executeNode-2-left",
-    label: "True",
     type: "execution",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
-    },
-    labelStyle: {
-      fill: "var(--accent)",
-      fontWeight: 600,
     },
   },
   // Stop-loss decision - False path
   {
     id: "n3.2-n3.3",
     source: "ifNode-2",
-    sourceHandle: "ifNode-2-right",
+    sourceHandle: "ifNode-2-false",
     target: "ifNode-3",
     targetHandle: "ifNode-3-top",
-    label: "False",
     type: "logic",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
-    },
-    labelStyle: {
-      fill: "var(--accent)",
-      fontWeight: 600,
     },
   },
   // Profit decision - True path
   {
     id: "n3.3-n4.3",
     source: "ifNode-3",
-    sourceHandle: "ifNode-3-bottom",
+    sourceHandle: "ifNode-3-true",
     target: "executeNode-3",
     targetHandle: "executeNode-3-left",
-    label: "True",
     type: "execution",
     animated: true,
     style: {
-      stroke: "var(--accent)",
+      stroke: "#000000",
       strokeWidth: 3,
       strokeDasharray: "5,5",
-    },
-    labelStyle: {
-      fill: "var(--accent)",
-      fontWeight: 600,
     },
   },
 ];
@@ -338,6 +319,16 @@ export default function Demo() {
 
   const onConnect = useCallback(
     (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+    [setEdges]
+  );
+
+  // Handle double-click on edges to remove them
+  const onEdgeDoubleClick = useCallback(
+    (event, edge) => {
+      setEdges((edgesSnapshot) => 
+        edgesSnapshot.filter((e) => e.id !== edge.id)
+      );
+    },
     [setEdges]
   );
 
@@ -485,11 +476,16 @@ export default function Demo() {
         <ReactFlow
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           nodes={nodes}
-          nodeTypes={memoizedNodeTypes}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeDoubleClick={onEdgeDoubleClick}
+          defaultEdgeOptions={{
+            type: 'step',
+          }}
           preventScrolling={false}
           autoPanOnNodeDrag={true}
           maxZoom={1.2}

@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import NodeDefault from "../nodeDefault";
 import { useMemo, useState, useEffect } from "react";
 import { VariableFieldStandalone } from "../components";
-import { useReactFlow } from "@xyflow/react";
+import { useReactFlow, Handle, Position } from "@xyflow/react";
 
 export default function If({ data, id }) {
   const parameters = useMemo(() => data?.parameters || [], [data?.parameters]);
@@ -82,106 +82,117 @@ export default function If({ data, id }) {
   return (
     <NodeDefault
       id={id}
-      title={data.label}
+      title="If"
       top={{ active: true, type: "target" }}
-      bottom={{ active: true, type: "source" }}
-      right={{ active: true, type: "source" }}
+      bottom={{ active: false, type: "source" }}
+      right={{ active: false, type: "source" }}
     >
-      <div className="node-header-controls">
-        <div
-          className="hint-line"
-          title="Bind left/right values and the operator via parameters. Operator accepts one of >, <, ==, >=, <=. Left/right can be numbers, 'close', or expressions like 'entry * 0.95'."
-        >
-          <span className="hint-icon">i</span>
-          If condition
-        </div>
-        {!isConnectedToMaster && (
-          <label
-            className="master-checkbox"
-            title="Master nodes start execution trees. Only one master node should be active."
-          >
-            <input
-              type="checkbox"
-              checked={isMaster}
-              onChange={(e) => setIsMaster(e.target.checked)}
+      <div className="if-condition-container">
+        <div className="condition-row">
+          <div className="condition-parameter">
+            <VariableFieldStandalone
+              key={variable[0].id}
+              zoneId={`variable-${variable[0].id}`}
+              id={variable[0].id}
+              label={variable[0].label}
+              zoneCheck={{
+                variable: {
+                  allowedFamilies: ["variable"],
+                },
+              }}
+              parameters={parameters}
+              parameterData={variable[0].parameterData}
+              setVariables={setVariable}
             />
-            <span className="checkbox-label">Master</span>
-          </label>
-        )}
-        {isConnectedToMaster && (
-          <span
-            className="slave-badge"
-            title="This node is connected to a master node"
+          </div>
+          
+          <select
+            className="condition-operator"
+            value={variable[2].parameterData || ""}
+            onChange={(e) => {
+              const newVar = [...variable];
+              newVar[2].parameterData = e.target.value;
+              setVariable(newVar);
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+            }}
           >
-            Slave
-          </span>
-        )}
+            <option value=">">&gt;</option>
+            <option value="<">&lt;</option>
+            <option value="==">==</option>
+            <option value=">=">&gt;=</option>
+            <option value="<=">&lt;=</option>
+          </select>
+          
+          <div className="condition-parameter">
+            <VariableFieldStandalone
+              key={variable[1].id}
+              zoneId={`variable-${variable[1].id}`}
+              id={variable[1].id}
+              label={variable[1].label}
+              zoneCheck={{
+                variable: {
+                  allowedFamilies: ["variable"],
+                },
+              }}
+              parameters={parameters}
+              parameterData={variable[1].parameterData}
+              setVariables={setVariable}
+            />
+          </div>
+        </div>
       </div>
-      <div className="condition-row">
-        <VariableFieldStandalone
-          key={variable[0].id}
-          zoneId={`variable-${variable[0].id}`}
-          id={variable[0].id}
-          label={variable[0].label}
-          zoneCheck={{
-            variable: {
-              allowedFamilies: ["variable"],
-            },
-          }}
-          parameters={parameters}
-          parameterData={variable[0].parameterData}
-          setVariables={setVariable}
-        />
-        <select
-          className="condition-operator"
-          value={variable[2].parameterData || ""}
-          onChange={(e) => {
-            const newVar = [...variable];
-            newVar[2].parameterData = e.target.value;
-            setVariable(newVar);
-          }}
-        >
-          <option value=">">&gt;</option>
-          <option value="<">&lt;</option>
-          <option value="==">==</option>
-          <option value=">=">&gt;=</option>
-          <option value="<=">&lt;=</option>
-        </select>
-        <VariableFieldStandalone
-          key={variable[1].id}
-          zoneId={`variable-${variable[1].id}`}
-          id={variable[1].id}
-          label={variable[1].label}
-          zoneCheck={{
-            variable: {
-              allowedFamilies: ["variable"],
-            },
-          }}
-          parameters={parameters}
-          parameterData={variable[1].parameterData}
-          setVariables={setVariable}
-        />
+     
+      
+      {/* Output labels */}
+      <div className="if-outputs">
+        <div className="output-label">False</div>
+        <div className="output-label">True</div>
       </div>
-      <div className="param-badges">
-        {variable.map((v) => {
-          const label = String(v.parameterData?.label || "").toLowerCase();
-          const show =
-            label.includes("lookback") ||
-            label.includes("window") ||
-            label.includes("period") ||
-            label.includes("stop") ||
-            label.includes("loss") ||
-            label.includes("fee") ||
-            label.includes("asset");
-          if (!show) return null;
-          return (
-            <span key={`badge-${v.id}`} className="param-badge">
-              {v.parameterData?.label}
-            </span>
-          );
-        })}
-      </div>
-      <div className="variable-row"></div>
+      
+      {/* Custom handles for True and False outputs */}
+      <Handle
+        id={`${id}-true`}
+        type="source"
+        position={Position.Bottom}
+        style={{ 
+          left: '70%', 
+          bottom: '-6px',
+          width: '12px',
+          height: '12px',
+          background: '#fff',
+          border: '2px solid #000000',
+          borderRadius: '50%',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)'
+        }}
+        className="if-handle-true"
+      />
+      <Handle
+        id={`${id}-false`}
+        type="source"
+        position={Position.Bottom}
+        style={{ 
+          left: '30%', 
+          bottom: '-6px',
+          width: '12px',
+          height: '12px',
+          background: '#fff',
+          border: '2px solid #000000',
+          borderRadius: '50%',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)'
+        }}
+        className="if-handle-false"
+      />
     </NodeDefault>
   );
 }

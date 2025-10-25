@@ -138,6 +138,15 @@
     -moz-user-select: none !important;
     -ms-user-select: none !important;
     user-select: none !important;
+    
+    // Allow select elements to work properly
+    select {
+      -webkit-user-select: auto !important;
+      -moz-user-select: auto !important;
+      -ms-user-select: auto !important;
+      user-select: auto !important;
+      pointer-events: auto !important;
+    }
   }
   
   .react-flow__renderer {
@@ -153,16 +162,15 @@
   }
   
   .react-flow__node {
-    transition: all 0.3s ease;
+    transition: box-shadow 0.3s ease;
     
     &:hover {
-      transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
     }
   }
   
   .react-flow__edge {
-    transition: all 0.3s ease;
+    transition: none !important;
     stroke-width: 2;
     
     &:hover {
@@ -173,20 +181,20 @@
 
   // Custom edge styling for all connections
   .react-flow__edge-path {
-    stroke: var(--accent);
+    stroke: #000000;
     stroke-width: 3;
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
-    transition: all 0.3s ease;
+    transition: none !important;
     stroke-dasharray: 5, 5;
     animation: dataFlow 2s linear infinite;
   }
 
-  // All connections use the same purple accent styling
+  // All connections use black styling instead of purple
   .react-flow__edge {
     .react-flow__edge-path {
-      stroke: var(--accent);
+      stroke: #000000;
       stroke-width: 3;
       stroke-dasharray: 5, 5;
       animation: dataFlow 2s linear infinite;
@@ -197,7 +205,7 @@
   .react-flow__edge-text {
     font-size: 12px;
     font-weight: 600;
-    fill: var(--accent);
+    fill: #000000;
     text-anchor: middle;
     dominant-baseline: middle;
     filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8));
@@ -217,23 +225,53 @@
   .react-flow__edge:hover {
     .react-flow__edge-path {
       stroke-width: 4;
-      filter: drop-shadow(0 0 8px var(--accent));
+      filter: drop-shadow(0 0 8px #000000);
+    }
+  }
+  
+  // Edge cursor styling to indicate double-click functionality
+  .react-flow__edge {
+    cursor: pointer;
+    
+    &:hover {
+      .react-flow__edge-path {
+        stroke-width: 4;
+        filter: drop-shadow(0 0 8px #000000);
+      }
     }
   }
 
   // Connection line styling (when creating new connections)
   .react-flow__connection-line {
-    stroke: var(--accent);
+    stroke: #000000;
     stroke-width: 3;
     stroke-dasharray: 5, 5;
     animation: dataFlow 1s linear infinite;
+  }
+  
+  // Make connection line step-style (angular) instead of smooth
+  .react-flow__connection-line-path {
+    stroke: #000000;
+    stroke-width: 3;
+    stroke-dasharray: 5, 5;
+    animation: dataFlow 1s linear infinite;
+  }
+  
+  // Ensure connection line is step-style when dragging
+  .react-flow__connection-line {
+    .react-flow__connection-line-path {
+      stroke: #000000;
+      stroke-width: 3;
+      stroke-dasharray: 5, 5;
+      animation: dataFlow 1s linear infinite;
+    }
   }
 
   // Edge selection styling
   .react-flow__edge.selected {
     .react-flow__edge-path {
       stroke-width: 4;
-      filter: drop-shadow(0 0 12px var(--accent));
+      filter: drop-shadow(0 0 12px #000000);
     }
   }
   
