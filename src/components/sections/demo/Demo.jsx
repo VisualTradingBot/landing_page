@@ -19,6 +19,7 @@ import SetParameter from "./nodes/setParameter/SetParameter";
 import If from "./nodes/if/If";
 import Input from "./nodes/input/Input";
 import Indicator from "./nodes/indicator/Indicator";
+import Block from "./nodes/block/Block";
 import "./demo.scss";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
@@ -98,7 +99,7 @@ const initialNodes = [
   {
     id: "ifNode-1",
     type: "ifNode",
-    position: { x: 300, y: 20 },
+    position: { x: 400, y: 300 },
     data: {
       label: "If Entry",
       parameters: initialParameters,
@@ -128,14 +129,15 @@ const initialNodes = [
   {
     id: "buyNode-1",
     type: "buyNode",
-    position: { x: 580, y: 180 },
+    position: { x: 640, y: 430 },
     data: { label: "Buy", action: "buy" },
   },
   // Decision Logic Layer - Exit Decisions
   {
     id: "ifNode-2",
     type: "ifNode",
-    position: { x: 780, y: 150 },
+    position: { x: 960, y: 100 },
+    draggable: false,
     data: {
       label: "If Exit (Stop-Loss)",
       parameters: initialParameters,
@@ -163,13 +165,15 @@ const initialNodes = [
   {
     id: "sellNode-1",
     type: "sellNode",
-    position: { x: 1000, y: 320 },
+    position: { x: 1230, y: 220 },
+    draggable: false,
     data: { label: "Sell (Stop-Loss)", action: "sell", amount: "100" },
   },
   {
     id: "ifNode-3",
     type: "ifNode",
-    position: { x: 1200, y: 280 },
+    position: { x: 960, y: 330 },
+    draggable: false,
     data: {
       label: "If Exit (Profit)",
       parameters: initialParameters,
@@ -197,38 +201,76 @@ const initialNodes = [
   {
     id: "sellNode-2",
     type: "sellNode",
-    position: { x: 1430, y: 450 },
+    position: { x: 1230, y: 450 },
+    draggable: false,
     data: { label: "Sell (Profit)", action: "sell", amount: "100" },
   },
   // Record blocks
   {
     id: "recordNode-1",
     type: "recordNode",
-    position: { x: 800, y: 50 },
+    position: { x: 638, y: 610 },
     data: { recordType: "entry_price", recordValue: "" },
   },
   // Set Parameter block
   {
     id: "setParameterNode-1",
     type: "setParameterNode",
-    position: { x: 1000, y: 50 },
+    position: { x: 960, y: 620 },
     data: { parameterName: "entry_price", sourceValue: "" },
+  },
+  {
+    id: "blockNode-1",
+    type: "blockNode",
+    position: { x: 930, y: 50 },
+    data: { label: "In a trade" },
   },
 ];
 
-const nodeTypes = {
-  buyNode: Buy,
-  sellNode: Sell,
-  recordNode: Record,
-  setParameterNode: SetParameter,
-  ifNode: If,
-  inputNode: Input,
-  indicatorNode: Indicator,
-};
+  const nodeTypes = {
+    buyNode: Buy,
+    sellNode: Sell,
+    recordNode: Record,
+    setParameterNode: SetParameter,
+    ifNode: If,
+    inputNode: Input,
+    indicatorNode: Indicator,
+    blockNode: Block,
+  };
 
 // Edge types for ReactFlow - use step edges instead of smooth
 const edgeTypes = {
   default: StepEdge,
+  step: StepEdge,
+  // Custom step edge with shorter initial segment
+  shortStep: (props) => (
+    <StepEdge 
+      {...props} 
+      pathOptions={{
+        offset: 2, // Very small offset for shorter initial segment
+        borderRadius: 0,
+      }}
+    />
+  ),
+  // Apply shortStep to existing edge types
+  dataFlow: (props) => (
+    <StepEdge 
+      {...props} 
+      pathOptions={{
+        offset: 1,
+        borderRadius: 0,
+      }}
+    />
+  ),
+  execution: (props) => (
+    <StepEdge 
+      {...props} 
+      pathOptions={{
+        offset: 1,
+        borderRadius: 0,
+      }}
+    />
+  ),
 };
 
 const initialEdges = [
@@ -502,7 +544,13 @@ export default function Demo() {
           onConnect={onConnect}
           onEdgeDoubleClick={onEdgeDoubleClick}
           defaultEdgeOptions={{
-            type: 'step',
+            type: 'shortStep',
+          }}
+          connectionLineType="step"
+          connectionLineStyle={{
+            strokeWidth: 3,
+            stroke: '#000000',
+            strokeDasharray: '5,5',
           }}
           preventScrolling={false}
           autoPanOnNodeDrag={true}
@@ -624,6 +672,7 @@ export default function Demo() {
           </div>
         </div>
       )}
+
     </section>
   );
 }

@@ -71,6 +71,11 @@ export default function Buy({ data, id }) {
       left={{ active: true, type: "target" }}
       bottom={{ active: true, type: "source" }}
     >
+      {/* Purple exclamation mark indicator */}
+      <div className="buy-indicator">
+        <span className="exclamation-mark">!</span>
+      </div>
+      
       <div className="buy-container">
         <div className="asset-display">
           <span className="asset-label">Asset:</span>

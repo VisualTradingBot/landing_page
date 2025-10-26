@@ -14,7 +14,7 @@ export default function ParameterBlock({
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState("");
-  const [dropdownState, setDropdownState] = useState(true);
+  const [dropdownState, setDropdownState] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState({});
   // Modal state will be managed by parent Demo component

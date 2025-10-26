@@ -1,4 +1,24 @@
 // Buy node specific styles
+.buy-indicator {
+  position: absolute;
+  top: 0px;
+  right: -40px;
+  width: 60px;
+  height: 60px;
+  background: transparent; // Purple background
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  
+  .exclamation-mark {
+    color: var(--accent);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
 .buy-container {
   padding: 8px 0;
   display: flex;
