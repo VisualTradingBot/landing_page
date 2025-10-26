@@ -21,14 +21,15 @@
 }
 
 .field-row.asset-row {
-  justify-content: space-between;
+  justify-content: flex-end;
   
   .field-label {
-    margin-right: 0;
+    margin-right: auto;
   }
   
   .asset-display {
     flex: 0 0 auto;
+    margin-left: 8px;
   }
 }
 

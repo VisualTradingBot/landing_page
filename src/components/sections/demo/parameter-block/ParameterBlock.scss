@@ -561,6 +561,17 @@
             color: #666666;
           }
           
+          .parameter-value-readonly {
+            color: #666666;
+            font-style: italic;
+            cursor: default;
+            margin-right: 8px;
+            
+            &:hover {
+              color: #666666;
+            }
+          }
+          
           .remove-btn {
             background: #000000;
             color: #ffffff;
@@ -629,13 +640,29 @@
         }
 
         .parameter-number-input {
-          background: transparent;
-          border: 1px solid #7a4caf;
-          color: aliceblue;
-          padding: 2px 4px;
+          background: #ffffff;
+          border: 2px solid #000000;
+          color: #000000;
+          padding: 4px 8px;
           border-radius: 2px;
           margin-right: 8px;
-          width: 30%;
+          width: 60%;
+          font-size: 12px;
+          font-weight: 500;
+          font-family: inherit;
+          
+          &:focus {
+            outline: none;
+            border-color: #000000;
+            background: #f8f8f8;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+          }
+          
+          &::placeholder {
+            color: #999999;
+            font-style: italic;
+          }
+          
           // to hide the arrows on number input
           &::-webkit-inner-spin-button,
           &::-webkit-outer-spin-button {

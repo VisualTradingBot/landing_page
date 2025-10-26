@@ -241,25 +241,35 @@ export default function ParameterBlock({
                             )}
                           </span>
                           <span className="parameter-value">
-                            {editingIndex === originalIndex && editingField === "value" ? (
-                              <input
-                                className="parameter-number-input"
-                                type="text"
-                                placeholder="e.g. 30, close, entry * 0.95"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onBlur={saveEdit}
-                                onKeyDown={handleKeyPress}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => startEditing(originalIndex, "value", param.value)}
-                                style={{ cursor: "pointer", marginRight: "8px" }}
-                                title="Click to edit"
-                              >
-                                {param.value}
+                            {param.paramType.type === 'bot-received' ? (
+                              // Bot-received parameters: show value as read-only
+                              <span className="parameter-value-readonly">
+                                [Auto-generated]
                               </span>
+                            ) : (
+                              // Manual parameters: allow editing
+                              <>
+                                {editingIndex === originalIndex && editingField === "value" ? (
+                                  <input
+                                    className="parameter-number-input"
+                                    type="text"
+                                    placeholder="e.g. 30, close, entry * 0.95"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={saveEdit}
+                                    onKeyDown={handleKeyPress}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => startEditing(originalIndex, "value", param.value)}
+                                    style={{ cursor: "pointer", marginRight: "8px" }}
+                                    title="Click to edit"
+                                  >
+                                    {param.value}
+                                  </span>
+                                )}
+                              </>
                             )}
                             <button onClick={() => handleDeleteClick(originalIndex)} className="remove-btn">
                               ×
@@ -331,26 +341,36 @@ export default function ParameterBlock({
                 )}
               </span>
                           <span className="parameter-value">
-                            {editingIndex === originalIndex && editingField === "value" ? (
-                  <input
-                    className="parameter-number-input"
-                    type="text"
-                    placeholder="e.g. 30, close, entry * 0.95"
-                    value={tempValue}
-                    onChange={(e) => setTempValue(e.target.value)}
-                    onBlur={saveEdit}
-                    onKeyDown={handleKeyPress}
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                                onClick={() => startEditing(originalIndex, "value", param.value)}
-                                style={{ cursor: "pointer", marginRight: "8px" }}
-                    title="Click to edit"
-                  >
-                    {param.value}
-                  </span>
-                )}
+                            {param.paramType.type === 'bot-received' ? (
+                              // Bot-received parameters: show value as read-only
+                              <span className="parameter-value-readonly">
+                                [Auto-generated]
+                              </span>
+                            ) : (
+                              // Manual parameters: allow editing
+                              <>
+                                {editingIndex === originalIndex && editingField === "value" ? (
+                                  <input
+                                    className="parameter-number-input"
+                                    type="text"
+                                    placeholder="e.g. 30, close, entry * 0.95"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    onBlur={saveEdit}
+                                    onKeyDown={handleKeyPress}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => startEditing(originalIndex, "value", param.value)}
+                                    style={{ cursor: "pointer", marginRight: "8px" }}
+                                    title="Click to edit"
+                                  >
+                                    {param.value}
+                                  </span>
+                                )}
+                              </>
+                            )}
                             <button onClick={() => handleDeleteClick(originalIndex)} className="remove-btn">
                               ×
                             </button>
