@@ -111,21 +111,7 @@
     background-color: transparent;
   }
   
-  // Add subtle grid pattern
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-      linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: 0;
-  }
+  // Grid pattern removed for clean background
   
   // Ensure ReactFlow is visible and transparent
   .react-flow__viewport {
@@ -315,11 +301,19 @@
     }
   }
   
-  // White theme specific adjustments
+  // Hide ReactFlow controls
   .react-flow__controls {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: none !important;
+  }
+  
+  // Hide ReactFlow attribution - multiple selectors to catch all variations
+  .react-flow__attribution,
+  .react-flow_attribution,
+  .react-flow__panel.react-flow__attribution,
+  .react-flow_panel.react-flow_attribution,
+  [class*="attribution"],
+  [class*="react-flow"][class*="attribution"] {
+    display: none !important;
   }
   
   .react-flow__minimap {
@@ -479,5 +473,15 @@ select option {
 select option:hover {
   background: #000000 !important;
   color: #ffffff !important;
+}
+
+// Global override to hide ReactFlow attribution anywhere
+.react-flow__attribution,
+.react-flow_attribution,
+[class*="attribution"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 }
