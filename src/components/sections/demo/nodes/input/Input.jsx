@@ -1,86 +1,94 @@
 import "./input.scss";
 import NodeDefault from "../nodeDefault";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useReactFlow } from "@xyflow/react";
 import PropTypes from "prop-types";
-import { VariableFieldStandalone } from "../components";
 
-export default function Input({ id, data }) {
+export default function Input({ id, data, onAssetChange }) {
   const { updateNodeData } = useReactFlow();
   const [dataSource, setDataSource] = useState(data?.dataSource || "synthetic");
   const [asset, setAsset] = useState(data?.asset || "bitcoin");
-  const parameters = useMemo(() => data?.parameters || [], [data?.parameters]);
-  const defaultVars = [
-    { label: "fee", id: `var-${Date.now() + 1}`, parameterData: {} },
-  ];
-  const [variable, setVariable] = useState(
-    () => data?.variables || defaultVars
-  );
+  const [type, setType] = useState(data?.type || "batch");
 
   useEffect(() => {
     if (updateNodeData && id) {
-      updateNodeData(id, { variables: variable, asset, dataSource });
+      updateNodeData(id, { asset, dataSource, type });
     }
-  }, [variable, asset, dataSource, id, updateNodeData]);
+  }, [asset, dataSource, type, id, updateNodeData]);
+
+  const handleAssetChange = (newAsset) => {
+    setAsset(newAsset);
+    if (onAssetChange) {
+      onAssetChange(newAsset);
+    }
+  };
 
   return (
     <NodeDefault
       id={id}
-      title={data.label}
-      right={{ active: true, type: "source" }}
+      title="Test Parameters"
     >
-      <div
-        className="hint-line"
-        title="Use parameters to override Asset (btc/bitcoin/eth/ethereum) and Fee (percent, e.g., 0.05 for 0.05%)."
-      >
-        <span className="hint-icon">i</span>
-        Data source and market
-      </div>
-      <div className="switch-case">
-        <label className="input-type-label">Data Source:</label>
-        <select
-          value={dataSource}
-          onChange={(e) => {
-            const value = e.target.value;
-            setDataSource(value);
-            updateNodeData(id, { dataSource: value });
-          }}
-        >
-          <option value="synthetic">Synthetic</option>
-          <option value="real">Real (CoinGecko)</option>
-        </select>
-
-        <label className="input-type-label">Asset:</label>
-        <select
-          value={asset}
-          onChange={(e) => {
-            const value = e.target.value;
-            setAsset(value);
-            updateNodeData(id, { asset: value });
-          }}
-        >
-          <option value="bitcoin">BTC</option>
-          <option value="ethereum">ETH</option>
-        </select>
-      </div>
-      <div className="variable-row" style={{ marginTop: 8 }}>
-        {variable.map((v) => (
-          <div
-            key={v.id}
-            style={{ display: "flex", flexDirection: "column", gap: 4 }}
+      <div className="input-container">
+        <div className="field-row">
+          <label className="field-label">Data Source:</label>
+          <select
+            className="field-select"
+            value={dataSource}
+            onChange={(e) => {
+              const value = e.target.value;
+              setDataSource(value);
+              updateNodeData(id, { dataSource: value });
+            }}
           >
-            <label style={{ fontSize: 12, color: "#64748b" }}>{v.label}</label>
-            <VariableFieldStandalone
-              zoneId={`variable-${v.id}`}
-              id={v.id}
-              label={v.label}
-              zoneCheck={{ variable: { allowedFamilies: ["variable"] } }}
-              parameters={parameters}
-              parameterData={v.parameterData}
-              setVariables={setVariable}
-            />
-          </div>
-        ))}
+            <option value="synthetic">Synthetic</option>
+            <option value="real">Real (CoinGecko)</option>
+          </select>
+        </div>
+
+        <div className="field-row">
+          <label className="field-label">Asset:</label>
+          <select
+            className="field-select"
+            value={asset}
+            onChange={(e) => {
+              const value = e.target.value;
+              handleAssetChange(value);
+              updateNodeData(id, { asset: value });
+            }}
+          >
+            <option value="bitcoin">BTC</option>
+            <option value="ethereum">ETH</option>
+          </select>
+        </div>
+
+        <div className="field-row">
+          <label className="field-label">Type:</label>
+          <select
+            className="field-select"
+            value={type}
+            onChange={(e) => {
+              const value = e.target.value;
+              setType(value);
+              updateNodeData(id, { type: value });
+            }}
+          >
+            <option value="batch">Batch</option>
+            <option value="stream">Stream</option>
+            <option value="realtime">Real-time</option>
+          </select>
+        </div>
+
+        <div className="button-row">
+          <button 
+            className="run-test-button"
+            onClick={() => {
+              console.log('Run Test clicked with:', { dataSource, asset, type });
+              // TODO: Implement test execution logic
+            }}
+          >
+            Run Test
+          </button>
+        </div>
       </div>
     </NodeDefault>
   );
@@ -89,4 +97,5 @@ export default function Input({ id, data }) {
 Input.propTypes = {
   id: PropTypes.string,
   data: PropTypes.object,
+  onAssetChange: PropTypes.func,
 };

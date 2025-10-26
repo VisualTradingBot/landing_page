@@ -8,6 +8,22 @@ export default function SetParameter({ data, id }) {
   const { updateNodeData } = useReactFlow();
   const [parameterName, setParameterName] = useState(data?.parameterName || "entry_price");
 
+  const getParameterColor = (paramName) => {
+    const label = paramName.toLowerCase();
+    if (label.includes('close') || label.includes('close price')) {
+      return 'green';
+    }
+    if (label.includes('indicator') || label.includes('output')) {
+      return 'dark-blue';
+    }
+    if (label.includes('entry') || label.includes('entry price')) {
+      return 'pink';
+    }
+    return 'default';
+  };
+
+  const parameterColor = getParameterColor(parameterName);
+
   const handleParameterNameChange = (event) => {
     const value = event.target.value;
     setParameterName(value);
@@ -20,11 +36,11 @@ export default function SetParameter({ data, id }) {
       title="Set Parameter"
       left={{ active: true, type: "target" }}
     >
-      <div className="set-parameter-container">
+      <div className={`set-parameter-container ${parameterColor}`}>
         <div className="parameter-field">
           <label className="parameter-label">Parameter:</label>
           <div className="parameter-input-container">
-            <span className="parameter-icon pink"></span>
+            <span className={`parameter-icon ${parameterColor}`}></span>
             <input
               type="text"
               value={parameterName}

@@ -5,9 +5,11 @@ import { useState, useEffect } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
+import { useAsset } from "../../AssetContext";
 
 export default function Buy({ data, id }) {
-  const { updateNodeData, getNodes } = useReactFlow();
+  const { updateNodeData } = useReactFlow();
+  const { selectedAsset } = useAsset();
   const [action, setAction] = useState("buy");
   const [type, setType] = useState(data?.type || "market");
   const [amount, setAmount] = useState(data?.amount || "10000");
@@ -20,14 +22,7 @@ export default function Buy({ data, id }) {
     eth: ethereumLogo
   };
 
-  // Get asset from input node
-  const getAssetFromInput = () => {
-    const nodes = getNodes();
-    const inputNode = nodes.find((n) => n.type === "inputNode");
-    return inputNode?.data?.asset || "bitcoin";
-  };
-
-  const currentAsset = getAssetFromInput();
+  const currentAsset = selectedAsset || "bitcoin";
   const assetImage = assetImages[currentAsset] || bitcoinLogo;
 
   // Ensure action is always "buy"

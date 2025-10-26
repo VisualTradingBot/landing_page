@@ -18,10 +18,12 @@ import Record from "./nodes/record/Record";
 import SetParameter from "./nodes/setParameter/SetParameter";
 import If from "./nodes/if/If";
 import Input from "./nodes/input/Input";
-import Indicator from "./nodes/indicator/Indicator";
+import InputIndicator from "./nodes/inputIndicator/InputIndicator";
+import InputPrice from "./nodes/inputPrice/InputPrice";
 import Block from "./nodes/block/Block";
 import "./demo.scss";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { AssetContext } from "./AssetContext";
 
 // --- START OF CHANGES ---
 
@@ -59,42 +61,43 @@ const getParam = (label) => initialParameters.find((p) => p.label === label);
 const initialNodes = [
   // Data Input Layer
   {
+    id: "inputIndicatorNode",
+    type: "inputIndicatorNode",
+    position: { x: -200, y: 50 },
+    data: {
+      resolution: "1h",
+      lookbackWindow: "30",
+      lookbackUnit: "d",
+      indicator: "SMA",
+    },
+  },
+  {
+    id: "inputPriceNode",
+    type: "inputPriceNode",
+    position: { x: -200, y: 300 },
+    data: {
+      timeFrame: "1h",
+      type: "instant",
+      format: "close",
+    },
+  },
+  {
+    id: "setParameterIndicatorNode",
+    type: "setParameterNode",
+    position: { x: 350, y: 150 },
+    data: { parameterName: "indicator_output", sourceValue: "" },
+  },
+  {
     id: "inputNode",
     type: "inputNode",
-    position: { x: -200, y: 0 },
+    position: { x: -200, y: 550 },
     data: {
-      label: "Input",
+      label: "Test Parameters",
       parameters: initialParameters,
+      type: "batch",
     },
   },
   // Analysis Layer
-  {
-    id: "indicatorNode",
-    type: "indicatorNode",
-    position: { x: 50, y: 200 },
-    data: {
-      label: "Indicator",
-      parameters: initialParameters,
-      variables: [
-        {
-          label: "output",
-          id: `var-indicator-output`,
-          parameterData: {
-            parameterId: getParam("indicator_output").id,
-            ...getParam("indicator_output"),
-          },
-        },
-        {
-          label: "window",
-          id: `var-indicator-window`,
-          parameterData: {
-            parameterId: getParam("lookback_window").id,
-            ...getParam("lookback_window"),
-          },
-        },
-      ],
-    },
-  },
   // Decision Logic Layer - Entry Decision
   {
     id: "ifNode-1",
@@ -212,12 +215,19 @@ const initialNodes = [
     position: { x: 638, y: 610 },
     data: { recordType: "entry_price", recordValue: "" },
   },
-  // Set Parameter block
+  // Set Parameter block for entry_price (connected to Record)
   {
     id: "setParameterNode-1",
     type: "setParameterNode",
     position: { x: 960, y: 620 },
     data: { parameterName: "entry_price", sourceValue: "" },
+  },
+  // Set Parameter block for close_price
+  {
+    id: "setParameterNode-2",
+    type: "setParameterNode",
+    position: { x: 160, y: 430 },
+    data: { parameterName: "close_price", sourceValue: "" },
   },
   {
     id: "blockNode-1",
@@ -233,8 +243,9 @@ const initialNodes = [
     recordNode: Record,
     setParameterNode: SetParameter,
     ifNode: If,
-    inputNode: Input,
-    indicatorNode: Indicator,
+    inputNode: (props) => <Input {...props} onAssetChange={handleAssetChange} />,
+    inputIndicatorNode: InputIndicator,
+    inputPriceNode: InputPrice,
     blockNode: Block,
   };
 
@@ -274,13 +285,43 @@ const edgeTypes = {
 };
 
 const initialEdges = [
-  // Data flow connection (Input → Indicator)
+  // Data flow connection (Input-Indicator → Set Parameter Indicator)
   {
-    id: "n1-n2",
-    source: "inputNode",
-    sourceHandle: "inputNode-right",
-    target: "indicatorNode",
-    targetHandle: "indicatorNode-left",
+    id: "input-indicator-to-setparam",
+    source: "inputIndicatorNode",
+    sourceHandle: "inputIndicatorNode-right",
+    target: "setParameterIndicatorNode",
+    targetHandle: "setParameterIndicatorNode-left",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  // Data flow connection (Input-Price → Set Parameter)
+  {
+    id: "input-price-to-setparam",
+    source: "inputPriceNode",
+    sourceHandle: "inputPriceNode-right",
+    target: "setParameterNode-2",
+    targetHandle: "setParameterNode-2-left",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  // Data flow connection (Record → Set Parameter)
+  {
+    id: "record-to-setparam",
+    source: "recordNode-1",
+    sourceHandle: "recordNode-1-right",
+    target: "setParameterNode-1",
+    targetHandle: "setParameterNode-1-left",
     type: "dataFlow",
     animated: true,
     style: {
@@ -370,6 +411,7 @@ export default function Demo() {
   const [parameters, setParameters] = useState(initialParameters);
   const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedAsset, setSelectedAsset] = useState("bitcoin");
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -428,7 +470,21 @@ export default function Demo() {
     handleCloseDeleteModal();
   }, [parameterToDelete, handleRemoveParameter, handleCloseDeleteModal]);
 
-  const memoizedNodeTypes = useMemo(() => nodeTypes, []);
+  const handleAssetChange = useCallback((asset) => {
+    setSelectedAsset(asset);
+  }, []);
+
+  const nodeTypes = useMemo(() => ({
+    buyNode: (props) => <Buy {...props} />,
+    sellNode: (props) => <Sell {...props} />,
+    recordNode: Record,
+    setParameterNode: SetParameter,
+    ifNode: If,
+    inputNode: (props) => <Input {...props} onAssetChange={handleAssetChange} />,
+    inputIndicatorNode: (props) => <InputIndicator {...props} />,
+    inputPriceNode: (props) => <InputPrice {...props} />,
+    blockNode: Block,
+  }), [handleAssetChange]);
 
   const containerRef = useRef(null);
   const [translateExtent, setTranslateExtent] = useState([
@@ -510,28 +566,15 @@ export default function Demo() {
     opts.edges = edges;
 
     // Extract lookback and indicator info for visualization only
-    const indicator = nodes.find((n) => n.type === "indicatorNode");
-    if (indicator?.data?.variables) {
-      const windowVar = indicator.data.variables.find(
-        (v) => v.label === "window"
-      );
-      const windowValue = windowVar?.parameterData?.value;
-      const n = Number(windowValue);
-      if (!Number.isNaN(n) && n > 0) {
-        opts.lookback = n;
-      }
-    }
+    // Note: indicatorNode has been removed, using default values
     if (!opts.lookback) opts.lookback = 30;
-
-    // Get indicator type for visualization
-    const indicatorType = indicator?.data?.type || "30d_high";
-    opts.graph = { indicatorType };
 
     return opts;
   }, [nodes, edges]);
 
   return (
-    <section id="demo" className="demo">
+    <AssetContext.Provider value={{ selectedAsset, setSelectedAsset }}>
+      <section id="demo" className="demo">
       <div ref={containerRef} style={{ width: "100%", height: "75vh", minHeight: "650px", position: "relative", background: "transparent" }}>
         <ReactFlow
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
@@ -674,5 +717,6 @@ export default function Demo() {
       )}
 
     </section>
+    </AssetContext.Provider>
   );
 }
