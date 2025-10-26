@@ -148,6 +148,52 @@
   }
 }
 
+// If block specific handle positioning - Override in nodeDefault.scss
+// Use maximum specificity to override inline styles
+.react-flow__node[data-id="ifNode-1"] .node-handle--top,
+.react-flow__node[data-id="ifNode-2"] .node-handle--top,
+.react-flow__node[data-id="ifNode-3"] .node-handle--top {
+  transform: translateY(26px) !important;
+  
+  &:hover {
+    transform: translateY(26px) !important;
+  }
+  
+  &.node-handle--active {
+    transform: translateY(26px) !important;
+  }
+}
+
+.react-flow__node[data-id="ifNode-1"] .node-handle--bottom,
+.react-flow__node[data-id="ifNode-2"] .node-handle--bottom,
+.react-flow__node[data-id="ifNode-3"] .node-handle--bottom {
+  transform: translateY(6px) !important;
+  
+  &:hover {
+    transform: translateY(6px) !important;
+  }
+  
+  &.node-handle--active {
+    transform: translateY(6px) !important;
+  }
+}
+
+// Alternative approach - try to override with CSS custom properties
+.react-flow__node[data-id="ifNode-1"],
+.react-flow__node[data-id="ifNode-2"],
+.react-flow__node[data-id="ifNode-3"] {
+  --handle-top-transform: translateY(26px) !important;
+  --handle-bottom-transform: translateY(6px) !important;
+  
+  .node-handle--top {
+    transform: var(--handle-top-transform) !important;
+  }
+  
+  .node-handle--bottom {
+    transform: var(--handle-bottom-transform) !important;
+  }
+}
+
 .node-handle--bottom {
   transform: translateY(6px);
 }

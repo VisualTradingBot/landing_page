@@ -9,6 +9,8 @@ import ethereumLogo from "../../../../../assets/images/etherium.png";
 export default function Buy({ data, id }) {
   const { updateNodeData, getNodes } = useReactFlow();
   const [action, setAction] = useState("buy");
+  const [type, setType] = useState(data?.type || "market");
+  const [amount, setAmount] = useState(data?.amount || "10000");
 
   // Asset image mapping
   const assetImages = {
@@ -36,11 +38,38 @@ export default function Buy({ data, id }) {
     }
   }, [action, id, updateNodeData]);
 
+  const handleTypeChange = (event) => {
+    const value = event.target.value;
+    setType(value);
+    updateNodeData(id, { type: value });
+  };
+
+  const handleAmountChange = (event) => {
+    const value = event.target.value;
+    // Remove any non-numeric characters except dots
+    const numericValue = value.replace(/[^\d.]/g, '');
+    setAmount(numericValue);
+    updateNodeData(id, { amount: numericValue });
+  };
+
+  // Format number with thousands separators
+  const formatAmount = (value) => {
+    if (!value) return '';
+    // Remove any existing formatting
+    const numericValue = value.replace(/\./g, '');
+    // Add thousands separators
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Get display value (formatted) vs actual value (unformatted)
+  const displayAmount = formatAmount(amount);
+
   return (
     <NodeDefault
       id={id}
       title="Buy"
       left={{ active: true, type: "target" }}
+      bottom={{ active: true, type: "source" }}
     >
       <div className="buy-container">
         <div className="asset-display">
@@ -58,6 +87,34 @@ export default function Buy({ data, id }) {
           <span className="asset-fallback" style={{ display: 'none' }}>
             {currentAsset === 'bitcoin' ? '₿' : '🔷'}
           </span>
+        </div>
+        
+        <div className="type-field">
+          <label className="type-label">Type:</label>
+          <select 
+            value={type} 
+            onChange={handleTypeChange}
+            className="type-select"
+          >
+            <option value="market">Market</option>
+            <option value="limit">Limit</option>
+            <option value="stop">Stop</option>
+            <option value="stop_limit">Stop Limit</option>
+          </select>
+        </div>
+        
+        <div className="amount-field">
+          <label className="amount-label">Amount:</label>
+          <div className="amount-input-container">
+            <input
+              type="text"
+              value={displayAmount}
+              onChange={handleAmountChange}
+              placeholder="Enter amount in dollars"
+              className="amount-input"
+            />
+            <span className="amount-suffix">$</span>
+          </div>
         </div>
       </div>
     </NodeDefault>

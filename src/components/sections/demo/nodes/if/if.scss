@@ -19,7 +19,7 @@
     background: #ffffff;
     border-radius: 6px;
     padding: 6px 0 !important;
-    min-width: 100px;
+    // min-width: 100px;
     width: fit-content;
     text-align: center;
     flex-shrink: 0;
@@ -168,4 +168,13 @@
     outline: none !important;
     box-shadow: none !important;
   }
+}
+
+// If block specific handle positioning
+// Target only If nodes' handles
+.react-flow__node[data-id*="ifNode"] {
+  .node-handle--top {
+    transform: translateY(20px) !important; // Adjust top handle position
+  }
+  
 }

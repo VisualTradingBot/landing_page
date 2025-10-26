@@ -83,8 +83,9 @@ export default function If({ data, id }) {
     <NodeDefault
       id={id}
       title="If"
-      top={{ active: true, type: "target" }}
-      bottom={{ active: false, type: "source" }}
+      top={{ active: false, type: "target" }} // Disable default top handle
+      bottom={{ active: false, type: "source" }} // Disable default bottom handle
+      left={{ active: false, type: "target" }} // Disable default left handle
       right={{ active: false, type: "source" }}
     >
       <div className="if-condition-container">
@@ -160,20 +161,39 @@ export default function If({ data, id }) {
         <div className="output-label">True</div>
       </div>
       
+      {/* Custom left handle */}
+      <Handle
+        id={`${id}-left`}
+        type="target"
+        position={Position.Left}
+        style={{ 
+          left: '0px',
+          width: '12px',
+          height: '12px',
+          background: '#fff',
+          border: '2px solid #000000',
+          borderRadius: '50%',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+          transform: 'translateX(-5px)' // Custom left handle position - less far left
+        }}
+        className="if-handle-left"
+      />
+      
       {/* Custom handles for True and False outputs */}
       <Handle
         id={`${id}-true`}
         type="source"
         position={Position.Bottom}
         style={{ 
-          left: '70%', 
-          bottom: '-6px',
+          left: '68%', 
+          bottom: '0px',
           width: '12px',
           height: '12px',
           background: '#fff',
           border: '2px solid #000000',
           borderRadius: '50%',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)'
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+          transform: 'translateY(6px)' // Custom bottom handle position
         }}
         className="if-handle-true"
       />
@@ -182,14 +202,15 @@ export default function If({ data, id }) {
         type="source"
         position={Position.Bottom}
         style={{ 
-          left: '30%', 
-          bottom: '-6px',
+          left: '28%', 
+          bottom: '0px',
           width: '12px',
           height: '12px',
           background: '#fff',
           border: '2px solid #000000',
           borderRadius: '50%',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)'
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+          transform: 'translateY(6px)' // Custom bottom handle position
         }}
         className="if-handle-false"
       />

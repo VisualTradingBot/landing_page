@@ -14,8 +14,9 @@ import BacktestView from "./back-test/BacktestView";
 // Nodes
 import Buy from "./nodes/buy/Buy";
 import Sell from "./nodes/sell/Sell";
-import If from "./nodes/if/If";
+import Record from "./nodes/record/Record";
 import SetParameter from "./nodes/setParameter/SetParameter";
+import If from "./nodes/if/If";
 import Input from "./nodes/input/Input";
 import Indicator from "./nodes/indicator/Indicator";
 import "./demo.scss";
@@ -43,7 +44,7 @@ const initialParameters = [
   // Separate entry price reference - not affected by multiplications
   {
     id: "param-6",
-    label: "entry_price_reference",
+    label: "entry_price",
     value: "close",
     family: "variable",
   },
@@ -107,8 +108,8 @@ const initialNodes = [
           label: "var-1",
           id: `var-if1-left`,
           parameterData: {
-            parameterId: getParam("entry_price_reference").id,
-            ...getParam("entry_price_reference"),
+            parameterId: getParam("entry_price").id,
+            ...getParam("entry_price"),
           },
         },
         {
@@ -199,15 +200,30 @@ const initialNodes = [
     position: { x: 1430, y: 450 },
     data: { label: "Sell (Profit)", action: "sell", amount: "100" },
   },
+  // Record blocks
+  {
+    id: "recordNode-1",
+    type: "recordNode",
+    position: { x: 800, y: 50 },
+    data: { recordType: "entry_price", recordValue: "" },
+  },
+  // Set Parameter block
+  {
+    id: "setParameterNode-1",
+    type: "setParameterNode",
+    position: { x: 1000, y: 50 },
+    data: { parameterName: "entry_price", sourceValue: "" },
+  },
 ];
 
 const nodeTypes = {
   buyNode: Buy,
   sellNode: Sell,
+  recordNode: Record,
+  setParameterNode: SetParameter,
   ifNode: If,
   inputNode: Input,
   indicatorNode: Indicator,
-  setParameterNode: SetParameter,
 };
 
 // Edge types for ReactFlow - use step edges instead of smooth
@@ -246,21 +262,6 @@ const initialEdges = [
       strokeDasharray: "5,5",
     },
   },
-  // Entry decision - False path
-  {
-    id: "n3.1-n3.2",
-    source: "ifNode-1",
-    sourceHandle: "ifNode-1-false",
-    target: "ifNode-2",
-    targetHandle: "ifNode-2-top",
-    type: "logic",
-    animated: true,
-    style: {
-      stroke: "#000000",
-      strokeWidth: 3,
-      strokeDasharray: "5,5",
-    },
-  },
   // Stop-loss decision - True path
   {
     id: "n3.2-n4.2",
@@ -276,21 +277,6 @@ const initialEdges = [
       strokeDasharray: "5,5",
     },
   },
-  // Stop-loss decision - False path
-  {
-    id: "n3.2-n3.3",
-    source: "ifNode-2",
-    sourceHandle: "ifNode-2-false",
-    target: "ifNode-3",
-    targetHandle: "ifNode-3-top",
-    type: "logic",
-    animated: true,
-    style: {
-      stroke: "#000000",
-      strokeWidth: 3,
-      strokeDasharray: "5,5",
-    },
-  },
   // Profit decision - True path
   {
     id: "n3.3-n4.3",
@@ -299,6 +285,36 @@ const initialEdges = [
     target: "sellNode-2",
     targetHandle: "sellNode-2-left",
     type: "execution",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  // Buy to Record connection
+  {
+    id: "buy-record",
+    source: "buyNode-1",
+    sourceHandle: "buyNode-1-bottom",
+    target: "recordNode-1",
+    targetHandle: "recordNode-1-top",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  // Record to Set Parameter connection
+  {
+    id: "record-setparam",
+    source: "recordNode-1",
+    sourceHandle: "recordNode-1-right",
+    target: "setParameterNode-1",
+    targetHandle: "setParameterNode-1-left",
+    type: "dataFlow",
     animated: true,
     style: {
       stroke: "#000000",
