@@ -139,13 +139,42 @@
     -ms-user-select: none !important;
     user-select: none !important;
     
-    // Allow select elements to work properly
-    select {
-      -webkit-user-select: auto !important;
-      -moz-user-select: auto !important;
-      -ms-user-select: auto !important;
-      user-select: auto !important;
-      pointer-events: auto !important;
+  // Allow select elements to work properly
+  select {
+    -webkit-user-select: auto !important;
+    -moz-user-select: auto !important;
+    -ms-user-select: auto !important;
+    user-select: auto !important;
+    pointer-events: auto !important;
+    
+    // Override option hover colors to use black instead of blue
+    option {
+      background: #ffffff !important;
+      color: #000000 !important;
+      
+      &:hover {
+        background: #000000 !important;
+        color: #ffffff !important;
+      }
+    }
+    
+    // Override any browser default blue colors for individual option hover
+    option:hover {
+      background: #000000 !important;
+      color: #ffffff !important;
+    }
+  }
+  
+  // Prevent ReactFlow from adding focus styling to nodes with form elements
+  .react-flow__node {
+    &:focus,
+    &:focus-within,
+    &.selected,
+    &.selectable:focus {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
     }
   }
   
@@ -166,6 +195,17 @@
     
     &:hover {
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+    
+    // Prevent ReactFlow from adding borders when form elements are focused
+    &:focus,
+    &:focus-within,
+    &.selected,
+    &.selectable:focus {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
     }
   }
   
@@ -286,6 +326,36 @@
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
+  
+  // Global override to prevent ReactFlow from adding borders/outlines to nodes
+  .react-flow__node {
+    &:focus,
+    &:focus-within,
+    &.selected,
+    &.selectable:focus {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+    
+    // Override all dropdown option hover colors to use black
+    select option {
+      background: #ffffff !important;
+      color: #000000 !important;
+      
+      &:hover {
+        background: #000000 !important;
+        color: #ffffff !important;
+      }
+    }
+    
+    // Override any browser default blue colors for individual option hover
+    select option:hover {
+      background: #000000 !important;
+      color: #ffffff !important;
+    }
+  }
 }
 
 // Backtest integration styling
@@ -390,4 +460,24 @@
       padding: 8px;
     }
   }
+}
+
+// Global override for all dropdown options to use black hover instead of blue
+.react-flow__node select option,
+select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+  
+  &:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+  }
+}
+
+// Override any browser default blue colors for individual option hover
+.react-flow__node select option:hover,
+select option:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
 }

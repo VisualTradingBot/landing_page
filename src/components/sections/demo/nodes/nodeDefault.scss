@@ -120,13 +120,32 @@
   width: 12px !important;
   height: 12px !important;
   background: #fff !important;
-  border: 2px solid #3b82f6 !important; /* blue accent */
+  border: 2px solid #000000 !important; /* blue accent */
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.18) !important;
   border-radius: 50% !important;
 }
 
 .node-handle--top {
-  transform: translateY(-6px);
+  transform: translateY(20px);
+  
+  // Disable hover and active animations for top handle
+  &:hover {
+    border-color: #000000 !important; // Keep original border color
+    cursor: default !important; // Remove crosshair cursor
+    transform: translateY(20px) !important; // Keep original position
+  }
+  
+  &.node-handle--active {
+    transform: translateY(20px) !important; // Keep original position
+    border-color: #000000 !important; // Keep original border color
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18) !important; // Keep original shadow
+    cursor: default !important; // Remove crosshair cursor
+  }
+  
+  // Remove the pulse effect
+  &.node-handle--active::after {
+    display: none !important;
+  }
 }
 
 .node-handle--bottom {
@@ -180,30 +199,7 @@
   }
 }
 
-/* Interactive states for handles */
-.node-handle:hover {
-  border-color: #eb2525 !important;
-  cursor: crosshair !important;
-}
 
-.node-handle--active {
-  transform: scale(1.12) !important;
-  border-color: #1d4ed8 !important;
-  box-shadow: 0 10px 30px rgba(29, 78, 216, 0.22) !important;
-  cursor: crosshair !important;
-}
-
-/* When a handle is active we also show a subtle pulse to indicate drag start */
-.node-handle--active::after {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  left: -8px;
-  top: -8px;
-  border-radius: 50%;
-  background: rgba(37, 99, 235, 0.06);
-  pointer-events: none;
-}
 
 // Base form elements styling
 select, input[type="text"], input[type="number"] {
@@ -242,6 +238,23 @@ select {
   background-size: 16px;
   padding-right: 32px;
   appearance: none;
+  
+  // Override option hover colors to use black instead of blue
+  option {
+    background: #ffffff !important;
+    color: #000000 !important;
+    
+    &:hover {
+      background: #000000 !important;
+      color: #ffffff !important;
+    }
+  }
+  
+  // Override any browser default blue colors for individual option hover
+  option:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+  }
 }
 // Button styling
 button {
@@ -392,10 +405,30 @@ label {
     background: transparent !important;
   }
   
+  // Prevent ReactFlow from adding borders/outlines when form elements are focused
+  &:focus,
+  &:focus-within,
+  &.selected,
+  &.selectable:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  
   .node-default {
     &:hover {
       box-shadow: none !important;
       // transform: none !important;
+      background: transparent !important;
+    }
+    
+    // Prevent focus styling from bubbling up
+    &:focus,
+    &:focus-within {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
       background: transparent !important;
     }
   }
