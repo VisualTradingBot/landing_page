@@ -12,7 +12,8 @@ import ParameterBlock from "./parameter-block/ParameterBlock";
 import BacktestView from "./back-test/BacktestView";
 
 // Nodes
-import Execute from "./nodes/execute/Execute";
+import Buy from "./nodes/buy/Buy";
+import Sell from "./nodes/sell/Sell";
 import If from "./nodes/if/If";
 import SetParameter from "./nodes/setParameter/SetParameter";
 import Input from "./nodes/input/Input";
@@ -124,10 +125,10 @@ const initialNodes = [
   },
   // Execution Layer - Entry Action
   {
-    id: "executeNode-1",
-    type: "executeNode",
+    id: "buyNode-1",
+    type: "buyNode",
     position: { x: 580, y: 180 },
-    data: { label: "Execute Buy", action: "buy" },
+    data: { label: "Buy", action: "buy" },
   },
   // Decision Logic Layer - Exit Decisions
   {
@@ -159,10 +160,10 @@ const initialNodes = [
     },
   },
   {
-    id: "executeNode-2",
-    type: "executeNode",
+    id: "sellNode-1",
+    type: "sellNode",
     position: { x: 1000, y: 320 },
-    data: { label: "Execute Sell (Stop-Loss)", action: "sell" },
+    data: { label: "Sell (Stop-Loss)", action: "sell", amount: "100" },
   },
   {
     id: "ifNode-3",
@@ -193,15 +194,16 @@ const initialNodes = [
     },
   },
   {
-    id: "executeNode-3",
-    type: "executeNode",
+    id: "sellNode-2",
+    type: "sellNode",
     position: { x: 1430, y: 450 },
-    data: { label: "Execute Sell (Profit)", action: "sell" },
+    data: { label: "Sell (Profit)", action: "sell", amount: "100" },
   },
 ];
 
 const nodeTypes = {
-  executeNode: Execute,
+  buyNode: Buy,
+  sellNode: Sell,
   ifNode: If,
   inputNode: Input,
   indicatorNode: Indicator,
@@ -234,8 +236,8 @@ const initialEdges = [
     id: "n3.1-n4.1",
     source: "ifNode-1",
     sourceHandle: "ifNode-1-true",
-    target: "executeNode-1",
-    targetHandle: "executeNode-1-left",
+    target: "buyNode-1",
+    targetHandle: "buyNode-1-left",
     type: "execution",
     animated: true,
     style: {
@@ -264,8 +266,8 @@ const initialEdges = [
     id: "n3.2-n4.2",
     source: "ifNode-2",
     sourceHandle: "ifNode-2-true",
-    target: "executeNode-2",
-    targetHandle: "executeNode-2-left",
+    target: "sellNode-1",
+    targetHandle: "sellNode-1-left",
     type: "execution",
     animated: true,
     style: {
@@ -294,8 +296,8 @@ const initialEdges = [
     id: "n3.3-n4.3",
     source: "ifNode-3",
     sourceHandle: "ifNode-3-true",
-    target: "executeNode-3",
-    targetHandle: "executeNode-3-left",
+    target: "sellNode-2",
+    targetHandle: "sellNode-2-left",
     type: "execution",
     animated: true,
     style: {

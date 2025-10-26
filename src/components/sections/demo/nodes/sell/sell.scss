@@ -1,0 +1,87 @@
+// Sell node specific styles
+.sell-container {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asset-display {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  
+  .asset-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .asset-image {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+  
+  .asset-fallback {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+}
+
+.amount-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .amount-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  
+  .amount-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 60px; // Make the input field much thinner
+    
+    .amount-input {
+      width: 100%;
+      padding: 8px 20px 8px 8px; // Reduced right padding since field is thinner
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #ffffff;
+      color: #0f172a;
+      transition: all 0.2s ease;
+      
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      &::placeholder {
+        color: #9ca3af;
+        font-style: italic;
+      }
+    }
+    
+    .amount-suffix {
+      position: absolute;
+      right: 6px; // Moved closer to the input since field is thinner
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      pointer-events: none;
+    }
+  }
+}

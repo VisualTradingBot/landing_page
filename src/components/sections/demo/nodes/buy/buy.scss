@@ -1,0 +1,31 @@
+// Buy node specific styles
+.buy-container {
+  padding: 8px 0;
+}
+
+.asset-display {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  
+  .asset-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .asset-image {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+  
+  .asset-fallback {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+}
