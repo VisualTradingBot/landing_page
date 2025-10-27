@@ -614,16 +614,14 @@ export default function Demo() {
           translateExtent={translateExtent}
           fitView={false}
         >
-          <Panel position="top-center">
-            <ParameterBlock
-              handleRemoveParameter={handleRemoveParameter}
-              handleAddParameter={handleAddParameter}
-              parameters={parameters}
-              setParameters={setParameters}
-              onShowModal={handleShowModal}
-              onShowDeleteModal={handleShowDeleteModal}
-            />
-          </Panel>
+          <ParameterBlock
+            handleRemoveParameter={handleRemoveParameter}
+            handleAddParameter={handleAddParameter}
+            parameters={parameters}
+            setParameters={setParameters}
+            onShowModal={handleShowModal}
+            onShowDeleteModal={handleShowDeleteModal}
+          />
         </ReactFlow>
       </div>
 

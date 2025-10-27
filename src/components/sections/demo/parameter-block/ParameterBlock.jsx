@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import "./ParameterBlock.scss";
 import PropTypes from "prop-types";
 
@@ -17,6 +17,16 @@ export default function ParameterBlock({
   const [dropdownState, setDropdownState] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState({});
+  
+  // Drag state management
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [currentX, setCurrentX] = useState(0);
+  const [canvasBounds, setCanvasBounds] = useState({ left: 0, right: 0 });
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [hasDragged, setHasDragged] = useState(false);
+  const parameterBlockRef = useRef(null);
+  
   // Modal state will be managed by parent Demo component
 
   const startEditing = useCallback((index, field, currentValue) => {
@@ -57,7 +67,16 @@ export default function ParameterBlock({
     [saveEdit, cancelEdit]
   );
 
-  const onClickDropdownButton = useCallback(() => {
+  const onClickDropdownButton = useCallback((e) => {
+    // Don't toggle if we've dragged
+    if (hasDragged) {
+      return;
+    }
+    setDropdownState((prev) => !prev);
+  }, [hasDragged]);
+
+  const onClickToggleIcon = useCallback((e) => {
+    e.stopPropagation(); // Prevent triggering the title click
     setDropdownState((prev) => !prev);
   }, []);
 
@@ -71,6 +90,78 @@ export default function ParameterBlock({
       [groupType]: !prev[groupType]
     }));
   }, []);
+
+  // Canvas bounds detection
+  useEffect(() => {
+    const updateCanvasBounds = () => {
+      if (parameterBlockRef.current) {
+        const canvas = parameterBlockRef.current.closest('.react-flow');
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const blockWidth = parameterBlockRef.current.offsetWidth;
+          setCanvasBounds({
+            left: 0,
+            right: rect.width - blockWidth
+          });
+        }
+      }
+    };
+
+    updateCanvasBounds();
+    window.addEventListener('resize', updateCanvasBounds);
+    return () => window.removeEventListener('resize', updateCanvasBounds);
+  }, []);
+
+  // Drag handlers
+  const handleMouseDown = useCallback((e) => {
+    // Only allow dragging on the title bar, but not on the toggle icon
+    if (e.target.closest('.dropdown-title') && !e.target.closest('.toggle-icon')) {
+      setDragStartPos({ x: e.clientX, y: e.clientY });
+      setHasDragged(false);
+      const rect = parameterBlockRef.current.getBoundingClientRect();
+      setDragOffset(e.clientX - rect.left);
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (dragStartPos.x !== 0 && dragStartPos.y !== 0) {
+      const deltaX = Math.abs(e.clientX - dragStartPos.x);
+      const deltaY = Math.abs(e.clientY - dragStartPos.y);
+      
+      // Start dragging if moved more than 5 pixels horizontally
+      if (deltaX > 5 && deltaX > deltaY) {
+        if (!isDragging) {
+          setIsDragging(true);
+          setHasDragged(true);
+          document.body.style.cursor = 'grabbing';
+          document.body.style.userSelect = 'none';
+        }
+        
+        const newX = e.clientX - dragOffset;
+        const constrainedX = Math.max(canvasBounds.left, Math.min(canvasBounds.right, newX));
+        setCurrentX(constrainedX);
+      }
+    }
+  }, [dragStartPos, dragOffset, canvasBounds, isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+    setDragStartPos({ x: 0, y: 0 });
+  }, [isDragging]);
+
+  // Add global mouse event listeners
+  useEffect(() => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
   // Parameter type detection
   const getParameterType = useCallback((param) => {
@@ -137,11 +228,19 @@ export default function ParameterBlock({
 
   return (
     <div
-      className={`parameters-dropdown ${dropdownState ? 'expanded' : 'collapsed'} ${!hasMatchingParameters ? 'empty' : ''}`}
+      ref={parameterBlockRef}
+      className={`parameters-dropdown ${dropdownState ? 'expanded' : 'collapsed'} ${!hasMatchingParameters ? 'empty' : ''} ${isDragging ? 'dragging' : ''}`}
+      style={{ 
+        transform: `translateX(${currentX}px)`,
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        zIndex: 1000
+      }}
     >
-      <h1 className="dropdown-title" onClick={onClickDropdownButton}>
+      <h1 className="dropdown-title" onClick={onClickDropdownButton} onMouseDown={handleMouseDown}>
         Parameter Dashboard
-        <span className="toggle-icon">
+        <span className="toggle-icon" onClick={onClickToggleIcon}>
           {dropdownState ? '▲' : '▼'}
         </span>
       </h1>
