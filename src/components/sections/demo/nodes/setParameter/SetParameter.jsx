@@ -40,7 +40,6 @@ export default function SetParameter({ data, id }) {
         <div className="parameter-field">
           <label className="parameter-label">Parameter:</label>
           <div className="parameter-input-container">
-            <span className={`parameter-icon ${parameterColor}`}></span>
             <input
               type="text"
               value={parameterName}

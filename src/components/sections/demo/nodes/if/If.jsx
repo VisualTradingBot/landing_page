@@ -1,8 +1,7 @@
 import "./if.scss";
 import PropTypes from "prop-types";
 import NodeDefault from "../nodeDefault";
-import { useMemo, useState, useEffect } from "react";
-import { VariableFieldStandalone } from "../components";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useReactFlow, Handle, Position } from "@xyflow/react";
 
 export default function If({ data, id }) {
@@ -79,6 +78,81 @@ export default function If({ data, id }) {
     }
   }, [variable, isMaster, id, updateNodeData]);
 
+  // Drag and drop handlers for parameter fields
+  const [dragOverZone, setDragOverZone] = useState({});
+
+  const handleDragOver = useCallback((e, variableIndex) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverZone(prev => ({ ...prev, [variableIndex]: true }));
+  }, []);
+
+  const handleDragLeave = useCallback((e, variableIndex) => {
+    e.preventDefault();
+    setDragOverZone(prev => ({ ...prev, [variableIndex]: false }));
+  }, []);
+
+  const handleDrop = useCallback((e, variableIndex) => {
+    e.preventDefault();
+    setDragOverZone(prev => ({ ...prev, [variableIndex]: false }));
+    
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('application/reactflow'));
+      if (dragData && dragData.family === 'variable') {
+        setVariable(prev => {
+          const newVars = [...prev];
+          newVars[variableIndex] = {
+            ...newVars[variableIndex],
+            parameterData: {
+              parameterId: dragData.id,
+              label: dragData.label,
+              value: dragData.value
+            }
+          };
+          return newVars;
+        });
+      }
+    } catch (error) {
+      console.error('Error handling drop:', error);
+    }
+  }, []);
+
+  const handleParameterDragStart = useCallback((e, variableIndex) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    const paramData = variable[variableIndex].parameterData;
+    e.dataTransfer.setData('application/reactflow', JSON.stringify({
+      label: paramData.label,
+      value: paramData.value,
+      family: "variable",
+      id: paramData.parameterId
+    }));
+  }, [variable]);
+
+  const handleParameterDragEnd = useCallback((variableIndex) => {
+    // Clear the parameter when dragged away
+    setVariable(prev => {
+      const newVars = [...prev];
+      newVars[variableIndex] = {
+        ...newVars[variableIndex],
+        parameterData: {}
+      };
+      return newVars;
+    });
+  }, []);
+
+  const handleParameterDoubleClick = useCallback((variableIndex) => {
+    // Clear the parameter when double-clicked
+    setVariable(prev => {
+      const newVars = [...prev];
+      newVars[variableIndex] = {
+        ...newVars[variableIndex],
+        parameterData: {}
+      };
+      return newVars;
+    });
+  }, []);
+
   return (
     <NodeDefault
       id={id}
@@ -91,20 +165,26 @@ export default function If({ data, id }) {
       <div className="if-condition-container">
         <div className="condition-row">
           <div className="condition-parameter">
-            <VariableFieldStandalone
-              key={variable[0].id}
-              zoneId={`variable-${variable[0].id}`}
-              id={variable[0].id}
-              label={variable[0].label}
-              zoneCheck={{
-                variable: {
-                  allowedFamilies: ["variable"],
-                },
-              }}
-              parameters={parameters}
-              parameterData={variable[0].parameterData}
-              setVariables={setVariable}
-            />
+            {variable[0].parameterData && Object.keys(variable[0].parameterData).length > 0 ? (
+              <div 
+                className="parameter-connected"
+                draggable
+                onDragStart={(e) => handleParameterDragStart(e, 0)}
+                onDragEnd={() => handleParameterDragEnd(0)}
+                onDoubleClick={() => handleParameterDoubleClick(0)}
+              >
+                {variable[0].parameterData.label}
+              </div>
+            ) : (
+              <div 
+                className={`parameter-placeholder ${dragOverZone[0] ? 'drag-over' : ''}`}
+                onDragOver={(e) => handleDragOver(e, 0)}
+                onDragLeave={(e) => handleDragLeave(e, 0)}
+                onDrop={(e) => handleDrop(e, 0)}
+              >
+                Drag parameter here
+              </div>
+            )}
           </div>
           
           <select
@@ -136,20 +216,26 @@ export default function If({ data, id }) {
           </select>
           
           <div className="condition-parameter">
-            <VariableFieldStandalone
-              key={variable[1].id}
-              zoneId={`variable-${variable[1].id}`}
-              id={variable[1].id}
-              label={variable[1].label}
-              zoneCheck={{
-                variable: {
-                  allowedFamilies: ["variable"],
-                },
-              }}
-              parameters={parameters}
-              parameterData={variable[1].parameterData}
-              setVariables={setVariable}
-            />
+            {variable[1].parameterData && Object.keys(variable[1].parameterData).length > 0 ? (
+              <div 
+                className="parameter-connected"
+                draggable
+                onDragStart={(e) => handleParameterDragStart(e, 1)}
+                onDragEnd={() => handleParameterDragEnd(1)}
+                onDoubleClick={() => handleParameterDoubleClick(1)}
+              >
+                {variable[1].parameterData.label}
+              </div>
+            ) : (
+              <div 
+                className={`parameter-placeholder ${dragOverZone[1] ? 'drag-over' : ''}`}
+                onDragOver={(e) => handleDragOver(e, 1)}
+                onDragLeave={(e) => handleDragLeave(e, 1)}
+                onDrop={(e) => handleDrop(e, 1)}
+              >
+                Drag parameter here
+              </div>
+            )}
           </div>
         </div>
       </div>

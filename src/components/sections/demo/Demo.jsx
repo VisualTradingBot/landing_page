@@ -29,7 +29,7 @@ import { AssetContext } from "./AssetContext";
 
 // 1. Define initial parameters for the demo strategy.
 const initialParameters = [
-  { id: "param-1", label: "lookback_window", value: "30", family: "variable" },
+  { id: "param-1", label: "lookback", value: "30", family: "variable" },
   {
     id: "param-2",
     label: "stop_loss_level",
@@ -66,9 +66,17 @@ const initialNodes = [
     position: { x: -200, y: 50 },
     data: {
       resolution: "1h",
-      lookbackWindow: "30",
       lookbackUnit: "d",
       indicator: "SMA",
+      lookbackVariable: {
+        label: "lookback",
+        id: "lookback-input-indicator",
+        parameterData: {
+          parameterId: "param-1",
+          label: "lookback",
+          value: "30"
+        }
+      }
     },
   },
   {

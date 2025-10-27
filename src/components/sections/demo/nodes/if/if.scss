@@ -39,6 +39,62 @@
         box-shadow: none;
       }
     }
+
+    .parameter-placeholder {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #9ca3af;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 100px;
+
+      &:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+      }
+
+      &.drag-over {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      }
+    }
+
+    .parameter-connected {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: all 0.2s ease;
+      min-width: 100px;
+
+      &:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
   }
   
   .condition-operator {
