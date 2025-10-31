@@ -1,20 +1,236 @@
+// If node specific styles - clean minimalist design
+.if-condition-container {
+  width: fit-content;
+  min-width: 200px;
+  margin: 0 !important;
+}
+
 .condition-row {
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
-  flex-direction: row;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  div {
-    width: 30%;
-    height: 25px;
-    background-color: #ececec;
-    border: 1px dashed #444;
-    border-radius: 4px;
+  justify-content: center;
+  gap: 8px !important;
+  padding: 8px 0 !important;
+  width: fit-content;
+  flex-wrap: nowrap;
+  
+  .condition-parameter {
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 6px 0 !important;
+    // min-width: 100px;
+    width: fit-content;
     text-align: center;
-    //text is too long
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 20px;
-    font-size: 12px;
+    flex-shrink: 0;
+    
+    // Style the input field inside
+    input, select {
+      border: none;
+      background: transparent;
+      color: #000000;
+      font-weight: 600;
+      text-align: center;
+      width: 100%;
+      outline: none;
+      
+      &:focus {
+        outline: none;
+        box-shadow: none;
+      }
+    }
+
+    .parameter-placeholder {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #9ca3af;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 100px;
+
+      &:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+      }
+
+      &.drag-over {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      }
+    }
+
+    .parameter-connected {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: all 0.2s ease;
+      min-width: 100px;
+
+      &:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
   }
+  
+  .condition-operator {
+    background: #ffffff;
+    border: none !important;
+    border-radius: 6px;
+    padding: 6px 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    color: #000000;
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
+    flex-shrink: 0;
+    cursor: pointer;
+    appearance: none;
+    padding-right: 6px;
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    
+    // Prevent the select from interfering with node dragging
+    &:focus,
+    &:active,
+    &:hover {
+      transform: none !important;
+      transition: none !important;
+      animation: none !important;
+    }
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:active {
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:hover {
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    // Override ReactFlow's default select styling
+    &.react-flow__node select:focus,
+    .react-flow__node &:focus {
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    // Style the dropdown options
+    option {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-weight: 600;
+      padding: 4px 8px;
+      
+      &:hover {
+        background: #000000 !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+}
+
+// Output labels styling
+.if-outputs {
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center;
+  padding: 4px 12px !important;
+  margin-top: 0 !important;
+  
+  .output-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+}
+
+// Global override for ReactFlow select elements
+.react-flow__node select {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+// More aggressive overrides for ReactFlow interference
+.react-flow__node {
+  .condition-operator {
+    &:focus,
+    &:active,
+    &:hover {
+      outline: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      transform: none !important;
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+// Prevent ReactFlow from interfering with select elements
+.react-flow__node * {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// If block specific handle positioning
+// Target only If nodes' handles
+.react-flow__node[data-id*="ifNode"] {
+  .node-handle--top {
+    transform: translateY(20px) !important; // Adjust top handle position
+  }
+  
 }

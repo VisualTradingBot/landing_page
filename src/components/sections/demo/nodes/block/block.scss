@@ -1,0 +1,49 @@
+// Block Node - Empty container like SetParameter with purple styling
+.block-container {
+  padding: 12px;
+  min-height: 510px;
+  min-width: 510px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Override NodeDefault styles for Block node
+.react-flow__node[data-id*="blockNode"] {
+  width: 700px !important;
+  height: 700px !important;
+  pointer-events: none !important; // Disable all interactions
+  
+  .node-default-header {
+    font-size: 22px !important;
+    background: linear-gradient(135deg, #e83dff, #3002ff, #1f02ff) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important; // Fallback for browsers that don't support background-clip
+    pointer-events: none !important; // Disable header interactions
+  }
+  
+  .node-default-body {
+  // Purple border
+    background: transparent !important; // Transparent body
+    width: 100% !important;
+    border: 3px solid var(--accent) !important;
+    height: calc(100% - 40px) !important; // Full height minus header
+    pointer-events: none !important; // Disable body interactions
+    box-shadow: none !important; // No hover shadow
+    transform: none !important; // No hover transform
+  }
+  
+  // Disable all hover effects
+  &:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    background: transparent !important;
+  }
+  
+  &:hover .node-default-body {
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
