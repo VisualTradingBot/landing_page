@@ -13,12 +13,6 @@
   justify-content: space-between;
 }
 
-.button-row {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
 .run-test-button {
   background: #000000;
   color: #ffffff;
@@ -85,7 +79,7 @@
   option {
     background: #ffffff;
     color: #000000;
-    
+
     &:hover {
       background: #000000;
       color: #ffffff;

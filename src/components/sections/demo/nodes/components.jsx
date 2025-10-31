@@ -96,25 +96,30 @@ export function VariableFieldStandalone({
         {!parameterData || Object.keys(parameterData).length === 0 ? (
           <div className="empty-zone"></div>
         ) : (
-          <Box 
-            data={parameterData} 
+          <Box
+            data={parameterData}
             onDragStart={(e) => {
-              console.log('Drag started');
+              console.log("Drag started");
               e.stopPropagation();
               e.stopImmediatePropagation();
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('application/reactflow', JSON.stringify({
-                label: parameterData.label,
-                value: parameterData.value,
-                family: "variable",
-                id: parameterData.parameterId
-              }));
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData(
+                "application/reactflow",
+                JSON.stringify({
+                  label: parameterData.label,
+                  value: parameterData.value,
+                  family: "variable",
+                  id: parameterData.parameterId,
+                })
+              );
             }}
             onDragEnd={() => {
-              console.log('Removing parameter');
+              console.log("Removing parameter");
               setVariables((prev) =>
                 prev.map((variable) =>
-                  variable.id === id ? { ...variable, parameterData: {} } : variable
+                  variable.id === id
+                    ? { ...variable, parameterData: {} }
+                    : variable
                 )
               );
             }}
@@ -126,12 +131,12 @@ export function VariableFieldStandalone({
 }
 
 // Boxes go inside interactive nodes drop zone
-function Box({ data, onDragStart, onDragEnd }) {
+function Box({ data, onDragEnd }) {
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e) => {
-    console.log('Mouse down on box');
+    console.log("Mouse down on box");
     e.stopPropagation();
     e.stopImmediatePropagation();
     setIsDragging(true);
@@ -146,26 +151,27 @@ function Box({ data, onDragStart, onDragEnd }) {
 
   const handleMouseUp = (e) => {
     if (!isDragging) return;
-    console.log('Mouse up on box');
+    console.log("Mouse up on box");
     e.stopPropagation();
     e.stopImmediatePropagation();
     setIsDragging(false);
-    
+
     // Check if we moved far enough to consider it a drag
     const distance = Math.sqrt(
       Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2)
     );
-    
-    if (distance > 10) { // 10px threshold
+
+    if (distance > 10) {
+      // 10px threshold
       // Get the element under the mouse
       const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-      const dropZone = elementBelow?.closest('.drop-zone');
-      
-      console.log('Drop zone found:', dropZone);
-      
+      const dropZone = elementBelow?.closest(".drop-zone");
+
+      console.log("Drop zone found:", dropZone);
+
       // If not over any drop zone, remove the parameter
       if (!dropZone && onDragEnd) {
-        console.log('Removing parameter');
+        console.log("Removing parameter");
         onDragEnd(e);
       }
     }
@@ -174,19 +180,19 @@ function Box({ data, onDragStart, onDragEnd }) {
   // Add global mouse event listeners
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isDragging]);
 
   return (
-    <span 
-      className={`placed-block ${isDragging ? 'dragging' : ''}`}
+    <span
+      className={`placed-block ${isDragging ? "dragging" : ""}`}
       onMouseDown={handleMouseDown}
     >
       <h3>{data.label}</h3>

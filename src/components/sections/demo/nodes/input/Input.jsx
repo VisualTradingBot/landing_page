@@ -24,10 +24,7 @@ export default function Input({ id, data, onAssetChange }) {
   };
 
   return (
-    <NodeDefault
-      id={id}
-      title="Test Parameters"
-    >
+    <NodeDefault id={id} title="Test Parameters">
       <div className="input-container">
         <div className="field-row">
           <label className="field-label">Data Source:</label>
@@ -76,18 +73,6 @@ export default function Input({ id, data, onAssetChange }) {
             <option value="stream">Stream</option>
             <option value="realtime">Real-time</option>
           </select>
-        </div>
-
-        <div className="button-row">
-          <button 
-            className="run-test-button"
-            onClick={() => {
-              console.log('Run Test clicked with:', { dataSource, asset, type });
-              // TODO: Implement test execution logic
-            }}
-          >
-            Run Test
-          </button>
         </div>
       </div>
     </NodeDefault>

@@ -1,7 +1,7 @@
 import "./inputIndicator.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
@@ -11,29 +11,30 @@ import { VariableFieldStandalone } from "../components";
 export default function InputIndicator({ data, id }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
-  
+
   // State for the form fields
   const [resolution, setResolution] = useState(data?.resolution || "1h");
   const [lookbackUnit, setLookbackUnit] = useState(data?.lookbackUnit || "d");
-  const [indicator, setIndicator] = useState(data?.indicator || "SMA");
-  
+  // indicator stored as internal id (e.g. 'sma', 'ema', '30d_high')
+  const [indicator, setIndicator] = useState(data?.indicator || "sma");
+
   // Parameter system for lookback window
   const defaultLookbackVar = {
     label: "lookback",
     id: `lookback-${Date.now()}`,
-    parameterData: {}
+    parameterData: {},
   };
   const [lookbackVariable, setLookbackVariable] = useState(() => {
     return data?.lookbackVariable || defaultLookbackVar;
   });
-  const parameters = useMemo(() => data?.parameters || [], [data?.parameters]);
+  // parameters provided by graph; kept on node data but not used locally
 
   // Drag and drop handlers
   const [dragOverZone, setDragOverZone] = useState(false);
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
     setDragOverZone(true);
   }, []);
 
@@ -45,48 +46,56 @@ export default function InputIndicator({ data, id }) {
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragOverZone(false);
-    
+
     try {
-      const dragData = JSON.parse(e.dataTransfer.getData('application/reactflow'));
-      if (dragData && dragData.family === 'variable') {
-        setLookbackVariable(prev => ({
+      const dragData = JSON.parse(
+        e.dataTransfer.getData("application/reactflow")
+      );
+      if (dragData && dragData.family === "variable") {
+        setLookbackVariable((prev) => ({
           ...prev,
           parameterData: {
             parameterId: dragData.id,
             label: dragData.label,
-            value: dragData.value
-          }
+            value: dragData.value,
+          },
         }));
       }
     } catch (error) {
-      console.error('Error handling drop:', error);
+      console.error("Error handling drop:", error);
     }
   }, []);
 
-  const handleParameterDragStart = useCallback((e) => {
-    e.stopPropagation();
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/reactflow', JSON.stringify({
-      label: lookbackVariable.parameterData.label,
-      value: lookbackVariable.parameterData.value,
-      family: "variable",
-      id: lookbackVariable.parameterData.parameterId
-    }));
-  }, [lookbackVariable.parameterData]);
+  const handleParameterDragStart = useCallback(
+    (e) => {
+      e.stopPropagation();
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData(
+        "application/reactflow",
+        JSON.stringify({
+          label: lookbackVariable.parameterData.label,
+          value: lookbackVariable.parameterData.value,
+          family: "variable",
+          id: lookbackVariable.parameterData.parameterId,
+        })
+      );
+    },
+    [lookbackVariable.parameterData]
+  );
 
   const handleParameterDragEnd = useCallback(() => {
     // Clear the parameter when dragged away
-    setLookbackVariable(prev => ({
+    setLookbackVariable((prev) => ({
       ...prev,
-      parameterData: {}
+      parameterData: {},
     }));
   }, []);
 
   const handleParameterDoubleClick = useCallback(() => {
     // Clear the parameter when double-clicked
-    setLookbackVariable(prev => ({
+    setLookbackVariable((prev) => ({
       ...prev,
-      parameterData: {}
+      parameterData: {},
     }));
   }, []);
 
@@ -95,7 +104,7 @@ export default function InputIndicator({ data, id }) {
     bitcoin: bitcoinLogo,
     ethereum: ethereumLogo,
     btc: bitcoinLogo,
-    eth: ethereumLogo
+    eth: ethereumLogo,
   };
 
   const currentAsset = selectedAsset || "bitcoin";
@@ -104,21 +113,27 @@ export default function InputIndicator({ data, id }) {
   // Update node data when lookback variable changes
   useEffect(() => {
     if (updateNodeData && id) {
-      updateNodeData(id, { 
+      updateNodeData(id, {
         lookbackVariable,
         resolution,
         lookbackUnit,
-        indicator
+        indicator,
       });
     }
-  }, [lookbackVariable, resolution, lookbackUnit, indicator, id, updateNodeData]);
+  }, [
+    lookbackVariable,
+    resolution,
+    lookbackUnit,
+    indicator,
+    id,
+    updateNodeData,
+  ]);
 
   const handleResolutionChange = (event) => {
     const value = event.target.value;
     setResolution(value);
     updateNodeData(id, { resolution: value });
   };
-
 
   const handleLookbackUnitChange = (event) => {
     const value = event.target.value;
@@ -143,18 +158,18 @@ export default function InputIndicator({ data, id }) {
         <div className="field-row asset-row">
           <label className="field-label">Asset:</label>
           <div className="asset-display">
-            <img 
-              src={assetImage} 
-              alt={currentAsset} 
+            <img
+              src={assetImage}
+              alt={currentAsset}
               className="asset-image"
               onError={(e) => {
                 // Fallback to emoji if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline';
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "inline";
               }}
             />
-            <span className="asset-fallback" style={{ display: 'none' }}>
-              {currentAsset === 'bitcoin' ? '₿' : '🔷'}
+            <span className="asset-fallback" style={{ display: "none" }}>
+              {currentAsset === "bitcoin" ? "₿" : "🔷"}
             </span>
           </div>
         </div>
@@ -178,8 +193,9 @@ export default function InputIndicator({ data, id }) {
           <label className="field-label">Lookback Window:</label>
           <div className="lookback-container">
             <div className="lookback-parameter-field">
-              {lookbackVariable.parameterData && Object.keys(lookbackVariable.parameterData).length > 0 ? (
-                <div 
+              {lookbackVariable.parameterData &&
+              Object.keys(lookbackVariable.parameterData).length > 0 ? (
+                <div
                   className="parameter-connected"
                   draggable
                   onDragStart={handleParameterDragStart}
@@ -189,8 +205,10 @@ export default function InputIndicator({ data, id }) {
                   {lookbackVariable.parameterData.label}
                 </div>
               ) : (
-                <div 
-                  className={`parameter-placeholder ${dragOverZone ? 'drag-over' : ''}`}
+                <div
+                  className={`parameter-placeholder ${
+                    dragOverZone ? "drag-over" : ""
+                  }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -219,14 +237,14 @@ export default function InputIndicator({ data, id }) {
             onChange={handleIndicatorChange}
             className="field-select"
           >
-            <option value="rolling_low">Rolling Low</option>
-            <option value="rolling_high">Rolling High</option>
-            <option value="SMA">SMA (Simple Moving Average)</option>
-            <option value="EMA">EMA (Exponential Moving Average)</option>
-            <option value="RSI">RSI (Relative Strength Index)</option>
+            <option value="30d_low">Rolling Low</option>
+            <option value="30d_high">Rolling High</option>
+            <option value="sma">SMA (Simple Moving Average)</option>
+            <option value="ema">EMA (Exponential Moving Average)</option>
+            <option value="rsi">RSI (Relative Strength Index)</option>
             <option value="bollinger_upper">Bollinger Upper Band</option>
             <option value="bollinger_lower">Bollinger Lower Band</option>
-            <option value="ATR">ATR (Average True Range)</option>
+            <option value="atr">ATR (Average True Range)</option>
           </select>
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function Sell({ data, id }) {
     bitcoin: bitcoinLogo,
     ethereum: ethereumLogo,
     btc: bitcoinLogo,
-    eth: ethereumLogo
+    eth: ethereumLogo,
   };
 
   const currentAsset = selectedAsset || "bitcoin";
@@ -39,29 +39,25 @@ export default function Sell({ data, id }) {
   };
 
   return (
-    <NodeDefault
-      id={id}
-      title="Sell"
-      left={{ active: true, type: "target" }}
-    >
+    <NodeDefault id={id} title="Sell" left={{ active: true, type: "target" }}>
       <div className="sell-container">
         <div className="asset-display">
           <span className="asset-label">Asset:</span>
-          <img 
-            src={assetImage} 
-            alt={currentAsset} 
+          <img
+            src={assetImage}
+            alt={currentAsset}
             className="asset-image"
             onError={(e) => {
               // Fallback to emoji if image fails to load
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'inline';
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "inline";
             }}
           />
-          <span className="asset-fallback" style={{ display: 'none' }}>
-            {currentAsset === 'bitcoin' ? '₿' : '🔷'}
+          <span className="asset-fallback" style={{ display: "none" }}>
+            {currentAsset === "bitcoin" ? "₿" : "🔷"}
           </span>
         </div>
-        
+
         <div className="amount-field">
           <label className="amount-label">Amount:</label>
           <div className="amount-input-container">

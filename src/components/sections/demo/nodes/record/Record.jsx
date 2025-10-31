@@ -1,12 +1,14 @@
 import "./record.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useReactFlow } from "@xyflow/react";
 
 export default function Record({ data, id }) {
   const { updateNodeData } = useReactFlow();
-  const [recordType, setRecordType] = useState(data?.recordType || "entry_price");
+  const [recordType, setRecordType] = useState(
+    data?.recordType || "entry_price"
+  );
 
   const handleRecordTypeChange = (event) => {
     const value = event.target.value;
@@ -24,8 +26,8 @@ export default function Record({ data, id }) {
       <div className="record-container">
         <div className="record-type-field">
           <label className="record-type-label">Record:</label>
-          <select 
-            value={recordType} 
+          <select
+            value={recordType}
             onChange={handleRecordTypeChange}
             className="record-type-select"
           >
