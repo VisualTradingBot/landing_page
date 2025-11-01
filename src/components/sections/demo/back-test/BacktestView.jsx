@@ -8,7 +8,6 @@ import {
   useTransition,
 } from "react";
 import PropTypes from "prop-types";
-import { DEFAULT_LOOKBACK } from "../defaults";
 // BacktestView: Visualizes the results of a trading strategy backtest, including price, indicators, equity curve, and trade statistics.
 import {
   ResponsiveContainer,
@@ -19,6 +18,10 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceDot,
+  BarChart,
+  Bar,
+  Cell,
+  ReferenceLine,
 } from "recharts";
 
 import {
@@ -73,10 +76,36 @@ CustomTooltip.propTypes = {
   formatter: PropTypes.func,
 };
 
+function HistogramTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+
+  const dataPoint = payload[0]?.payload;
+  if (!dataPoint) return null;
+
+  return (
+    <div className="backtest-tooltip">
+      <p className="tooltip-label">Return Range</p>
+      <p className="tooltip-value">{dataPoint.range}</p>
+      <p className="tooltip-value">Trades: {dataPoint.count}</p>
+    </div>
+  );
+}
+
+HistogramTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.array,
+};
+
+function buildPriceKey(opts) {
+  if (!opts) return null;
+  const assetKey = opts.asset ?? "bitcoin";
+  const sourceKey = opts.useSynthetic ? "synthetic" : "real";
+  return `${assetKey}|${sourceKey}`;
+}
+
 export default function BacktestView({
   options,
   externalControl: _externalControl = false,
-  useSynthetic = false,
 }) {
   // === State for backtest and chart animation ===
   const [stats, setStats] = useState(null); // Backtest statistics and equity series
@@ -86,25 +115,42 @@ export default function BacktestView({
   const [progress, setProgress] = useState(0); // 0..1 progress for worker
   const workerRef = useRef(null);
   const runInProgressRef = useRef(false); // prevents duplicate posts to worker
-  const autoRunRef = useRef(false); // ensure auto-run happens only once after prices load
   const [storedPrices, setStoredPrices] = useState(null); // Price data (real or synthetic)
+  const priceKeyRef = useRef(null); // Tracks which option set the current prices belong to
   const [visiblePricePoints, setVisiblePricePoints] = useState(0); // Animated price chart points
   const [visibleEquityPoints, setVisibleEquityPoints] = useState(0); // Animated equity chart points
   const priceAnimationRef = useRef(null);
   const equityAnimationRef = useRef(null);
   const [, startTransition] = useTransition();
+  const [activeOptions, setActiveOptions] = useState(options);
+  const optionsInitializedRef = useRef(false);
+  const pendingRunRef = useRef(null);
+
+  useEffect(() => {
+    if (optionsInitializedRef.current) return;
+    if (!options) return;
+    setActiveOptions(options);
+    pendingRunRef.current = options;
+    optionsInitializedRef.current = true;
+    setIsLoading(true);
+    setProgress(0);
+    setError(null);
+    setVisiblePricePoints(0);
+    setVisibleEquityPoints(0);
+    setWorkerNotice(null);
+  }, [options]);
 
   // === Backtest options ===
-  const asset = options?.asset ?? "bitcoin";
+  const asset = activeOptions?.asset ?? "bitcoin";
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
-  const lookback = options?.lookback;
-  const feePercent = options?.feePercent ?? 0.05;
+  const lookback = activeOptions?.lookback;
+  const feePercent = activeOptions?.feePercent ?? 0.05;
 
   // === Extract stop-loss from graph nodes (for visualization only) ===
   // Looks for an 'ifNode' with a right-side variable like 'entry * 0.95' to infer stop-loss percent
   const stopLossPercent = useMemo(() => {
-    if (!options?.nodes) return 5;
-    const ifNodes = options.nodes.filter((n) => n.type === "ifNode");
+    if (!activeOptions?.nodes) return 5;
+    const ifNodes = activeOptions.nodes.filter((n) => n.type === "ifNode");
     for (const ifNode of ifNodes) {
       const vars = ifNode.data?.variables || [];
       const rightVar = vars[1];
@@ -114,7 +160,7 @@ export default function BacktestView({
       if (pd && pd.parameterId) {
         // Resolve by scanning node-attached parameters (Demo attaches parameters to each node.data.parameters)
         let resolved = null;
-        for (const n of options.nodes) {
+        for (const n of activeOptions.nodes) {
           const params = n?.data?.parameters;
           if (!Array.isArray(params)) continue;
           const match = params.find(
@@ -142,7 +188,7 @@ export default function BacktestView({
       }
     }
     return 5;
-  }, [options]);
+  }, [activeOptions]);
 
   // Debug: Log resolved stop-loss percent
 
@@ -151,17 +197,55 @@ export default function BacktestView({
     syntheticRef.current = generateSyntheticPrices(365, 20000);
   }
 
+  const runSimulationWithOptions = useCallback((runOptions, priceSeries) => {
+    if (!workerRef.current || !priceSeries?.length) return;
+
+    pendingRunRef.current = null;
+
+    const numericFee = Number(runOptions?.feePercent);
+    const feeForRun = Number.isFinite(numericFee) ? numericFee : 0.05;
+
+    setIsLoading(true);
+    setProgress(0);
+    setError(null);
+    setVisiblePricePoints(0);
+    setVisibleEquityPoints(0);
+    setWorkerNotice(null);
+    runInProgressRef.current = true;
+
+    workerRef.current.postMessage({
+      nodes: runOptions.nodes,
+      edges: runOptions.edges,
+      parameters: runOptions.parameters,
+      prices: priceSeries,
+      feePercent: feeForRun,
+    });
+  }, []);
+
   // === Fetch price data (CoinGecko or synthetic fallback) ===
   useEffect(() => {
-    let mounted = true;
-    async function initPrices() {
-      if (useSynthetic) {
-        setStoredPrices(syntheticRef.current);
+    if (!activeOptions) return;
+
+    const fetchKey = buildPriceKey(activeOptions);
+    const wantsSynthetic = !!activeOptions.useSynthetic;
+    const targetAsset = activeOptions.asset ?? "bitcoin";
+
+    if (priceKeyRef.current === fetchKey && storedPrices?.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function ensurePrices() {
+      if (wantsSynthetic) {
+        if (!cancelled) {
+          priceKeyRef.current = fetchKey;
+          setStoredPrices(syntheticRef.current);
+        }
         return;
       }
 
-      let url = `https://api.coingecko.com/api/v3/coins/${asset}/market_chart?vs_currency=eur&days=365&interval=daily`;
-
+      const url = `https://api.coingecko.com/api/v3/coins/${targetAsset}/market_chart?vs_currency=eur&days=365&interval=daily`;
       const fetchOptions = {
         method: "GET",
         headers: { "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w" },
@@ -169,10 +253,12 @@ export default function BacktestView({
 
       try {
         const response = await fetch(url, fetchOptions);
+        if (cancelled) return;
         if (response && response.ok) {
           const data = await response.json();
           const mapped = mapCoinGeckoPricesToOHLC(data.prices || []);
           if (Array.isArray(mapped) && mapped.length > 0) {
+            priceKeyRef.current = fetchKey;
             setStoredPrices(mapped);
             return;
           }
@@ -183,21 +269,37 @@ export default function BacktestView({
           );
         }
       } catch (error) {
-        console.error("Error fetching prices:", error);
+        if (!cancelled) {
+          console.error("Error fetching prices:", error);
+        }
       }
 
-      if (mounted) {
+      if (!cancelled) {
+        priceKeyRef.current = fetchKey;
         setStoredPrices(syntheticRef.current);
-        // Optionally, notify user that real data failed and synthetic is used
       }
     }
 
-    initPrices();
+    ensurePrices();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-  }, [asset, useSynthetic]);
+  }, [activeOptions, storedPrices]);
+
+  useEffect(() => {
+    if (!storedPrices || !storedPrices.length) return;
+    if (!pendingRunRef.current) return;
+
+    const runOptions = pendingRunRef.current;
+    const expectedKey = buildPriceKey(runOptions);
+    if (priceKeyRef.current !== expectedKey) {
+      return;
+    }
+
+    pendingRunRef.current = null;
+    runSimulationWithOptions(runOptions, storedPrices);
+  }, [storedPrices, runSimulationWithOptions]);
 
   // Ensure we display the price/indicator plot once prices load even before a backtest run
   useEffect(() => {
@@ -258,40 +360,33 @@ export default function BacktestView({
 
   // === MODIFIED: The function to trigger the backtest ===
   const handleRunBacktest = useCallback(() => {
-    // Guard clauses: Do nothing if the worker isn't ready or data is missing.
-    if (
-      !workerRef.current ||
-      !storedPrices ||
-      isLoading ||
-      runInProgressRef.current
-    ) {
+    if (!workerRef.current || runInProgressRef.current) {
       return;
     }
 
-    // Set UI state to loading.
-    setIsLoading(true);
-    setProgress(0);
-    setError(null);
-    setVisiblePricePoints(0); // Reset animations
-    setVisibleEquityPoints(0);
+    const nextOptions = options;
+    if (!nextOptions) return;
 
-    // Send the necessary data to the worker to start the job.
-    runInProgressRef.current = true;
-    workerRef.current.postMessage({
-      nodes: options.nodes,
-      edges: options.edges,
-      parameters: options.parameters,
-      prices: storedPrices, // Pass the fetched prices
-      feePercent: feePercent,
-    });
-  }, [
-    storedPrices,
-    options.nodes,
-    options.edges,
-    options.parameters,
-    feePercent,
-    isLoading,
-  ]);
+    const nextKey = buildPriceKey(nextOptions);
+    const hasPricesForRun =
+      storedPrices &&
+      storedPrices.length > 0 &&
+      priceKeyRef.current === nextKey;
+
+    pendingRunRef.current = nextOptions;
+    setActiveOptions(nextOptions);
+
+    if (hasPricesForRun) {
+      runSimulationWithOptions(nextOptions, storedPrices);
+    } else {
+      setIsLoading(true);
+      setProgress(0);
+      setError(null);
+      setVisiblePricePoints(0);
+      setVisibleEquityPoints(0);
+      setWorkerNotice(null);
+    }
+  }, [options, storedPrices, runSimulationWithOptions]);
 
   // === Animate chart reveal for price and equity ===
   useEffect(() => {
@@ -345,10 +440,10 @@ export default function BacktestView({
   // === Check if indicator is connected to the graph (reachable from Input) ===
   // Uses BFS to determine if indicatorNode is reachable from inputNode
   const _isIndicatorConnected = useMemo(() => {
-    if (!options?.nodes || !options?.edges) return false;
+    if (!activeOptions?.nodes || !activeOptions?.edges) return false;
 
-    const inputNode = options.nodes.find((n) => n.type === "inputNode");
-    const indicatorNode = options.nodes.find(
+    const inputNode = activeOptions.nodes.find((n) => n.type === "inputNode");
+    const indicatorNode = activeOptions.nodes.find(
       (n) => n.type === "inputIndicatorNode"
     );
 
@@ -359,7 +454,7 @@ export default function BacktestView({
     const queue = [inputNode.id];
     const edgeMap = new Map();
 
-    options.edges.forEach((e) => {
+    activeOptions.edges.forEach((e) => {
       if (!edgeMap.has(e.source)) edgeMap.set(e.source, []);
       edgeMap.get(e.source).push(e.target);
     });
@@ -374,10 +469,110 @@ export default function BacktestView({
     }
 
     return reachable.has(indicatorNode.id);
-  }, [options]);
+  }, [activeOptions]);
 
   // Memoize trades array to prevent unnecessary re-renders
   const trades = useMemo(() => stats?.trades || [], [stats]);
+
+  const tradeReturns = useMemo(() => {
+    if (!trades.length) return [];
+    return trades
+      .map((trade) => {
+        const { entryPrice, exitPrice } = trade || {};
+        if (!Number.isFinite(entryPrice) || !Number.isFinite(exitPrice)) {
+          return null;
+        }
+        const grossReturn = (exitPrice - entryPrice) / entryPrice;
+        return Number.isFinite(grossReturn) ? grossReturn * 100 : null;
+      })
+      .filter((value) => value != null);
+  }, [trades]);
+
+  const histogramData = useMemo(() => {
+    if (!tradeReturns.length) return [];
+
+    const minReturn = Math.min(...tradeReturns);
+    const maxReturn = Math.max(...tradeReturns);
+
+    if (!Number.isFinite(minReturn) || !Number.isFinite(maxReturn)) {
+      return [];
+    }
+
+    const formatValue = (value) => {
+      const normalized = Math.abs(value) < 0.05 ? 0 : value;
+      return `${normalized.toFixed(1)}%`;
+    };
+
+    if (minReturn === maxReturn) {
+      const singleValue = minReturn;
+      const label = formatValue(singleValue);
+      return [
+        {
+          range: label,
+          count: tradeReturns.length,
+          midpoint: singleValue,
+          start: singleValue,
+          end: singleValue,
+          isPositive: singleValue >= 0,
+        },
+      ];
+    }
+
+    const span = maxReturn - minReturn;
+    const tentativeBins = Math.min(
+      12,
+      Math.max(5, Math.ceil(Math.sqrt(tradeReturns.length)))
+    );
+    const binSize = span / tentativeBins;
+
+    const bins = Array.from({ length: tentativeBins }, (_, index) => {
+      const start = minReturn + index * binSize;
+      const end = index === tentativeBins - 1 ? maxReturn : start + binSize;
+      const midpoint = (start + end) / 2;
+      return {
+        start,
+        end,
+        midpoint,
+        count: 0,
+        isPositive: midpoint >= 0,
+      };
+    });
+
+    tradeReturns.forEach((value) => {
+      const clamped = Math.min(
+        tentativeBins - 1,
+        Math.max(0, Math.floor((value - minReturn) / binSize))
+      );
+      bins[clamped].count += 1;
+    });
+
+    return bins.map((bin) => {
+      const rangeLabel = `${formatValue(bin.start)} to ${formatValue(bin.end)}`;
+      return {
+        range: rangeLabel,
+        count: bin.count,
+        midpoint: bin.midpoint,
+        start: bin.start,
+        end: bin.end,
+        isPositive: bin.isPositive,
+      };
+    });
+  }, [tradeReturns]);
+
+  const maxHistogramCount = useMemo(() => {
+    if (!histogramData.length) return 0;
+    return Math.max(...histogramData.map((bin) => bin.count));
+  }, [histogramData]);
+
+  const positiveZoneOffset = useMemo(() => {
+    if (!histogramData.length) return 100;
+    const firstPositiveIndex = histogramData.findIndex((bin) => bin.end > 0);
+    if (firstPositiveIndex === -1) return 100;
+    return Math.max(
+      0,
+      Math.min(100, (firstPositiveIndex / histogramData.length) * 100)
+    );
+  }, [histogramData]);
 
   // Calculate effective window used in backtest
   const maxWindow = useMemo(
@@ -394,7 +589,7 @@ export default function BacktestView({
   // Calculate indicator for visualization only if connected
   // Derive indicator type from the inputIndicatorNode (fallback to 30d_high)
   const indicatorType = useMemo(() => {
-    const inputIndicator = options?.nodes?.find(
+    const inputIndicator = activeOptions?.nodes?.find(
       (n) => n.type === "inputIndicatorNode"
     );
     const raw = inputIndicator?.data?.indicator;
@@ -411,7 +606,7 @@ export default function BacktestView({
       rollingLow: "30d_low",
     };
     return map[raw] || String(raw).toLowerCase();
-  }, [options?.nodes]);
+  }, [activeOptions?.nodes]);
 
   // Get the indicator series from the *simulation results* (the worker).
   // This ensures the chart *always* matches the simulation.
@@ -420,7 +615,7 @@ export default function BacktestView({
 
     // Find the output name of the indicator (e.g., "indicator_output")
     // This is the key used in the dataSeries map.
-    const inputIndicator = options?.nodes?.find(
+    const inputIndicator = activeOptions?.nodes?.find(
       (n) => n.type === "inputIndicatorNode"
     );
     const indicatorName = inputIndicator?.data?.outputParamName;
@@ -428,7 +623,7 @@ export default function BacktestView({
     if (!indicatorName) return null;
 
     return stats.dataSeries[indicatorName] || null;
-  }, [stats, options?.nodes]);
+  }, [stats, activeOptions?.nodes]);
 
   // Get display name for indicator
   const indicatorDisplayNames = {
@@ -611,21 +806,6 @@ export default function BacktestView({
     const returnPercent = (value - 1) * 100;
     return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(1)}%`;
   }, []);
-
-  useEffect(() => {
-    // Auto-run once after prices load (avoid repeated runs on rapid option changes)
-    if (
-      !autoRunRef.current &&
-      storedPrices &&
-      storedPrices.length > 0 &&
-      !isLoading
-    ) {
-      autoRunRef.current = true;
-      handleRunBacktest();
-    }
-    // The dependency array ensures this runs whenever the graph (options)
-    // or the price data changes.
-  }, [storedPrices, options, handleRunBacktest, isLoading]);
 
   // Render priority:
   // 1) Error, 2) No price data, 3) No stats & not loading (show initial run), 4) Full UI
@@ -999,6 +1179,75 @@ export default function BacktestView({
           <div className="stat-value">{(maxDrawdown * 100).toFixed(1)}%</div>
         </div>
       </div>
+
+      <div className="backtest-distribution">
+        <div className="distribution-header">
+          <h4>Trade Return Distribution</h4>
+          <div className="distribution-meta">
+            <span>{tradeReturns.length} closed trades</span>
+          </div>
+        </div>
+        {histogramData.length ? (
+          <div
+            className="histogram-wrapper"
+            style={{ "--positive-start": `${positiveZoneOffset}%` }}
+          >
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={histogramData}
+                margin={{ top: 20, right: 12, bottom: 24, left: 12 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="rgba(148, 163, 184, 0.4)"
+                />
+                <XAxis
+                  dataKey="range"
+                  tick={{ fill: "#475569", fontSize: 11 }}
+                  interval={0}
+                  height={60}
+                  tickMargin={12}
+                  angle={-35}
+                  textAnchor="end"
+                />
+                <YAxis
+                  allowDecimals={false}
+                  domain={[0, Math.max(maxHistogramCount, 1)]}
+                  tick={{ fill: "#475569", fontSize: 11 }}
+                  axisLine={{ stroke: "#475569" }}
+                  tickLine={{ stroke: "#475569" }}
+                  width={40}
+                  label={{
+                    value: "Trades",
+                    angle: -90,
+                    position: "insideLeft",
+                    fill: "#94a3b8",
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                />
+                <Tooltip
+                  content={<HistogramTooltip />}
+                  cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
+                />
+                <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  {histogramData.map((bin, index) => (
+                    <Cell
+                      key={`bin-${index}`}
+                      fill={bin.isPositive ? "#10b981" : "#ef4444"}
+                      opacity={bin.count ? 0.85 : 0.25}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="histogram-empty">No closed trades yet.</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1014,5 +1263,4 @@ BacktestView.propTypes = {
     parameters: PropTypes.array,
   }),
   externalControl: PropTypes.bool,
-  useSynthetic: PropTypes.bool,
 };

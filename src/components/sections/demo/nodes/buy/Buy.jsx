@@ -7,7 +7,7 @@ import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
 
-export default function Buy({ data, id }) {
+export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
   const [action, setAction] = useState("buy");
@@ -147,6 +147,11 @@ export default function Buy({ data, id }) {
 
   // Get display value (formatted) vs actual value (unformatted)
   const displayAmount = formatAmount(amount);
+  const handleToggleCollapse = () => {
+    if (typeof onToggleInTrade === "function") {
+      onToggleInTrade();
+    }
+  };
 
   return (
     <NodeDefault
@@ -157,7 +162,19 @@ export default function Buy({ data, id }) {
     >
       {/* Purple exclamation mark indicator */}
       <div className="buy-indicator">
-        <span className="exclamation-mark">!</span>
+        <button
+          type="button"
+          className={`buy-toggle ${
+            isInTradeCollapsed ? "collapsed" : "expanded"
+          }`}
+          onClick={handleToggleCollapse}
+          aria-pressed={isInTradeCollapsed}
+          aria-label={
+            isInTradeCollapsed ? "Show in-trade block" : "Hide in-trade block"
+          }
+        >
+          !
+        </button>
       </div>
 
       <div className="buy-container">
@@ -213,4 +230,6 @@ export default function Buy({ data, id }) {
 Buy.propTypes = {
   id: PropTypes.string,
   data: PropTypes.object,
+  onToggleInTrade: PropTypes.func,
+  isInTradeCollapsed: PropTypes.bool,
 };

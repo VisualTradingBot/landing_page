@@ -186,7 +186,6 @@ const initialNodes = [
     id: "ifNode-2",
     type: "ifNode",
     position: { x: 960, y: 100 },
-    draggable: false,
     data: {
       label: "If Exit (Stop-Loss)",
       parameters: initialParameters,
@@ -215,7 +214,6 @@ const initialNodes = [
     id: "sellNode-1",
     type: "sellNode",
     position: { x: 1230, y: 220 },
-    draggable: false,
     data: {
       label: "Sell (Stop-Loss)",
       action: "sell",
@@ -227,7 +225,6 @@ const initialNodes = [
     id: "ifNode-3",
     type: "ifNode",
     position: { x: 960, y: 330 },
-    draggable: false,
     data: {
       label: "If Exit (Profit)",
       parameters: initialParameters,
@@ -256,7 +253,6 @@ const initialNodes = [
     id: "sellNode-2",
     type: "sellNode",
     position: { x: 1230, y: 450 },
-    draggable: false,
     data: {
       label: "Sell (Profit)",
       action: "sell",
@@ -283,6 +279,7 @@ const initialNodes = [
       sourceValue: "",
       outputParamName: "entry_price",
       parameters: initialParameters,
+      preventInTradeGrouping: true,
     },
   },
   {
@@ -300,7 +297,11 @@ const initialNodes = [
     id: "blockNode-1",
     type: "blockNode",
     position: { x: 930, y: 50 },
-    data: { label: "In a trade", parameters: initialParameters },
+    data: {
+      label: "In a trade",
+      parameters: initialParameters,
+      anchorNodeId: "buyNode-1",
+    },
   },
 ];
 

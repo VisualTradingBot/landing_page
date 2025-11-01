@@ -48,6 +48,7 @@ export default function Demo() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
   const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
+  const [inTradeCollapsed, setInTradeCollapsed] = useState(false); // Collapse state for in-trade block
 
   // === Modal state ===
   const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
@@ -120,9 +121,19 @@ export default function Demo() {
   }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
 
   // === Node types for ReactFlow ===
+  const toggleInTradeBlock = useCallback(() => {
+    setInTradeCollapsed((prev) => !prev);
+  }, []);
+
   const nodeTypes = useMemo(
     () => ({
-      buyNode: (props) => <Buy {...props} />,
+      buyNode: (props) => (
+        <Buy
+          {...props}
+          onToggleInTrade={toggleInTradeBlock}
+          isInTradeCollapsed={inTradeCollapsed}
+        />
+      ),
       sellNode: (props) => <Sell {...props} />,
       recordNode: Record,
       setParameterNode: SetParameter,
@@ -132,7 +143,7 @@ export default function Demo() {
       inputPriceNode: (props) => <InputPrice {...props} />,
       blockNode: Block,
     }),
-    []
+    [toggleInTradeBlock, inTradeCollapsed]
   );
 
   // === ReactFlow viewport extent ===
@@ -241,6 +252,29 @@ export default function Demo() {
     }
   }, [edges]);
 
+  const blockNode = useMemo(
+    () =>
+      nodes.find(
+        (n) => n.type === "blockNode" && n.data?.label === "In a trade"
+      ) || null,
+    [nodes]
+  );
+
+  const FALLBACK_BLOCK_SIZE = 700;
+  const BLOCK_PADDING = 32;
+
+  const blockBounds = useMemo(() => {
+    if (!blockNode?.position) return null;
+    const width = blockNode.width ?? FALLBACK_BLOCK_SIZE;
+    const height = blockNode.height ?? FALLBACK_BLOCK_SIZE;
+    return {
+      minX: blockNode.position.x,
+      maxX: blockNode.position.x + width,
+      minY: blockNode.position.y,
+      maxY: blockNode.position.y + height,
+    };
+  }, [blockNode]);
+
   // Parse the signatures back into lightweight structures for computing
   // options. This avoids referencing the full `nodes`/`edges` arrays inside
   // the main backtestOptions useMemo so position-only changes won't force
@@ -252,10 +286,265 @@ export default function Demo() {
         position: node.position || null,
         width: node.width,
         height: node.height,
+        positionAbsolute: node.positionAbsolute || null,
       });
     });
     return map;
   }, [nodes]);
+
+  const nodesById = useMemo(() => {
+    const map = new Map();
+    nodes.forEach((node) => {
+      map.set(node.id, node);
+    });
+    return map;
+  }, [nodes]);
+
+  const anchorNodeId = useMemo(() => {
+    if (blockNode?.data?.anchorNodeId) {
+      return blockNode.data.anchorNodeId;
+    }
+    const firstBuy = nodes.find((n) => n.type === "buyNode");
+    return firstBuy ? firstBuy.id : null;
+  }, [blockNode, nodes]);
+
+  const inTradeNodeIds = useMemo(() => {
+    const ids = new Set();
+    nodes.forEach((node) => {
+      if (node.id === blockNode?.id) return;
+      if (node.data?.preventInTradeGrouping) {
+        return;
+      }
+      if (node.data?.forceInTradeGrouping) {
+        ids.add(node.id);
+        return;
+      }
+      if (!blockBounds) return;
+      const pos = node.position;
+      if (!pos) return;
+      if (
+        pos.x >= blockBounds.minX &&
+        pos.x <= blockBounds.maxX &&
+        pos.y >= blockBounds.minY &&
+        pos.y <= blockBounds.maxY
+      ) {
+        ids.add(node.id);
+      }
+    });
+    return ids;
+  }, [nodes, blockBounds, blockNode?.id]);
+
+  const handleNodesChange = useCallback(
+    (changes) => {
+      const bufferedChanges = [...changes];
+      let anchorDeltaX = 0;
+      let anchorDeltaY = 0;
+      let anchorMoved = false;
+
+      if (anchorNodeId && blockNode) {
+        const existingIds = new Set(bufferedChanges.map((change) => change.id));
+
+        changes.forEach((change) => {
+          if (
+            change.type !== "position" ||
+            !change.position ||
+            change.id !== anchorNodeId
+          ) {
+            return;
+          }
+
+          const meta = nodeMetaById.get(change.id);
+          const previous = meta?.position;
+          if (!previous) return;
+
+          const deltaX = change.position.x - previous.x;
+          const deltaY = change.position.y - previous.y;
+          if (!deltaX && !deltaY) return;
+
+          anchorMoved = true;
+          anchorDeltaX += deltaX;
+          anchorDeltaY += deltaY;
+
+          const appendChange = (nodeId) => {
+            if (!nodeId || existingIds.has(nodeId)) return;
+            const targetMeta = nodeMetaById.get(nodeId);
+            if (!targetMeta?.position) return;
+            const node = nodesById.get(nodeId);
+            if (node?.data?.preventInTradeGrouping) return;
+
+            const nextChange = {
+              id: nodeId,
+              type: "position",
+              position: {
+                x: targetMeta.position.x + deltaX,
+                y: targetMeta.position.y + deltaY,
+              },
+            };
+
+            if (targetMeta.positionAbsolute) {
+              nextChange.positionAbsolute = {
+                x: targetMeta.positionAbsolute.x + deltaX,
+                y: targetMeta.positionAbsolute.y + deltaY,
+              };
+            }
+
+            bufferedChanges.push(nextChange);
+            existingIds.add(nodeId);
+          };
+
+          appendChange(blockNode.id);
+
+          inTradeNodeIds.forEach((nodeId) => {
+            if (nodeId === change.id) return;
+            appendChange(nodeId);
+          });
+        });
+      }
+
+      const boundsForClamp =
+        anchorMoved && blockBounds
+          ? {
+              minX: blockBounds.minX + anchorDeltaX,
+              maxX: blockBounds.maxX + anchorDeltaX,
+              minY: blockBounds.minY + anchorDeltaY,
+              maxY: blockBounds.maxY + anchorDeltaY,
+            }
+          : blockBounds;
+
+      if (!boundsForClamp || inTradeNodeIds.size === 0) {
+        onNodesChange(bufferedChanges);
+        return;
+      }
+
+      const minX = boundsForClamp.minX + BLOCK_PADDING;
+      const minY = boundsForClamp.minY + BLOCK_PADDING;
+      const nextChanges = bufferedChanges.map((change) => {
+        if (change.type !== "position" || !change.position) {
+          return change;
+        }
+
+        if (!inTradeNodeIds.has(change.id)) {
+          return change;
+        }
+
+        const meta = nodeMetaById.get(change.id) || {};
+        const width = meta.width ?? 180;
+        const height = meta.height ?? 140;
+
+        const maxX = Math.max(
+          minX,
+          boundsForClamp.maxX - width - BLOCK_PADDING
+        );
+        const maxY = Math.max(
+          minY,
+          boundsForClamp.maxY - height - BLOCK_PADDING
+        );
+
+        const clampedX = Math.min(Math.max(change.position.x, minX), maxX);
+        const clampedY = Math.min(Math.max(change.position.y, minY), maxY);
+
+        if (clampedX === change.position.x && clampedY === change.position.y) {
+          return change;
+        }
+
+        const nextChange = {
+          ...change,
+          position: { x: clampedX, y: clampedY },
+        };
+
+        if (change.positionAbsolute) {
+          nextChange.positionAbsolute = {
+            x: Math.min(Math.max(change.positionAbsolute.x, minX), maxX),
+            y: Math.min(Math.max(change.positionAbsolute.y, minY), maxY),
+          };
+        }
+
+        return nextChange;
+      });
+
+      onNodesChange(nextChanges);
+    },
+    [
+      onNodesChange,
+      blockBounds,
+      inTradeNodeIds,
+      nodeMetaById,
+      blockNode,
+      anchorNodeId,
+      nodesById,
+    ]
+  );
+
+  useEffect(() => {
+    if (!blockNode) return;
+
+    const hiddenClass = "in-trade-hidden";
+    const applyClassName = (className, hidden) => {
+      const tokens = new Set((className || "").split(/\s+/).filter(Boolean));
+      if (hidden) {
+        tokens.add(hiddenClass);
+      } else {
+        tokens.delete(hiddenClass);
+      }
+      return tokens.size ? Array.from(tokens).join(" ") : undefined;
+    };
+
+    setNodes((prevNodes) => {
+      let changed = false;
+      const nextNodes = prevNodes.map((node) => {
+        const isInTrade =
+          node.id === blockNode.id || inTradeNodeIds.has(node.id);
+        const shouldHide = isInTrade && inTradeCollapsed;
+
+        const nextClassName = applyClassName(node.className, shouldHide);
+        const classChanged = nextClassName !== (node.className || undefined);
+
+        let nextData = node.data;
+        if (isInTrade) {
+          if (node.data?.isInTradeHidden === shouldHide) {
+            if (!classChanged) return node;
+          } else {
+            nextData = { ...(node.data || {}), isInTradeHidden: shouldHide };
+          }
+        } else if (node.data?.isInTradeHidden !== undefined) {
+          const { isInTradeHidden, ...rest } = node.data;
+          nextData = rest;
+        } else if (!classChanged) {
+          return node;
+        }
+
+        if (!classChanged && nextData === node.data) {
+          return node;
+        }
+
+        changed = true;
+        return {
+          ...node,
+          className: nextClassName,
+          data: nextData,
+        };
+      });
+
+      return changed ? nextNodes : prevNodes;
+    });
+  }, [blockNode, inTradeCollapsed, inTradeNodeIds, setNodes]);
+
+  useEffect(() => {
+    setEdges((prevEdges) => {
+      let changed = false;
+      const nextEdges = prevEdges.map((edge) => {
+        const inside =
+          inTradeNodeIds.has(edge.source) && inTradeNodeIds.has(edge.target);
+        const shouldHide = inTradeCollapsed && inside;
+        if ((edge.hidden ?? false) === shouldHide) {
+          return edge;
+        }
+        changed = true;
+        return { ...edge, hidden: shouldHide };
+      });
+      return changed ? nextEdges : prevEdges;
+    });
+  }, [inTradeCollapsed, inTradeNodeIds, setEdges]);
 
   const logicalNodes = useMemo(() => {
     try {
@@ -373,7 +662,7 @@ export default function Demo() {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             edges={edges}
-            onNodesChange={onNodesChange}
+            onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
             onEdgeDoubleClick={handleEdgeDoubleClick}
@@ -410,11 +699,7 @@ export default function Demo() {
 
         {/* === Backtest results section === */}
         <div className="backtest">
-          <BacktestView
-            options={backtestOptions}
-            externalControl
-            useSynthetic={backtestOptions.useSynthetic}
-          />
+          <BacktestView options={backtestOptions} externalControl />
         </div>
 
         {/* === Add Parameter / Custom Parameter Modal === */}
