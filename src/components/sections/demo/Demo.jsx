@@ -1,6 +1,10 @@
-
 // External libraries
-import { ReactFlow, useEdgesState, useNodesState, addEdge } from "@xyflow/react";
+import {
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  addEdge,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
@@ -26,15 +30,24 @@ import Block from "./nodes/block/Block";
 import "./demo.scss";
 
 // Initial data and edge types
-import { initialNodes, initialEdges, initialParameters, edgeTypes } from "./initial.jsx";
-
+import {
+  initialNodes,
+  initialEdges,
+  initialParameters,
+  edgeTypes,
+} from "./initial.jsx";
+import {
+  DEFAULT_ASSET,
+  DEFAULT_LOOKBACK,
+  DEFAULT_FEE_PERCENT,
+} from "./defaults";
 
 export default function Demo() {
   // === State for parameters and graph ===
   const [parameters, setParameters] = useState(initialParameters); // List of user-defined parameters
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
-  const [selectedAsset, setSelectedAsset] = useState("bitcoin"); // Currently selected asset
+  const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
 
   // === Modal state ===
   const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
@@ -45,8 +58,20 @@ export default function Demo() {
   // === ReactFlow event handlers ===
   // Add a new edge to the graph
   const handleConnect = useCallback(
-    (connectionParams) => setEdges((currentEdges) => addEdge(connectionParams, currentEdges)),
-    [setEdges]
+    (connectionParams) => {
+      const { source, sourceHandle } = connectionParams;
+      // The sourceHandle is available during the connection event.
+      // We can add it to the edge payload to be used by the simulator.
+      const edge = { ...connectionParams };
+      if (sourceHandle) {
+        const sourceNode = nodes.find((n) => n.id === source);
+        if (sourceNode && sourceNode.type === "ifNode") {
+          edge.sourceHandle = sourceHandle;
+        }
+      }
+      setEdges((currentEdges) => addEdge(edge, currentEdges));
+    },
+    [setEdges, nodes]
   );
 
   // Remove edge on double-click
@@ -94,11 +119,6 @@ export default function Demo() {
     closeDeleteModal();
   }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
 
-  // === Asset selection handler ===
-  const handleAssetChange = useCallback((asset) => {
-    setSelectedAsset(asset);
-  }, []);
-
   // === Node types for ReactFlow ===
   const nodeTypes = useMemo(
     () => ({
@@ -107,12 +127,12 @@ export default function Demo() {
       recordNode: Record,
       setParameterNode: SetParameter,
       ifNode: If,
-      inputNode: (props) => <Input {...props} onAssetChange={handleAssetChange} />,
+      inputNode: (props) => <Input {...props} />,
       inputIndicatorNode: (props) => <InputIndicator {...props} />,
       inputPriceNode: (props) => <InputPrice {...props} />,
       blockNode: Block,
     }),
-    [handleAssetChange]
+    []
   );
 
   // === ReactFlow viewport extent ===
@@ -164,27 +184,114 @@ export default function Demo() {
 
   // Update all nodes with the latest parameters when parameters change
   useEffect(() => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          parameters: parameters,
-        },
-      }))
-    );
+    // Only update nodes if the parameters array is not already present on the node.data
+    setNodes((prevNodes) => {
+      let changed = false;
+      const next = prevNodes.map((node) => {
+        // Fast path: same reference (most common)
+        if (node.data && node.data.parameters === parameters) return node;
+
+        // If parameters deeply equal to existing, keep node as-is
+        const existing = node.data && node.data.parameters;
+        const existingJson = existing ? JSON.stringify(existing) : null;
+        const newJson = parameters ? JSON.stringify(parameters) : null;
+        if (existingJson === newJson) return node;
+
+        changed = true;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            parameters: parameters,
+          },
+        };
+      });
+
+      return changed ? next : prevNodes;
+    });
   }, [parameters, setNodes]);
 
   // === Backtest options for BacktestView ===
+  // Create lightweight signatures of nodes/edges that exclude layout/position
+  // so backtestOptions doesn't recompute when the user moves nodes around.
+  const nodesSignature = useMemo(() => {
+    try {
+      return JSON.stringify(
+        nodes.map((n) => ({ id: n.id, type: n.type, data: n.data }))
+      );
+    } catch {
+      return String(nodes.length);
+    }
+  }, [nodes]);
+
+  const edgesSignature = useMemo(() => {
+    try {
+      return JSON.stringify(
+        edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+          type: e.type,
+        }))
+      );
+    } catch {
+      return String(edges.length);
+    }
+  }, [edges]);
+
+  // Parse the signatures back into lightweight structures for computing
+  // options. This avoids referencing the full `nodes`/`edges` arrays inside
+  // the main backtestOptions useMemo so position-only changes won't force
+  // recomputation.
+  const nodeMetaById = useMemo(() => {
+    const map = new Map();
+    nodes.forEach((node) => {
+      map.set(node.id, {
+        position: node.position || null,
+        width: node.width,
+        height: node.height,
+      });
+    });
+    return map;
+  }, [nodes]);
+
+  const logicalNodes = useMemo(() => {
+    try {
+      const parsed = JSON.parse(nodesSignature);
+      return parsed.map((node) => {
+        const meta = nodeMetaById.get(node.id);
+        if (!meta) return node;
+        return {
+          ...node,
+          position: meta.position,
+          width: meta.width,
+          height: meta.height,
+        };
+      });
+    } catch {
+      return [];
+    }
+  }, [nodesSignature, nodeMetaById]);
+
+  const logicalEdges = useMemo(() => {
+    try {
+      return JSON.parse(edgesSignature);
+    } catch {
+      return [];
+    }
+  }, [edgesSignature]);
+
   const backtestOptions = useMemo(() => {
     const opts = {
-      asset: "bitcoin",
-      feePercent: 0.05,
+      asset: DEFAULT_ASSET,
+      feePercent: DEFAULT_FEE_PERCENT,
       useGraphExecutor: true,
     };
-
-    // Find input node to determine data source and asset
-    const inputNode = nodes.find((n) => n.type === "inputNode");
+    // Find input node to determine data source and asset using the
+    // position-agnostic logical nodes.
+    const inputNode = logicalNodes.find((n) => n.type === "inputNode");
     const useSynthetic = inputNode?.data?.dataSource !== "real";
 
     if (inputNode?.data?.asset) {
@@ -192,14 +299,59 @@ export default function Demo() {
     }
 
     opts.useSynthetic = useSynthetic;
-    opts.nodes = nodes;
-    opts.edges = edges;
+    // Expose the logical nodes/edges (no layout/position data) to keep the
+    // backtest payload stable when users move nodes around in the editor.
+    opts.nodes = logicalNodes;
+    opts.edges = logicalEdges;
+    opts.parameters = parameters;
 
-    // Default lookback value for visualization
-    if (!opts.lookback) opts.lookback = 30;
+    // Derive lookback from inputIndicator node (prefers explicit numeric value,
+    // then bound parameter wiring). Fallback to parameter labeled 'lookback'
+    // on the input node, then finally default to 30.
+    try {
+      const inputIndicator = logicalNodes.find(
+        (n) => n.type === "inputIndicatorNode"
+      );
+      let computedLookback = undefined;
+
+      if (inputIndicator) {
+        // 1) prefer a canonical numeric lookback on the node
+        const lb = inputIndicator.data?.lookback;
+        if (lb != null && lb !== "") computedLookback = Number(lb);
+
+        // 2) then prefer a bound parameter value if present
+        const lbVar = inputIndicator.data?.lookbackVariable?.parameterData;
+        if (lbVar && lbVar.value != null && String(lbVar.value).trim() !== "") {
+          const num = Number(lbVar.value);
+          if (!Number.isNaN(num)) computedLookback = num;
+        }
+      }
+
+      // 3) fallback: check top-level input node parameters for a parameter named 'lookback'
+      if (computedLookback == null) {
+        const inputNode = logicalNodes.find((n) => n.type === "inputNode");
+        const paramLookback = inputNode?.data?.parameters?.find(
+          (p) => String(p.label).toLowerCase() === "lookback"
+        )?.value;
+        if (paramLookback != null && String(paramLookback).trim() !== "") {
+          const num2 = Number(paramLookback);
+          if (!Number.isNaN(num2)) computedLookback = num2;
+        }
+      }
+
+      // 4) default
+      opts.lookback =
+        computedLookback != null && !Number.isNaN(Number(computedLookback))
+          ? Number(computedLookback)
+          : 30;
+    } catch {
+      opts.lookback = 30;
+    }
 
     return opts;
-  }, [nodes, edges]);
+  }, [logicalNodes, logicalEdges, parameters]);
+
+  // Debug: log backtestOptions whenever it recomputes
 
   return (
     <AssetContext.Provider value={{ selectedAsset, setSelectedAsset }}>
@@ -267,7 +419,10 @@ export default function Demo() {
 
         {/* === Add Parameter / Custom Parameter Modal === */}
         {showParameterModal && (
-          <div className="fullscreen-modal-overlay" onClick={closeParameterModal}>
+          <div
+            className="fullscreen-modal-overlay"
+            onClick={closeParameterModal}
+          >
             <div
               className="fullscreen-modal-content"
               onClick={(e) => e.stopPropagation()}
@@ -318,10 +473,7 @@ export default function Demo() {
 
         {/* === Delete Confirmation Modal === */}
         {showDeleteModal && (
-          <div
-            className="fullscreen-modal-overlay"
-            onClick={closeDeleteModal}
-          >
+          <div className="fullscreen-modal-overlay" onClick={closeDeleteModal}>
             <div
               className="fullscreen-modal-content"
               onClick={(e) => e.stopPropagation()}

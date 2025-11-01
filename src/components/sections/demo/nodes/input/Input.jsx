@@ -3,24 +3,25 @@ import NodeDefault from "../nodeDefault";
 import { useState, useEffect } from "react";
 import { useReactFlow } from "@xyflow/react";
 import PropTypes from "prop-types";
+import { DEFAULT_ASSET } from "../../defaults.js";
 
-export default function Input({ id, data, onAssetChange }) {
+export default function Input({ id, data }) {
   const { updateNodeData } = useReactFlow();
   const [dataSource, setDataSource] = useState(data?.dataSource || "synthetic");
-  const [asset, setAsset] = useState(data?.asset || "bitcoin");
+  const [asset, setAsset] = useState(data?.asset || DEFAULT_ASSET);
   const [type, setType] = useState(data?.type || "batch");
 
   useEffect(() => {
-    if (updateNodeData && id) {
-      updateNodeData(id, { asset, dataSource, type });
-    }
+    if (!id || !updateNodeData) return;
+    updateNodeData(id, {
+      asset,
+      dataSource,
+      type,
+    });
   }, [asset, dataSource, type, id, updateNodeData]);
 
   const handleAssetChange = (newAsset) => {
     setAsset(newAsset);
-    if (onAssetChange) {
-      onAssetChange(newAsset);
-    }
   };
 
   return (

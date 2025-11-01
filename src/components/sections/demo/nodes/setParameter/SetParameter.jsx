@@ -6,20 +6,22 @@ import { useReactFlow } from "@xyflow/react";
 
 export default function SetParameter({ data, id }) {
   const { updateNodeData } = useReactFlow();
-  const [parameterName, setParameterName] = useState(data?.parameterName || "entry_price");
+  const [parameterName, setParameterName] = useState(
+    data?.parameterName || "live_price"
+  );
 
   const getParameterColor = (paramName) => {
     const label = paramName.toLowerCase();
-    if (label.includes('close') || label.includes('close price')) {
-      return 'green';
+    if (label.includes("indicator") || label.includes("output")) {
+      return "dark-blue";
     }
-    if (label.includes('indicator') || label.includes('output')) {
-      return 'dark-blue';
+    if (label.includes("entry")) {
+      return "pink";
     }
-    if (label.includes('entry') || label.includes('entry price')) {
-      return 'pink';
+    if (label.includes("live")) {
+      return "red";
     }
-    return 'default';
+    return "default";
   };
 
   const parameterColor = getParameterColor(parameterName);
@@ -29,6 +31,16 @@ export default function SetParameter({ data, id }) {
     setParameterName(value);
     updateNodeData(id, { parameterName: value });
   };
+
+  // Expose a canonical outputParamName for backend consumption
+  useEffect(() => {
+    if (updateNodeData && id) {
+      updateNodeData(id, {
+        parameterName: parameterName,
+        outputParamName: parameterName,
+      });
+    }
+  }, [parameterName, id, updateNodeData]);
 
   return (
     <NodeDefault

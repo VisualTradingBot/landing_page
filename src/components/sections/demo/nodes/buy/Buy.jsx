@@ -14,6 +14,18 @@ export default function Buy({ data, id }) {
   const [type, setType] = useState(data?.type || "market");
   const [amount, setAmount] = useState(data?.amount || "10000");
 
+  // Parameter system for amount
+  const [amountVariable, setAmountVariable] = useState(() => ({
+    label: "buy_amount",
+    id: `amount-${Date.now()}`,
+    parameterData: {
+      source: "user",
+      ...((data?.amountParamData && {
+        ...data.amountParamData,
+      }) || { value: "10000" }),
+    },
+  }));
+
   // Asset image mapping
   const assetImages = {
     bitcoin: bitcoinLogo,
@@ -44,8 +56,85 @@ export default function Buy({ data, id }) {
     // Remove any non-numeric characters except dots
     const numericValue = value.replace(/[^\d.]/g, "");
     setAmount(numericValue);
-    updateNodeData(id, { amount: numericValue });
+
+    const currentParamData = amountVariable.parameterData || {};
+    // Update both direct amount and parameter data
+    setAmountVariable((prev) => ({
+      ...prev,
+      parameterData: {
+        ...prev.parameterData,
+        value: numericValue,
+        source: prev.parameterData?.source || "user",
+      },
+    }));
+
+    if (id) {
+      updateNodeData(id, {
+        amount: numericValue,
+        amountNumber: parseFloat(numericValue) || 0,
+        amountParamData: {
+          ...currentParamData,
+          value: numericValue,
+          source: currentParamData.source || "user",
+        },
+      });
+    }
   };
+
+  // Listen for parameter updates
+  useEffect(() => {
+    const handleParameterUpdate = (event) => {
+      const params = Array.isArray(event?.detail)
+        ? event.detail
+        : Array.isArray(event)
+        ? event
+        : null;
+      if (!params) return;
+
+      const targetId = amountVariable?.parameterData?.parameterId;
+      const targetLabel =
+        amountVariable?.parameterData?.label || amountVariable?.paramName;
+      if (!targetId && !targetLabel) return;
+
+      const amountParam = params.find((p) => {
+        if (targetId && p.id === targetId) return true;
+        if (!targetId && targetLabel) {
+          return p.label === targetLabel;
+        }
+        return false;
+      });
+      if (!amountParam) return;
+
+      const newValue = amountParam.value;
+      setAmount(newValue);
+      setAmountVariable((prev) => ({
+        ...prev,
+        parameterData: {
+          ...prev.parameterData,
+          parameterId: amountParam.id,
+          label: amountParam.label,
+          value: newValue,
+          source: amountParam.source || prev.parameterData?.source || "user",
+        },
+      }));
+      if (id) {
+        updateNodeData(id, {
+          amount: newValue,
+          amountNumber: parseFloat(newValue) || 0,
+          amountParamData: {
+            parameterId: amountParam.id,
+            label: amountParam.label,
+            value: newValue,
+            source: amountParam.source || "user",
+          },
+        });
+      }
+    };
+
+    window.addEventListener("parametersUpdated", handleParameterUpdate);
+    return () =>
+      window.removeEventListener("parametersUpdated", handleParameterUpdate);
+  }, [amountVariable, id, updateNodeData]);
 
   // Format number with thousands separators
   const formatAmount = (value) => {

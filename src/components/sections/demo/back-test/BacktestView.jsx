@@ -1,6 +1,14 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+  useTransition,
+} from "react";
 import PropTypes from "prop-types";
+import { DEFAULT_LOOKBACK } from "../defaults";
 // BacktestView: Visualizes the results of a trading strategy backtest, including price, indicators, equity curve, and trade statistics.
 import {
   ResponsiveContainer,
@@ -16,7 +24,6 @@ import {
 import {
   generateSyntheticPrices,
   mapCoinGeckoPricesToOHLC,
-  calculateIndicator,
 } from "../../../../utils/indicators";
 
 import "./backtest.scss";
@@ -75,6 +82,7 @@ export default function BacktestView({
   const [stats, setStats] = useState(null); // Backtest statistics and equity series
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [workerNotice, setWorkerNotice] = useState(null); // non-fatal errors/warnings from worker
   const [progress, setProgress] = useState(0); // 0..1 progress for worker
   const workerRef = useRef(null);
   const runInProgressRef = useRef(false); // prevents duplicate posts to worker
@@ -84,10 +92,12 @@ export default function BacktestView({
   const [visibleEquityPoints, setVisibleEquityPoints] = useState(0); // Animated equity chart points
   const priceAnimationRef = useRef(null);
   const equityAnimationRef = useRef(null);
+  const [, startTransition] = useTransition();
 
   // === Backtest options ===
   const asset = options?.asset ?? "bitcoin";
-  const lookback = options?.lookback ?? 30;
+  // rely on Demo to provide the canonical lookback; if absent, treat as undefined
+  const lookback = options?.lookback;
   const feePercent = options?.feePercent ?? 0.05;
 
   // === Extract stop-loss from graph nodes (for visualization only) ===
@@ -98,7 +108,27 @@ export default function BacktestView({
     for (const ifNode of ifNodes) {
       const vars = ifNode.data?.variables || [];
       const rightVar = vars[1];
-      const stopLossValue = rightVar?.parameterData?.value;
+      // Prefer parameterId resolution (keeps in sync with ParameterBlock). Fall back to legacy parameterData.value
+      let stopLossValue = null;
+      const pd = rightVar?.parameterData;
+      if (pd && pd.parameterId) {
+        // Resolve by scanning node-attached parameters (Demo attaches parameters to each node.data.parameters)
+        let resolved = null;
+        for (const n of options.nodes) {
+          const params = n?.data?.parameters;
+          if (!Array.isArray(params)) continue;
+          const match = params.find(
+            (p) => p.id === pd.parameterId || p.label === pd.label
+          );
+          if (match) {
+            resolved = match;
+            break;
+          }
+        }
+        stopLossValue = resolved?.value ?? pd.value;
+      } else {
+        stopLossValue = pd?.value ?? rightVar?.value ?? null;
+      }
       if (
         typeof stopLossValue === "string" &&
         stopLossValue.includes("entry") &&
@@ -113,6 +143,8 @@ export default function BacktestView({
     }
     return 5;
   }, [options]);
+
+  // Debug: Log resolved stop-loss percent
 
   const syntheticRef = useRef(null);
   if (syntheticRef.current === null) {
@@ -183,22 +215,32 @@ export default function BacktestView({
 
     // Define what to do when a message is received from the worker.
     worker.onmessage = (event) => {
-      // Debug: log incoming worker messages so we can trace progress/complete/error
-      try {
-        console.debug("Backtest worker -> main thread message:", event.data);
-      } catch {
-        /* ignore */
-      }
-
       const { status, data } = event.data;
       if (status === "complete") {
         runInProgressRef.current = false;
         setProgress(1);
-        setStats(data); // Set the final results
-        setIsLoading(false); // Stop loading
+        // If worker returned errors/warnings as part of 'complete', surface them as non-fatal notices
+        if (data?.errors || data?.error) {
+          setWorkerNotice({
+            type: "error",
+            messages: data.errors || [data.error],
+          });
+          setIsLoading(false);
+          return;
+        }
+        if (data?.warnings) {
+          setWorkerNotice({ type: "warning", messages: data.warnings });
+        } else {
+          setWorkerNotice(null);
+        }
+        startTransition(() => {
+          setStats(data);
+          setIsLoading(false);
+        });
       } else if (status === "error") {
         runInProgressRef.current = false;
-        setError(data); // Set the error message
+        // Non-fatal: show notice but don't unmount the UI
+        setWorkerNotice({ type: "error", messages: [data] });
         setIsLoading(false); // Stop loading
       } else if (status === "progress") {
         // update progress indicator (worker may send { progress: 0..1 } )
@@ -235,24 +277,21 @@ export default function BacktestView({
 
     // Send the necessary data to the worker to start the job.
     runInProgressRef.current = true;
-    try {
-      // Debug: log what we send to the worker (avoid dumping full arrays in prod)
-      console.debug("Posting to backtest worker:", {
-        nodesCount: options?.nodes?.length ?? 0,
-        edgesCount: options?.edges?.length ?? 0,
-        pricesCount: Array.isArray(storedPrices) ? storedPrices.length : 0,
-      });
-    } catch {
-      /* ignore */
-    }
-
     workerRef.current.postMessage({
       nodes: options.nodes,
       edges: options.edges,
+      parameters: options.parameters,
       prices: storedPrices, // Pass the fetched prices
       feePercent: feePercent,
     });
-  }, [storedPrices, options.nodes, options.edges, feePercent, isLoading]);
+  }, [
+    storedPrices,
+    options.nodes,
+    options.edges,
+    options.parameters,
+    feePercent,
+    isLoading,
+  ]);
 
   // === Animate chart reveal for price and equity ===
   useEffect(() => {
@@ -345,7 +384,12 @@ export default function BacktestView({
     () => Math.max(1, (storedPrices?.length || 1) - 1),
     [storedPrices]
   );
-  const effectiveLookback = Math.min(lookback, maxWindow);
+  // If lookback is not provided by Demo, fall back to maxWindow (visualization)
+  const numericLookback =
+    lookback != null && !Number.isNaN(Number(lookback))
+      ? Number(lookback)
+      : undefined;
+  const effectiveLookback = Math.min(numericLookback ?? maxWindow, maxWindow);
 
   // Calculate indicator for visualization only if connected
   // Derive indicator type from the inputIndicatorNode (fallback to 30d_high)
@@ -369,35 +413,22 @@ export default function BacktestView({
     return map[raw] || String(raw).toLowerCase();
   }, [options?.nodes]);
 
-  // Compute indicatorSeries whenever we have prices and an inputIndicatorNode exists.
-  // We don't require the node to be reachable from `inputNode` for visualization purposes.
+  // Get the indicator series from the *simulation results* (the worker).
+  // This ensures the chart *always* matches the simulation.
   const indicatorSeries = useMemo(() => {
-    if (!storedPrices) return null;
-    const hasInputIndicator = options?.nodes?.some(
+    if (!stats?.dataSeries) return null;
+
+    // Find the output name of the indicator (e.g., "indicator_output")
+    // This is the key used in the dataSeries map.
+    const inputIndicator = options?.nodes?.find(
       (n) => n.type === "inputIndicatorNode"
     );
-    if (!hasInputIndicator) return null;
+    const indicatorName = inputIndicator?.data?.outputParamName;
 
-    const series = calculateIndicator(
-      storedPrices,
-      indicatorType,
-      effectiveLookback
-    );
-    try {
-      console.debug("indicatorSeries computed:", {
-        pricesCount: Array.isArray(storedPrices) ? storedPrices.length : 0,
-        indicatorType,
-        effectiveLookback,
-        nonNullPoints: Array.isArray(series)
-          ? series.filter((v) => v != null).length
-          : 0,
-      });
-    } catch {
-      /* ignore */
-    }
+    if (!indicatorName) return null;
 
-    return series;
-  }, [storedPrices, options?.nodes, indicatorType, effectiveLookback]);
+    return stats.dataSeries[indicatorName] || null;
+  }, [stats, options?.nodes]);
 
   // Get display name for indicator
   const indicatorDisplayNames = {
@@ -652,11 +683,7 @@ export default function BacktestView({
         </div>
         <div className="backtest-params-grid">
           <div className="param-block">
-            <div className="param-label">Lookback</div>
-            <div className="param-value">{lookback}</div>
-          </div>
-          <div className="param-block">
-            <div className="param-label">Window</div>
+            <div className="param-label">Lookback Window</div>
             <div className="param-value">{effectiveLookback}</div>
           </div>
           <div className="param-block">
@@ -673,6 +700,18 @@ export default function BacktestView({
           </div>
         </div>
       </div>
+
+      {/* Show non-fatal worker notices (errors / warnings) */}
+      {workerNotice && (
+        <div className={`worker-notice ${workerNotice.type}`}>
+          {Array.isArray(workerNotice.messages) &&
+            workerNotice.messages.map((m, i) => (
+              <div key={i} className="worker-notice-line">
+                {String(m)}
+              </div>
+            ))}
+        </div>
+      )}
 
       {/* Charts Row Container */}
       <div className="backtest-charts-row">
@@ -695,16 +734,6 @@ export default function BacktestView({
                   style={{ background: "#f59e0b" }}
                 ></span>
                 <span>{indicatorLabel}</span>
-              </div>
-            )}
-
-            {indicatorSeries && (
-              <div className="legend-item">
-                <span
-                  className="legend-line"
-                  style={{ background: "#7c3aed" }}
-                ></span>
-                <span>Input Indicator</span>
               </div>
             )}
 
@@ -808,21 +837,6 @@ export default function BacktestView({
                   strokeWidth={1.5}
                   dot={false}
                   name={indicatorLabel}
-                  connectNulls
-                  isAnimationActive={false}
-                />
-              )}
-
-              {/* Input Indicator (separate curve) */}
-              {indicatorSeries && (
-                <Line
-                  type="monotone"
-                  dataKey="inputIndicator"
-                  stroke="#7c3aed"
-                  strokeWidth={1.5}
-                  dot={false}
-                  name="Input Indicator"
-                  strokeDasharray="3 3"
                   connectNulls
                   isAnimationActive={false}
                 />
@@ -997,6 +1011,7 @@ BacktestView.propTypes = {
     graph: PropTypes.object,
     nodes: PropTypes.array,
     edges: PropTypes.array,
+    parameters: PropTypes.array,
   }),
   externalControl: PropTypes.bool,
   useSynthetic: PropTypes.bool,

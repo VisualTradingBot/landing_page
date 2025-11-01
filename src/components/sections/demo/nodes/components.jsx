@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./components.scss";
 
 export function VariableFieldStandalone({
@@ -31,6 +31,7 @@ export function VariableFieldStandalone({
             return {
               ...variable,
               parameterData: {},
+              paramName: undefined,
             };
           }
 
@@ -43,13 +44,17 @@ export function VariableFieldStandalone({
             const updatedParameter = parameterMap.get(
               variable.parameterData.parameterId
             );
+            const source = updatedParameter.source || "user";
             return {
               ...variable,
               parameterData: {
                 ...variable.parameterData,
                 label: updatedParameter.label,
                 value: updatedParameter.value,
+                source: updatedParameter.source,
               },
+              paramName:
+                source === "system" ? updatedParameter.label : undefined,
             };
           }
 
@@ -110,6 +115,7 @@ export function VariableFieldStandalone({
                   value: parameterData.value,
                   family: "variable",
                   id: parameterData.parameterId,
+                  source: parameterData.source || "user",
                 })
               );
             }}
@@ -118,7 +124,11 @@ export function VariableFieldStandalone({
               setVariables((prev) =>
                 prev.map((variable) =>
                   variable.id === id
-                    ? { ...variable, parameterData: {} }
+                    ? {
+                        ...variable,
+                        parameterData: {},
+                        paramName: undefined,
+                      }
                     : variable
                 )
               );
@@ -143,52 +153,59 @@ function Box({ data, onDragEnd }) {
     setStartPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-  };
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging) return;
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    },
+    [isDragging]
+  );
 
-  const handleMouseUp = (e) => {
-    if (!isDragging) return;
-    console.log("Mouse up on box");
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    setIsDragging(false);
+  const handleMouseUp = useCallback(
+    (e) => {
+      if (!isDragging) return;
+      console.log("Mouse up on box");
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      setIsDragging(false);
 
-    // Check if we moved far enough to consider it a drag
-    const distance = Math.sqrt(
-      Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2)
-    );
+      // Check if we moved far enough to consider it a drag
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - startPos.x, 2) +
+          Math.pow(e.clientY - startPos.y, 2)
+      );
 
-    if (distance > 10) {
-      // 10px threshold
-      // Get the element under the mouse
-      const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-      const dropZone = elementBelow?.closest(".drop-zone");
+      if (distance > 10) {
+        // 10px threshold
+        // Get the element under the mouse
+        const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+        const dropZone = elementBelow?.closest(".drop-zone");
 
-      console.log("Drop zone found:", dropZone);
+        console.log("Drop zone found:", dropZone);
 
-      // If not over any drop zone, remove the parameter
-      if (!dropZone && onDragEnd) {
-        console.log("Removing parameter");
-        onDragEnd(e);
+        // If not over any drop zone, remove the parameter
+        if (!dropZone && onDragEnd) {
+          console.log("Removing parameter");
+          onDragEnd(e);
+        }
       }
-    }
-  };
+    },
+    [isDragging, onDragEnd, startPos]
+  );
 
   // Add global mouse event listeners
   useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+    if (!isDragging) return undefined;
 
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDragging]);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <span
@@ -245,11 +262,14 @@ const handleParameterDrop = (
   if (!parameterData) return;
 
   // Destructure
+  const family = parameterData.family || "variable";
+  const source = parameterData.source || "user";
   const parameter = {
-    family: parameterData.family,
+    family,
     parameterId: parameterData.id, // Store parameter ID for tracking
     label: parameterData.label,
     value: parameterData.value,
+    source,
   };
 
   // Final compatibility check before dropping
@@ -265,7 +285,13 @@ const handleParameterDrop = (
   // SUCCESS CASE: Update variables when drop IS compatible
   setVariables((vars) =>
     vars.map((variable) =>
-      variable.id === id ? { ...variable, parameterData: parameter } : variable
+      variable.id === id
+        ? {
+            ...variable,
+            parameterData: { ...parameter, family },
+            paramName: source === "system" ? parameter.label : undefined,
+          }
+        : variable
     )
   );
 
@@ -301,14 +327,6 @@ const handleDragLeave = (event, setDragOverZone) => {
   if (!event.currentTarget.contains(event.relatedTarget)) {
     setDragOverZone(null);
   }
-};
-
-const removeParameter = (parameterData, setVariables, id) => {
-  setVariables((prev) =>
-    prev.map((variable) =>
-      variable.id === id ? { ...variable, parameterData: {} } : variable
-    )
-  );
 };
 
 import PropTypes from "prop-types";

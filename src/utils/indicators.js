@@ -46,14 +46,12 @@ export function calculateIndicator(prices, type, window) {
       // Use progressive lookback for early days, full window after
       for (let i = 0; i < prices.length; i++) {
         let highest = -Infinity;
-        const startIdx = Math.max(0, i - window);
-        for (let j = startIdx; j < i; j++) {
+        const startIdx = Math.max(0, i - window + 1); // <-- FIX 1
+        for (let j = startIdx; j <= i; j++) {
+          // <-- FIX 2 (<= i)
           if (prices[j].live_price > highest) highest = prices[j].live_price;
         }
-        // Only set if we have at least one previous day
-        if (i > 0) {
-          series[i] = highest;
-        }
+        series[i] = highest; // <-- FIX 3 (remove if(i>0))
       }
       break;
 
@@ -61,13 +59,12 @@ export function calculateIndicator(prices, type, window) {
       // Use progressive lookback for early days
       for (let i = 0; i < prices.length; i++) {
         let lowest = Infinity;
-        const startIdx = Math.max(0, i - window);
-        for (let j = startIdx; j < i; j++) {
+        const startIdx = Math.max(0, i - window + 1); // <-- FIX 1
+        for (let j = startIdx; j <= i; j++) {
+          // <-- FIX 2 (<= i)
           if (prices[j].live_price < lowest) lowest = prices[j].live_price;
         }
-        if (i > 0) {
-          series[i] = lowest;
-        }
+        series[i] = lowest; // <-- FIX 3 (remove if(i>0))
       }
       break;
 
@@ -108,7 +105,7 @@ export function calculateIndicator(prices, type, window) {
 
     case "rsi": // Relative Strength Index
       {
-        const period = Math.min(14, window); // RSI typically uses 14 periods
+        const period = window; // Respect the user-defined window
         for (let i = period; i < prices.length; i++) {
           let gains = 0;
           let losses = 0;
@@ -168,10 +165,11 @@ export function calculateIndicator(prices, type, window) {
           const actualWindow = i - startIdx + 1;
           let sum = 0;
           for (let j = startIdx; j <= i; j++) {
-            const h = prices[j].live_price;
-            const l = prices[j].live_price;
-            const pc = prices[j - 1].live_price;
-            sum += Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+            // Proxy TR since we only have close prices:
+            const tr = Math.abs(
+              prices[j].live_price - prices[j - 1].live_price
+            );
+            sum += tr;
           }
           series[i] = sum / actualWindow;
         }

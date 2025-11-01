@@ -1,86 +1,152 @@
-export { initialNodes, initialEdges, initialParameters, edgeTypes };
 import { StepEdge } from "@xyflow/react";
 
 // 1. Define initial parameters for the demo strategy.
 const initialParameters = [
-  { id: "param-1", label: "lookback", value: "30", family: "variable" },
+  {
+    id: "param-1",
+    label: "lookback",
+    value: "30",
+    family: "variable",
+    source: "user",
+  },
   {
     id: "param-2",
     label: "stop_loss_level",
     value: "entry * 0.95",
     family: "variable",
+    source: "user",
+  },
+  {
+    id: "param-3",
+    label: "live_price",
+    value: "close",
+    family: "variable",
+    source: "system",
+  },
+  {
+    id: "param-4",
+    label: "indicator_output",
+    value: "indicator_output",
+    family: "variable",
+    source: "system",
   },
   {
     id: "param-5",
     label: "profit_target",
     value: "entry * 1.10",
     family: "variable",
+    source: "user",
   },
-  { id: "param-3", label: "close_price", value: "close", family: "variable" },
-  { id: "param-4", label: "indicator_output", value: "", family: "variable" },
-  // Separate entry price reference - not affected by multiplications
   {
     id: "param-6",
     label: "entry_price",
-    value: "close",
+    value: "entry",
     family: "variable",
+    source: "system",
   },
 ];
 
 // Helper to find a parameter by its label for easier wiring.
 const getParam = (label) => initialParameters.find((p) => p.label === label);
 
+const bindParam = (label) => {
+  const param = getParam(label);
+  if (!param) return null;
+  return {
+    parameterId: param.id,
+    label: param.label,
+    value: param.value,
+    source: param.source || "user",
+  };
+};
+
+const createVariable = ({
+  label,
+  id,
+  type = "input",
+  paramLabel,
+  parameterData,
+}) => {
+  const binding = paramLabel ? bindParam(paramLabel) : null;
+  const paramData = parameterData || binding || {};
+  const variable = {
+    label,
+    id,
+    type,
+    parameterData: paramData,
+  };
+
+  if (paramData && paramData.source === "system") {
+    variable.paramName = paramData.label;
+  }
+
+  return variable;
+};
+
 // 2. Pre-configure nodes with data linked to the initial parameters.
 // Organized in logical flow: Input → Indicator → Decision Logic → Execution
 const initialNodes = [
-  // Data Input Layer
   {
     id: "inputIndicatorNode",
     type: "inputIndicatorNode",
     position: { x: -200, y: 50 },
-    data: {
-      resolution: "1h",
-      lookbackUnit: "d",
-      indicator: "sma",
-      lookbackVariable: {
-        label: "lookback",
-        id: "lookback-input-indicator",
-        parameterData: {
-          parameterId: "param-1",
+    data: (() => {
+      const lookbackBinding = bindParam("lookback");
+      const indicatorBinding = bindParam("indicator_output");
+      return {
+        resolution: "1h",
+        lookbackUnit: "d",
+        indicator: "sma",
+        lookback: Number(lookbackBinding?.value) || 30,
+        lookbackParamName: lookbackBinding?.label || "lookback",
+        lookbackVariable: {
           label: "lookback",
-          value: "30",
+          id: "lookback-input-indicator",
+          parameterData: lookbackBinding || {},
         },
-      },
-    },
+        outputParamName: indicatorBinding?.label || "indicator_output",
+        parameters: initialParameters,
+      };
+    })(),
   },
   {
     id: "inputPriceNode",
     type: "inputPriceNode",
     position: { x: -200, y: 300 },
-    data: {
-      timeFrame: "1h",
-      type: "instant",
-      format: "close",
-    },
+    data: (() => {
+      const livePriceBinding = bindParam("live_price");
+      return {
+        timeFrame: "1h",
+        type: "instant",
+        format: "close",
+        outputParamName: livePriceBinding?.label || "live_price",
+        priceParamData: livePriceBinding || {},
+        parameters: initialParameters,
+      };
+    })(),
   },
   {
     id: "setParameterIndicatorNode",
     type: "setParameterNode",
     position: { x: 350, y: 150 },
-    data: { parameterName: "indicator_output", sourceValue: "" },
+    data: {
+      parameterName: "indicator_output",
+      sourceValue: "",
+      outputParamName: "indicator_output",
+      parameters: initialParameters,
+    },
   },
   {
     id: "inputNode",
     type: "inputNode",
     position: { x: -200, y: 550 },
     data: {
-      label: "Test Parameters",
-      parameters: initialParameters,
       type: "batch",
+      asset: "bitcoin",
+      dataSource: "synthetic",
+      parameters: initialParameters,
     },
   },
-  // Analysis Layer
-  // Decision Logic Layer - Entry Decision
   {
     id: "ifNode-1",
     type: "ifNode",
@@ -88,36 +154,34 @@ const initialNodes = [
     data: {
       label: "If Entry",
       parameters: initialParameters,
-      isMaster: true, // Mark as master node
+      isMaster: true,
       variables: [
-        {
-          label: "var-1",
-          id: `var-if1-left`,
-          parameterData: {
-            parameterId: getParam("close_price").id,
-            ...getParam("close_price"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if1-right`,
-          parameterData: {
-            parameterId: getParam("indicator_output").id,
-            ...getParam("indicator_output"),
-          },
-        },
-        { label: "operator", id: `var-if1-op`, parameterData: ">" },
+        createVariable({
+          label: "condition-left",
+          id: "ifNode-1-left",
+          paramLabel: "live_price",
+        }),
+        createVariable({
+          label: "condition-right",
+          id: "ifNode-1-right",
+          paramLabel: "indicator_output",
+        }),
+        createVariable({
+          label: "operator",
+          id: "ifNode-1-operator",
+          type: "operator",
+          parameterData: { value: ">" },
+        }),
       ],
+      operator: ">",
     },
   },
-  // Execution Layer - Entry Action
   {
     id: "buyNode-1",
     type: "buyNode",
     position: { x: 640, y: 430 },
-    data: { label: "Buy", action: "buy" },
+    data: { label: "Buy", action: "buy", parameters: initialParameters },
   },
-  // Decision Logic Layer - Exit Decisions
   {
     id: "ifNode-2",
     type: "ifNode",
@@ -127,24 +191,24 @@ const initialNodes = [
       label: "If Exit (Stop-Loss)",
       parameters: initialParameters,
       variables: [
-        {
-          label: "var-1",
-          id: `var-if2-left`,
-          parameterData: {
-            parameterId: getParam("close_price").id,
-            ...getParam("close_price"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if2-right`,
-          parameterData: {
-            parameterId: getParam("stop_loss_level").id,
-            ...getParam("stop_loss_level"),
-          },
-        },
-        { label: "operator", id: `var-if2-op`, parameterData: "<" },
+        createVariable({
+          label: "condition-left",
+          id: "ifNode-2-left",
+          paramLabel: "live_price",
+        }),
+        createVariable({
+          label: "condition-right",
+          id: "ifNode-2-right",
+          paramLabel: "stop_loss_level",
+        }),
+        createVariable({
+          label: "operator",
+          id: "ifNode-2-operator",
+          type: "operator",
+          parameterData: { value: "<" },
+        }),
       ],
+      operator: "<",
     },
   },
   {
@@ -152,7 +216,12 @@ const initialNodes = [
     type: "sellNode",
     position: { x: 1230, y: 220 },
     draggable: false,
-    data: { label: "Sell (Stop-Loss)", action: "sell", amount: "100" },
+    data: {
+      label: "Sell (Stop-Loss)",
+      action: "sell",
+      amount: "100",
+      parameters: initialParameters,
+    },
   },
   {
     id: "ifNode-3",
@@ -163,24 +232,24 @@ const initialNodes = [
       label: "If Exit (Profit)",
       parameters: initialParameters,
       variables: [
-        {
-          label: "var-1",
-          id: `var-if3-left`,
-          parameterData: {
-            parameterId: getParam("close_price").id,
-            ...getParam("close_price"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if3-right`,
-          parameterData: {
-            parameterId: getParam("profit_target").id,
-            ...getParam("profit_target"),
-          },
-        },
-        { label: "operator", id: `var-if3-op`, parameterData: ">" },
+        createVariable({
+          label: "condition-left",
+          id: "ifNode-3-left",
+          paramLabel: "live_price",
+        }),
+        createVariable({
+          label: "condition-right",
+          id: "ifNode-3-right",
+          paramLabel: "profit_target",
+        }),
+        createVariable({
+          label: "operator",
+          id: "ifNode-3-operator",
+          type: "operator",
+          parameterData: { value: ">" },
+        }),
       ],
+      operator: ">",
     },
   },
   {
@@ -188,34 +257,50 @@ const initialNodes = [
     type: "sellNode",
     position: { x: 1230, y: 450 },
     draggable: false,
-    data: { label: "Sell (Profit)", action: "sell", amount: "100" },
+    data: {
+      label: "Sell (Profit)",
+      action: "sell",
+      amount: "100",
+      parameters: initialParameters,
+    },
   },
-  // Record blocks
   {
     id: "recordNode-1",
     type: "recordNode",
     position: { x: 638, y: 610 },
-    data: { recordType: "entry_price", recordValue: "" },
+    data: {
+      recordType: "entry_price",
+      recordValue: "",
+      parameters: initialParameters,
+    },
   },
-  // Set Parameter block for entry_price (connected to Record)
   {
     id: "setParameterNode-1",
     type: "setParameterNode",
     position: { x: 960, y: 620 },
-    data: { parameterName: "entry_price", sourceValue: "" },
+    data: {
+      parameterName: "entry_price",
+      sourceValue: "",
+      outputParamName: "entry_price",
+      parameters: initialParameters,
+    },
   },
-  // Set Parameter block for close_price
   {
     id: "setParameterNode-2",
     type: "setParameterNode",
     position: { x: 160, y: 430 },
-    data: { parameterName: "close_price", sourceValue: "" },
+    data: {
+      parameterName: "live_price",
+      sourceValue: "",
+      outputParamName: "live_price",
+      parameters: initialParameters,
+    },
   },
   {
     id: "blockNode-1",
     type: "blockNode",
     position: { x: 930, y: 50 },
-    data: { label: "In a trade" },
+    data: { label: "In a trade", parameters: initialParameters },
   },
 ];
 
@@ -376,3 +461,5 @@ const initialEdges = [
     },
   },
 ];
+
+export { initialNodes, initialEdges, initialParameters, edgeTypes };

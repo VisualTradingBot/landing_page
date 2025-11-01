@@ -1,16 +1,19 @@
 import "./inputIndicator.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect, useCallback } from "react";
-import { useReactFlow } from "@xyflow/react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useReactFlow, useEdges } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
-import { VariableFieldStandalone } from "../components";
+import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputIndicator({ data, id }) {
-  const { updateNodeData } = useReactFlow();
+  const { updateNodeData, getNode } = useReactFlow();
   const { selectedAsset } = useAsset();
+  const edges = useEdges();
+
+  const payloadRef = useRef(null);
 
   // State for the form fields
   const [resolution, setResolution] = useState(data?.resolution || "1h");
@@ -58,7 +61,12 @@ export default function InputIndicator({ data, id }) {
             parameterId: dragData.id,
             label: dragData.label,
             value: dragData.value,
+            source: dragData.source || "user",
           },
+          paramName:
+            (dragData.source || "user") === "system"
+              ? dragData.label
+              : undefined,
         }));
       }
     } catch (error) {
@@ -70,13 +78,16 @@ export default function InputIndicator({ data, id }) {
     (e) => {
       e.stopPropagation();
       e.dataTransfer.effectAllowed = "move";
+      const payload = lookbackVariable.parameterData;
+      if (!payload || !payload.label) return;
       e.dataTransfer.setData(
         "application/reactflow",
         JSON.stringify({
-          label: lookbackVariable.parameterData.label,
-          value: lookbackVariable.parameterData.value,
+          label: payload.label,
+          value: payload.value,
           family: "variable",
-          id: lookbackVariable.parameterData.parameterId,
+          id: payload.parameterId,
+          source: payload.source || "user",
         })
       );
     },
@@ -88,6 +99,7 @@ export default function InputIndicator({ data, id }) {
     setLookbackVariable((prev) => ({
       ...prev,
       parameterData: {},
+      paramName: undefined,
     }));
   }, []);
 
@@ -96,6 +108,7 @@ export default function InputIndicator({ data, id }) {
     setLookbackVariable((prev) => ({
       ...prev,
       parameterData: {},
+      paramName: undefined,
     }));
   }, []);
 
@@ -107,18 +120,52 @@ export default function InputIndicator({ data, id }) {
     eth: ethereumLogo,
   };
 
-  const currentAsset = selectedAsset || "bitcoin";
+  const currentAsset = selectedAsset || DEFAULT_ASSET;
   const assetImage = assetImages[currentAsset] || bitcoinLogo;
 
   // Update node data when lookback variable changes
   useEffect(() => {
-    if (updateNodeData && id) {
-      updateNodeData(id, {
-        lookbackVariable,
-        resolution,
-        lookbackUnit,
-        indicator,
-      });
+    if (!id || !updateNodeData) return;
+
+    let setParamNode = null;
+    for (const edge of edges) {
+      if (edge.source !== id) continue;
+      const candidate = getNode(edge.target);
+      if (candidate?.type === "setParameterNode") {
+        setParamNode = candidate;
+        break;
+      }
+    }
+
+    // Prepare canonical data structure for parser
+    const paramData = lookbackVariable.parameterData || {};
+    const rawLookback =
+      paramData.value ?? lookbackVariable.paramName ?? paramData.label;
+    const parsedLookback = Number(rawLookback);
+    const lookbackValue = Number.isFinite(parsedLookback)
+      ? parsedLookback
+      : rawLookback;
+
+    const updatedData = {
+      indicator,
+      resolution,
+      lookbackUnit,
+      lookback: lookbackValue ?? 30,
+      // If we have a connected SetParameter, use its name as our output parameter
+      outputParamName:
+        setParamNode?.data?.parameterName?.trim() || "indicator_output",
+      // Keep a reference to the parameter mapping for later resolution
+      lookbackParamName:
+        lookbackVariable.paramName || lookbackVariable.parameterData.label,
+      lookbackVariable,
+      parameters: data?.parameters, // Preserve parameter bindings
+    };
+
+    const { parameters: _ignoredParameters, ...rest } = updatedData;
+    const payloadSignature = JSON.stringify(rest);
+    if (payloadRef.current !== payloadSignature) {
+      payloadRef.current = payloadSignature;
+      updateNodeData(id, updatedData);
     }
   }, [
     lookbackVariable,
@@ -127,7 +174,60 @@ export default function InputIndicator({ data, id }) {
     indicator,
     id,
     updateNodeData,
+    edges,
+    data,
+    getNode,
   ]);
+
+  // Sync with global parameter updates emitted by ParameterBlock
+  useEffect(() => {
+    const handler = (ev) => {
+      const params = ev?.detail || ev;
+      if (!params || !lookbackVariable?.parameterData?.parameterId) return;
+      const pid = lookbackVariable.parameterData.parameterId;
+      const match = Array.isArray(params)
+        ? params.find((p) => p.id === pid)
+        : null;
+      if (match) {
+        // Only update if label/value changed
+        const newLabel = match.label;
+        const newValue = match.value;
+        const newSource = match.source;
+        const cur = lookbackVariable.parameterData || {};
+        if (
+          cur.label !== newLabel ||
+          cur.value !== newValue ||
+          cur.source !== newSource
+        ) {
+          const nextParamData = {
+            ...cur,
+            label: newLabel,
+            value: newValue,
+          };
+
+          if (newSource) {
+            nextParamData.source = newSource;
+          }
+
+          const updated = {
+            ...lookbackVariable,
+            parameterData: nextParamData,
+            paramName:
+              (newSource || "user") === "system" ? newLabel : undefined,
+          };
+          setLookbackVariable(updated);
+          try {
+            updateNodeData(id, { lookbackVariable: updated });
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    };
+
+    window.addEventListener("parametersUpdated", handler);
+    return () => window.removeEventListener("parametersUpdated", handler);
+  }, [lookbackVariable, id, updateNodeData]);
 
   const handleResolutionChange = (event) => {
     const value = event.target.value;
