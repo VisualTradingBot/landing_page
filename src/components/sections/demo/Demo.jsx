@@ -1,6 +1,7 @@
 // External libraries
 import {
   ReactFlow,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   addEdge,
@@ -14,6 +15,8 @@ import { AssetContext } from "./AssetContext";
 // Components
 import ParameterBlock from "./parameter-block/ParameterBlock";
 import BacktestView from "./back-test/BacktestView";
+import DemoTutorial from "./tutorial/DemoTutorial";
+import { TUTORIAL_STORAGE_KEY } from "./tutorial/tutorialSteps";
 
 // Node components
 import Buy from "./nodes/buy/Buy";
@@ -44,6 +47,11 @@ export default function Demo() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
   const [selectedAsset, setSelectedAsset] = useState("bitcoin"); // Currently selected asset
+
+  // === Tutorial state ===
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const [hasShownTutorial, setHasShownTutorial] = useState(false);
+  const demoSectionRef = useRef(null);
 
   // === Modal state ===
   const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
@@ -213,58 +221,94 @@ export default function Demo() {
     return opts;
   }, [nodes, edges]);
 
+  // === Tutorial handlers ===
+  const handleTutorialStart = useCallback(() => {
+    setIsTutorialActive(true);
+  }, []);
+
+  const handleTutorialComplete = useCallback(() => {
+    setIsTutorialActive(false);
+    setHasShownTutorial(true);
+  }, []);
+
+  // === Check if tutorial has been completed on mount ===
+  useEffect(() => {
+    const completed = localStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
+    if (completed) {
+      setHasShownTutorial(true);
+    }
+  }, []);
+
   return (
     <AssetContext.Provider value={{ selectedAsset, setSelectedAsset }}>
-      <section id="demo" className="demo">
-        {/* === Drag-and-drop algorithm builder === */}
-        <div
-          ref={containerRef}
-          style={{
-            width: "100%",
-            height: "75vh",
-            minHeight: "650px",
-            position: "relative",
-            background: "transparent",
-          }}
-        >
-          <ReactFlow
-            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-            nodes={nodes}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={handleConnect}
-            onEdgeDoubleClick={handleEdgeDoubleClick}
-            defaultEdgeOptions={{ type: "shortStep" }}
-            connectionLineType="step"
-            connectionLineStyle={{
-              strokeWidth: 3,
-              stroke: "#000000",
-              strokeDasharray: "5,5",
+      <section
+        id="demo"
+        className={`demo ${
+          isTutorialActive ? "tutorial-active" : ""
+        }`}
+        ref={demoSectionRef}
+      >
+        <ReactFlowProvider>
+          {/* === Drag-and-drop algorithm builder === */}
+          <div
+            ref={containerRef}
+            style={{
+              width: "100%",
+              height: "75vh",
+              minHeight: "650px",
+              position: "relative",
+              background: "transparent",
             }}
-            preventScrolling={false}
-            autoPanOnNodeDrag={true}
-            maxZoom={1.2}
-            minZoom={0.6}
-            panOnDrag={true}
-            panOnScroll={false}
-            zoomOnScroll={true}
-            zoomOnPinch={true}
-            fitView={false}
-            translateExtent={translateExtent}
           >
-            <ParameterBlock
-              handleRemoveParameter={removeParameter}
-              handleAddParameter={addParameter}
-              parameters={parameters}
-              setParameters={setParameters}
-              onShowModal={openParameterModal}
-              onShowDeleteModal={openDeleteModal}
-            />
-          </ReactFlow>
-        </div>
+            <ReactFlow
+              defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+              nodes={nodes}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={handleConnect}
+              onEdgeDoubleClick={handleEdgeDoubleClick}
+              defaultEdgeOptions={{ type: "shortStep" }}
+              connectionLineType="step"
+              connectionLineStyle={{
+                strokeWidth: 3,
+                stroke: "#000000",
+                strokeDasharray: "5,5",
+              }}
+              preventScrolling={isTutorialActive}
+              autoPanOnNodeDrag={!isTutorialActive}
+              maxZoom={1.2}
+              minZoom={0.6}
+              panOnDrag={!isTutorialActive}
+              panOnScroll={false}
+              zoomOnScroll={!isTutorialActive}
+              zoomOnPinch={!isTutorialActive}
+              fitView={false}
+              translateExtent={translateExtent}
+            >
+              <ParameterBlock
+                handleRemoveParameter={removeParameter}
+                handleAddParameter={addParameter}
+                parameters={parameters}
+                setParameters={setParameters}
+                onShowModal={openParameterModal}
+                onShowDeleteModal={openDeleteModal}
+              />
+            </ReactFlow>
+
+            {/* Tutorial component */}
+            {!hasShownTutorial && (
+              <DemoTutorial
+                nodes={nodes}
+                isTutorialActive={isTutorialActive}
+                onTutorialComplete={handleTutorialComplete}
+                onTutorialStart={handleTutorialStart}
+              />
+            )}
+          </div>
+        </ReactFlowProvider>
 
         <div className="divider"></div>
 
