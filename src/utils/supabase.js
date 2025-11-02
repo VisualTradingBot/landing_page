@@ -41,3 +41,10 @@ export default { getSupabaseClient, isSupabaseConfigured };
 
 
 
+
+
+
+
+
+
+

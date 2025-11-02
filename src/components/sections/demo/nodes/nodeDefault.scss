@@ -1,0 +1,496 @@
+.node-default {
+  display: inline-block;
+  width: fit-content;
+  min-width: 200px;
+  max-width: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: "ITC Avant Garde Gothic Medium", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #000000;
+  overflow: visible;
+  transition: none;
+  position: relative;
+  
+  // Prevent any hover effects on the main node
+  &:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Override ReactFlow's default node hover effects
+  &.react-flow__node:hover {
+    box-shadow: none !important;
+    // transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Override any ReactFlow wrapper hover effects
+  .react-flow__node:hover & {
+    box-shadow: none !important;
+    // transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Hover effects - only on body, never on header
+  .node-default-body:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.1);
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  // Ensure header never gets hover effects
+  .node-default-header:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Prevent any hover effects from bubbling up to the main node
+  &:hover .node-default-header {
+    box-shadow: none !important;
+    transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Focus state for accessibility
+  &:focus-within {
+    outline: 2px solid #000000;
+    outline-offset: 2px;
+  }
+}
+
+.node-default-header {
+  padding: 4px 16px;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: none;
+  background: transparent;
+  color: #000000;
+  text-align: left;
+  letter-spacing: 0.025em;
+  transition: none;
+  pointer-events: none;
+}
+
+.node-default-body {
+  padding: 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #000000;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+  transform: none !important;
+  animation: none !important;
+  
+ 
+  
+  // Hint line styling
+  .hint-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 8px;
+    
+    .hint-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      background: #e2e8f0;
+      color: #475569;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Handles */
+.node-handle {
+  width: 12px !important;
+  height: 12px !important;
+  background: #fff !important;
+  border: 2px solid #000000 !important; /* blue accent */
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.18) !important;
+  border-radius: 50% !important;
+}
+
+.node-handle--top {
+  transform: translateY(20px);
+  
+  // Disable hover and active animations for top handle
+  &:hover {
+    border-color: #000000 !important; // Keep original border color
+    cursor: default !important; // Remove crosshair cursor
+    transform: translateY(20px) !important; // Keep original position
+  }
+  
+  &.node-handle--active {
+    transform: translateY(20px) !important; // Keep original position
+    border-color: #000000 !important; // Keep original border color
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18) !important; // Keep original shadow
+    cursor: default !important; // Remove crosshair cursor
+  }
+  
+  // Remove the pulse effect
+  &.node-handle--active::after {
+    display: none !important;
+  }
+}
+
+// If block specific handle positioning - Override in nodeDefault.scss
+// Use maximum specificity to override inline styles
+.react-flow__node[data-id="ifNode-1"] .node-handle--top,
+.react-flow__node[data-id="ifNode-2"] .node-handle--top,
+.react-flow__node[data-id="ifNode-3"] .node-handle--top {
+  transform: translateY(26px) !important;
+  
+  &:hover {
+    transform: translateY(26px) !important;
+  }
+  
+  &.node-handle--active {
+    transform: translateY(26px) !important;
+  }
+}
+
+.react-flow__node[data-id="ifNode-1"] .node-handle--bottom,
+.react-flow__node[data-id="ifNode-2"] .node-handle--bottom,
+.react-flow__node[data-id="ifNode-3"] .node-handle--bottom {
+  transform: translateY(6px) !important;
+  
+  &:hover {
+    transform: translateY(6px) !important;
+  }
+  
+  &.node-handle--active {
+    transform: translateY(6px) !important;
+  }
+}
+
+// Alternative approach - try to override with CSS custom properties
+.react-flow__node[data-id="ifNode-1"],
+.react-flow__node[data-id="ifNode-2"],
+.react-flow__node[data-id="ifNode-3"] {
+  --handle-top-transform: translateY(26px) !important;
+  --handle-bottom-transform: translateY(6px) !important;
+  
+  .node-handle--top {
+    transform: var(--handle-top-transform) !important;
+  }
+  
+  .node-handle--bottom {
+    transform: var(--handle-bottom-transform) !important;
+  }
+}
+
+.node-handle--bottom {
+  transform: translateY(6px);
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .node-default {
+    min-width: 200px;
+    max-width: none;
+  }
+  
+  .node-default-header {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .node-default-body {
+    padding: 12px;
+    font-size: 12px;
+  }
+  
+  .condition-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .node-header-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .node-default {
+    min-width: 180px;
+    max-width: none;
+  }
+  
+  .node-default-header {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  
+  .node-default-body {
+    padding: 10px;
+    font-size: 11px;
+  }
+}
+
+
+
+// Base form elements styling
+select, input[type="text"], input[type="number"] {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  font-family: inherit;
+
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+  }
+  
+  &:hover {
+    border-color: #9ca3af;
+  }
+  
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+// Select specific styling
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 32px;
+  appearance: none;
+  
+  // Override option hover colors to use black instead of blue
+  option {
+    background: #ffffff !important;
+    color: #000000 !important;
+    
+    &:hover {
+      background: #000000 !important;
+      color: #ffffff !important;
+    }
+  }
+  
+  // Override any browser default blue colors for individual option hover
+  option:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+  }
+}
+// Button styling
+button {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+
+  &:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(59, 130, 246, 0.2);
+  }
+  
+  &:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+// Common layout classes
+.switch-case {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variable-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.condition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// Label styling
+label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.input-type-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+// Badge styling
+.param-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.param-badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+// Node header controls
+.node-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+// Master checkbox styling
+.master-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+    margin: 0;
+  }
+
+  .checkbox-label {
+    font-weight: 500;
+    color: #475569;
+    white-space: nowrap;
+  }
+
+  input[type="checkbox"]:checked + .checkbox-label {
+    color: #1e40af;
+    font-weight: 600;
+  }
+}
+
+// Override ReactFlow's default node styles globally
+.react-flow__node {
+  &:hover {
+    box-shadow: none !important;
+    // transform: none !important;
+    background: transparent !important;
+  }
+  
+  // Prevent ReactFlow from adding borders/outlines when form elements are focused
+  &:focus,
+  &:focus-within,
+  &.selected,
+  &.selectable:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  
+  .node-default {
+    &:hover {
+      box-shadow: none !important;
+      // transform: none !important;
+      background: transparent !important;
+    }
+    
+    // Prevent focus styling from bubbling up
+    &:focus,
+    &:focus-within {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+  }
+}
+
+// Slave badge
+.slave-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  white-space: nowrap;
+  user-select: none;
+}

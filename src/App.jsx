@@ -4,6 +4,7 @@ import Hero from "./components/sections/hero/Hero";
 import Build from "./components/sections/build/Build";
 import Test from "./components/sections/test/Test";
 import Trade from "./components/sections/trade/Trade";
+import Demo from "./components/sections/demo/Demo";
 import FAQ from "./components/sections/faq/FAQ";
 import CTA from "./components/sections/cta/CTA";
 import Footer from "./components/layout/Footer";
@@ -31,13 +32,14 @@ function App() {
         <Build />
         <Test />
         <Trade />
+        <Demo />
         <FAQ />
         <CTA onOpenModal={openModal} />
       </main>
 
       <Footer />
       <ContactModal isOpen={isModalOpen} onClose={closeModal} />
-      
+
       {/* Analytics Dashboard - Only visible in development */}
       {import.meta.env.DEV && <AnalyticsDashboard />}
     </div>

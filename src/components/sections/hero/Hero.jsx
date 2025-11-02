@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import TileWall from "./TileWall";
 import "./hero.scss";
@@ -73,15 +72,15 @@ export default function Hero({ onOpenModal }) {
           <span className="cursor">_</span>
         </h1>
 
-        <div className={`hero-tagline ${showTagline ? 'visible' : 'hidden'}`}>
+        <div className={`hero-tagline ${showTagline ? "visible" : "hidden"}`}>
           <p>{taglineText}</p>
         </div>
 
-        <div className={`hero-cta ${showButtons ? 'visible' : 'hidden'}`}>
+        <div className={`hero-cta ${showButtons ? "visible" : "hidden"}`}>
           <button
             className="cta-button"
             onClick={() => {
-              trackClick('hero-get-started');
+              trackClick("hero-get-started");
               onOpenModal();
             }}
           >
@@ -90,7 +89,7 @@ export default function Hero({ onOpenModal }) {
           <button
             className="secondary-button"
             onClick={() => {
-              trackClick('hero-learn-more');
+              trackClick("hero-learn-more");
               scrollToBuild();
             }}
           >
