@@ -1,43 +1,44 @@
 # Copilot Instructions
 
-## Core Context
+## Project Overview
 
-- Landing page runs on Vite + React (`npm run dev`); `src/App.jsx` wires the high-level sections, toggles the contact modal, and mounts the dev-only `AnalyticsDashboard`.
-- Visual strategy demo uses React Flow; see `src/components/sections/demo/Demo.jsx` for node state orchestration, parameter management, and backtest option assembly.
-- Global look & feel lives under `src/styles` plus per-component SCSS; prefer editing the local `.scss` next to each JSX file so animations and variables stay localized.
+- Vite + React 18 SPA (`src/App.jsx`) stitches marketing sections with a node-based trading demo and analytics.
+- UI sections live under `src/components/sections/**`, each paired with a SCSS module; global resets in `src/styles`.
+- `Navbar`, `Hero`, `CTA`, and `ContactModal` share the `onOpenModal` prop to drive the contact modal state owned by `App`.
 
-## Graph & Simulation Flow
+## Demo Graph & Backtest Flow
 
-- `Demo.jsx` keeps `parameters`, `nodes`, and `edges` in React state and injects a shared `params` array into each node before sending them to the worker.
-- Parameter editing happens in `.../demo/parameter-block/ParameterBlock.jsx`, which dispatches a `parametersUpdated` custom event; node components (e.g. `nodes/buy/Buy.jsx`) listen for it to stay in sync.
-- The web worker `src/workers/backtest.worker.js` deep-clones nodes, normalizes variable bindings, then pipelines into `parseGraph` and `runSimulation`.
-- `src/utils/parser.js` translates nodes/edges into a blueprint with `dataProducers`, `entryGraph`, and `inTradeGraph`; reference its warning messages when graph wiring is incomplete.
-- `src/utils/simulator.js` consumes that blueprint, resolves series via `calculateIndicator`, and returns normalized equity, trades, and drawdown metrics used by the UI.
+- `Demo.jsx` is the interactive core: ReactFlow nodes/edges seeded from `demo/initial.jsx`, parameters from `initialParameters`, and layout styles from `demo.scss`.
+- `ParameterBlock.jsx` is the single source of truth for strategy parameters; it injects the array into every node, exposes drag payloads via the `application/reactflow` mime type, and broadcasts `parametersUpdated` events.
+- Node implementations under `demo/nodes/**` rely on props such as `data.parameters`, `data.isInTradeHidden`, and `onToggleInTrade`; preserve these shapes when extending nodes.
+- The backtest loop lives in `src/workers/backtest.worker.js`: clone incoming nodes, normalize parameter bindings, run `parseGraph` (`utils/parser.js`), then simulate with `runSimulation` (`utils/simulator.js`).
+- `parseGraph` expects a block node labeled `"In a trade"` to split entry vs in-trade graphs; keep that label stable or update `IN_TRADE_LABEL`.
+- `runSimulation` and downstream charts assume price objects carry a `live_price` number; `BacktestView.jsx` maps CoinGecko responses with `mapCoinGeckoPricesToOHLC` and falls back to `generateSyntheticPrices`.
+- `BacktestView` creates the worker (`?worker` import), streams progress, animates chart reveal, and derives stop-loss/indicator context from `options.nodes`.
 
-## Backtest View
+## Utilities & Conventions
 
-- `.../demo/back-test/BacktestView.jsx` fetches CoinGecko data (daily EUR) with fallback to synthetic prices from `utils/indicators.js`; it auto-runs once prices land and replays chart animations on each run.
-- Chart rendering uses Recharts with custom tooltips and reference dots; update data shape via the computed `priceChartData` / `equityChartData` helpers to keep annotations working.
-- Stop-loss and indicator labels are derived by scanning `options.nodes`; when adding new node types ensure `options.nodes` still surfaces `data.parameters` for the worker/lookups.
+- `utils/analytics.js` bootstraps automatically, storing events in localStorage during dev and Supabase in production; use `useTrackInteraction` / `useAnalytics` to log UI activity.
+- Supabase helpers (`utils/supabase.js`) only load the SDK when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are defined; guard any direct Supabase usage accordingly.
+- Scroll chrome is managed by `utils/scrollbarAutoHide.js`; call `initScrollbarAutoHide` once per session (already done in `App.jsx`).
+- Styling prefers SCSS modules colocated with components; keep new selectors scoped to avoid leaking across sections.
 
-## Analytics & Telemetry
+## Developer Workflow
 
-- Privacy-friendly analytics live in `src/utils/analytics.js`; it queues events until Supabase is ready and falls back to `localStorage` under `import.meta.env.DEV`.
-- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to enable live inserts; the dev-only `AnalyticsDashboard.jsx` reads from the singleton and lets you inspect/clear stored events.
+- Install dependencies with `npm install` and run the site via `npm run dev`; `npm run build` and `npm run preview` use the stock Vite pipeline.
+- `npm run lint` enforces the flat `eslint.config.js` config; fix warnings before committing.
+- Automated simulation tests are wired to `scripts/run_sim_test.mjs` (currently absent); in the meantime, run `node scripts/smoke_test.mjs` to exercise `parseGraph` + `runSimulation` end-to-end.
+- Worker builds rely on Vite’s bundler; keep worker imports relative to `src` and avoid Node-only APIs inside worker code.
 
-## Styling & UX
+## External Integrations & Data
 
-- Scrollbar auto-hide is initialized via `initScrollbarAutoHide` (`src/utils/scrollbarAutoHide.js`) and driven by CSS variables; adjust behavior there instead of sprinkling listeners elsewhere.
-- Node UI shares wrappers in `.../demo/nodes/nodeDefault.jsx` plus individual SCSS; keep new node components consistent with the existing handles and `updateNodeData` hooks.
+- Price data comes from the CoinGecko REST API with an `x-cg-demo-api-key` header (`BacktestView.jsx`); expect rate limits in dev and handle fallbacks gracefully.
+- Analytics events ship to Supabase table `analytics_events`; schema expectation is defined inside `utils/analytics.js` `sendEventToSupabase`.
+- ReactFlow custom edges are defined in `demo/initial.jsx` (`edgeTypes.shortStep` etc.); register new types there to keep visuals consistent.
 
-## Scripts & Tooling
+## Productivity Tips
 
-- Install deps with `npm install`; run the site with `npm run dev`, build for deploy via `npm run build`, and preview using `npm run preview`.
-- Smoke the simulation stack with `node scripts/smoke_test.mjs`, which wires sample nodes -> `parseGraph` -> `runSimulation` and logs blueprint warnings.
-- `scripts/ping_coingecko.mjs` verifies the CoinGecko API key when rate limits bite; it reuses the same demo header used by `BacktestView`.
-
-## Gotchas
-
-- `package.json` advertises `npm test` / `npm run test:sim` but the `scripts/run_sim_test.mjs` entry is missing; stick to `node scripts/smoke_test.mjs` until the harness is restored.
-- `GRAPH_EXECUTOR_GUIDE.md` describes an older `graphExecutor` module; the live implementation is the parser/simulator pair mentioned above.
-- When editing analytics, remember production mode skips console logging and writes straight to Supabase—mirror any debug logging behind `import.meta.env.DEV`.
+- When adding nodes or parameters, update `initial.jsx` so the demo blueprint, drag payloads, and worker normalization stay aligned.
+- Keep parameter labels stable—worker logic resolves bindings by `label` before falling back to ids.
+- For new charts or analytics views, reuse the number formatters and animation approach from `BacktestView` to maintain UX consistency.
+- Dev-only tooling such as `AnalyticsDashboard.jsx` is gated behind `import.meta.env.DEV`; follow this pattern for diagnostic widgets.

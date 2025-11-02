@@ -49,31 +49,54 @@ export function runSimulation(blueprint, prices, options = {}) {
     if (!position) {
       const action = executeSubgraph(blueprint.entryGraph, context);
       if (action?.type === "buy" && cash > 0) {
-        const investable = cash * (1 - feeFraction);
+        const requestedNotional = coerceNumber(
+          action.node?.data?.amountNumber ?? action.node?.data?.amount,
+          NaN
+        );
+        const spendableCash =
+          Number.isFinite(requestedNotional) && requestedNotional > 0
+            ? Math.min(requestedNotional, cash)
+            : cash;
+
+        const investable = spendableCash * (1 - feeFraction);
         if (investable > 0) {
-          position = investable / livePrice;
-          cash = 0;
-          entryPrice = livePrice;
-          entryIndex = i;
-          trades.push({
-            entryIndex: i,
-            entryPrice: livePrice,
-            exitIndex: null,
-            exitPrice: null,
-          });
+          const quantity = investable / livePrice;
+          if (quantity > 0) {
+            position = quantity;
+            cash = Math.max(0, cash - spendableCash);
+            entryPrice = livePrice;
+            entryIndex = i;
+            trades.push({
+              entryIndex: i,
+              entryPrice: livePrice,
+              entryNotional: investable,
+              quantity,
+              exitIndex: null,
+              exitPrice: null,
+              exitNotional: null,
+              profit: null,
+            });
+          }
         }
       }
     } else {
       const action = executeSubgraph(blueprint.inTradeGraph, context);
       if (action?.type === "sell") {
-        const proceeds = position * livePrice * (1 - feeFraction);
-        cash = proceeds;
+        const exitNotional = position * livePrice * (1 - feeFraction);
+        cash += exitNotional;
         position = 0;
         if (trades.length) {
           const openTrade = trades[trades.length - 1];
           if (openTrade && openTrade.exitIndex == null) {
             openTrade.exitIndex = i;
             openTrade.exitPrice = livePrice;
+            openTrade.exitNotional = exitNotional;
+            const basis =
+              openTrade.entryNotional ??
+              openTrade.quantity * openTrade.entryPrice;
+            if (basis != null) {
+              openTrade.profit = exitNotional - basis;
+            }
           }
         }
         entryPrice = null;
@@ -87,12 +110,18 @@ export function runSimulation(blueprint, prices, options = {}) {
 
   if (position && entryIndex != null) {
     const lastPrice = liveSeries[liveSeries.length - 1];
-    const proceeds = position * lastPrice * (1 - feeFraction);
-    cash = proceeds;
+    const exitNotional = position * lastPrice * (1 - feeFraction);
+    cash += exitNotional;
     const openTrade = trades[trades.length - 1];
     if (openTrade && openTrade.exitIndex == null) {
       openTrade.exitIndex = liveSeries.length - 1;
       openTrade.exitPrice = lastPrice;
+      openTrade.exitNotional = exitNotional;
+      const basis =
+        openTrade.entryNotional ?? openTrade.quantity * openTrade.entryPrice;
+      if (basis != null) {
+        openTrade.profit = exitNotional - basis;
+      }
     }
     position = 0;
     entryPrice = null;

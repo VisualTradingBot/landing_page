@@ -24,17 +24,115 @@ export function mapCoinGeckoPricesToOHLC(prices) {
 }
 
 // Simple geometric random walk generator for fallback/demo data
-export function generateSyntheticPrices(days = 365, startPrice = 20000) {
-  const out = [];
-  let price = startPrice;
-  for (let i = 0; i < days; i++) {
-    const r = (Math.random() - 0.5) * 0.04;
-    price = Math.max(1, price * (1 + r));
-    const date = new Date();
-    date.setDate(date.getDate() - (days - i));
-    out.push({ time: date, live_price: Number(price.toFixed(2)) });
+const SYNTHETIC_CONFIG = {
+  "1d": {
+    min: 7,
+    max: 365,
+    stepMs: 24 * 60 * 60 * 1000,
+    defaultInterval: 180,
+    sharedVolatility: 0.02,
+    id: "daily",
+  },
+  "1h": {
+    min: 24,
+    max: 4320,
+    stepMs: 60 * 60 * 1000,
+    defaultInterval: 48,
+    sharedVolatility: 0.0125,
+    id: "hourly",
+  },
+  "1m": {
+    min: 1,
+    max: 24,
+    stepMs: 60 * 1000,
+    defaultInterval: 6,
+    sharedVolatility: 0.004,
+    id: "minutely",
+  },
+};
+
+const DEFAULT_START_PRICES = {
+  bitcoin: 20000,
+  ethereum: 1400,
+};
+
+const ASSET_VOLATILITY = {
+  bitcoin: 1,
+  ethereum: 1.15,
+};
+
+function createSeededRandom(seed) {
+  if (!Number.isFinite(seed)) {
+    return Math.random;
   }
-  return out;
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function generateSyntheticPrices(options = {}) {
+  const { resolution = "1d", interval, startPrices = {}, seed } = options;
+
+  const config = SYNTHETIC_CONFIG[resolution] || SYNTHETIC_CONFIG["1d"];
+  const boundsInterval = {
+    min: config.min,
+    max: config.max,
+  };
+  const rawInterval = Number(interval);
+  let normalizedInterval;
+  if (Number.isFinite(rawInterval)) {
+    normalizedInterval = Math.min(
+      Math.max(rawInterval, boundsInterval.min),
+      boundsInterval.max
+    );
+  } else {
+    normalizedInterval = config.defaultInterval;
+  }
+
+  const points =
+    resolution === "1m"
+      ? Math.max(2, Math.round(normalizedInterval * 60))
+      : Math.max(2, Math.round(normalizedInterval));
+
+  const rng = createSeededRandom(seed ?? Date.now());
+  const sharedShockScale = config.sharedVolatility;
+  const startTime = Date.now() - config.stepMs * (points - 1);
+
+  const assetMap = { ...DEFAULT_START_PRICES, ...startPrices };
+  const results = {};
+
+  Object.entries(assetMap).forEach(([assetKey, initialPriceRaw]) => {
+    const basePrice = Number(initialPriceRaw);
+    const startPrice =
+      Number.isFinite(basePrice) && basePrice > 0
+        ? basePrice
+        : DEFAULT_START_PRICES[assetKey] || 1000;
+    const assetVol = ASSET_VOLATILITY[assetKey] || 1;
+    const series = [];
+    let price = startPrice;
+
+    for (let i = 0; i < points; i++) {
+      const sharedShock = rng() - 0.5;
+      const idiosyncraticShock = rng() - 0.5;
+      const drift =
+        resolution === "1d" ? 0.0006 : resolution === "1h" ? 0.0002 : 0.00005;
+      const shock =
+        drift +
+        sharedShock * sharedShockScale +
+        idiosyncraticShock * sharedShockScale * 0.6 * assetVol;
+      price = Math.max(1, price * (1 + shock));
+      const time = new Date(startTime + i * config.stepMs);
+      series.push({ time, live_price: Number(price.toFixed(2)) });
+    }
+
+    results[assetKey] = series;
+  });
+
+  return results;
 }
 
 // Calculate various technical indicators

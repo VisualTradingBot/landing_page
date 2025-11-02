@@ -7,24 +7,41 @@ import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
 
+const DEFAULT_AMOUNT = "10000";
+
+const sanitizeAmountValue = (value) => {
+  if (value == null) return "";
+  const numeric = String(value).replace(/[^.\d]/g, "");
+  return numeric.replace(/\./g, "");
+};
+
 export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
   const [action, setAction] = useState("buy");
   const [type, setType] = useState(data?.type || "market");
-  const [amount, setAmount] = useState(data?.amount || "10000");
+  const [amount, setAmount] = useState(() => {
+    const initial = sanitizeAmountValue(data?.amount ?? DEFAULT_AMOUNT);
+    return initial || DEFAULT_AMOUNT;
+  });
 
   // Parameter system for amount
-  const [amountVariable, setAmountVariable] = useState(() => ({
-    label: "buy_amount",
-    id: `amount-${Date.now()}`,
-    parameterData: {
-      source: "user",
-      ...((data?.amountParamData && {
-        ...data.amountParamData,
-      }) || { value: "10000" }),
-    },
-  }));
+  const [amountVariable, setAmountVariable] = useState(() => {
+    const baseParamData = data?.amountParamData
+      ? { ...data.amountParamData }
+      : { value: DEFAULT_AMOUNT, source: "user" };
+    const sanitizedValue = sanitizeAmountValue(baseParamData.value);
+
+    return {
+      label: "buy_amount",
+      id: `amount-${Date.now()}`,
+      parameterData: {
+        ...baseParamData,
+        value: sanitizedValue || DEFAULT_AMOUNT,
+        source: baseParamData.source || "user",
+      },
+    };
+  });
 
   // Asset image mapping
   const assetImages = {
@@ -53,9 +70,8 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
 
   const handleAmountChange = (event) => {
     const value = event.target.value;
-    // Remove any non-numeric characters except dots
-    const numericValue = value.replace(/[^\d.]/g, "");
-    setAmount(numericValue);
+    const sanitizedValue = sanitizeAmountValue(value);
+    setAmount(sanitizedValue);
 
     const currentParamData = amountVariable.parameterData || {};
     // Update both direct amount and parameter data
@@ -63,18 +79,18 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
       ...prev,
       parameterData: {
         ...prev.parameterData,
-        value: numericValue,
+        value: sanitizedValue,
         source: prev.parameterData?.source || "user",
       },
     }));
 
     if (id) {
       updateNodeData(id, {
-        amount: numericValue,
-        amountNumber: parseFloat(numericValue) || 0,
+        amount: sanitizedValue,
+        amountNumber: parseFloat(sanitizedValue) || 0,
         amountParamData: {
           ...currentParamData,
-          value: numericValue,
+          value: sanitizedValue,
           source: currentParamData.source || "user",
         },
       });
@@ -105,7 +121,7 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
       });
       if (!amountParam) return;
 
-      const newValue = amountParam.value;
+      const newValue = sanitizeAmountValue(amountParam.value);
       setAmount(newValue);
       setAmountVariable((prev) => ({
         ...prev,
@@ -219,7 +235,7 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
               placeholder="Enter amount in dollars"
               className="amount-input"
             />
-            <span className="amount-suffix">$</span>
+            <span className="amount-suffix">€</span>
           </div>
         </div>
       </div>

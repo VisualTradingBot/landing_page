@@ -1,4 +1,8 @@
 import { StepEdge } from "@xyflow/react";
+import {
+  DEFAULT_DATA_RESOLUTION,
+  DEFAULT_INTERVAL_BY_RESOLUTION,
+} from "./defaults";
 
 // 1. Define initial parameters for the demo strategy.
 const initialParameters = [
@@ -144,6 +148,8 @@ const initialNodes = [
       type: "batch",
       asset: "bitcoin",
       dataSource: "synthetic",
+      resolution: DEFAULT_DATA_RESOLUTION,
+      interval: DEFAULT_INTERVAL_BY_RESOLUTION[DEFAULT_DATA_RESOLUTION],
       parameters: initialParameters,
     },
   },

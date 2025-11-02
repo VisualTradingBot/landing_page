@@ -182,7 +182,10 @@ const edges = [
 ];
 
 const blueprint = parseGraph(nodes, edges);
-const prices = generateSyntheticPrices(365, 20000);
+const prices = generateSyntheticPrices({
+  resolution: "1d",
+  interval: 180,
+}).bitcoin;
 const result = runSimulation(blueprint, prices, { feePercent: 0.05 });
 
 console.log({

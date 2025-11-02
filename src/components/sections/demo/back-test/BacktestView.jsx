@@ -29,52 +29,11 @@ import {
   mapCoinGeckoPricesToOHLC,
 } from "../../../../utils/indicators";
 
+import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
+
 import "./backtest.scss";
 
 import BacktestWorker from "../../../../workers/backtest.worker.js?worker";
-
-// Custom tooltip for the charts
-function CustomTooltip({ active, payload, label, formatter }) {
-  if (!active || !payload?.length) return null;
-
-  return (
-    <div className="backtest-tooltip">
-      <p className="tooltip-label">Day: {label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} className="tooltip-value" style={{ color: entry.color }}>
-          {entry.name}: {formatter ? formatter(entry.value) : entry.value}
-        </p>
-      ))}
-      {/* show entry/exit meta if present on the data point */}
-      {payload[0]?.payload &&
-        (() => {
-          const meta = payload[0].payload;
-          if (meta.isExit) {
-            return (
-              <p className="tooltip-value" style={{ color: "#ef4444" }}>
-                Exit: {meta.exitProfit ? "Profit" : "Loss"}
-              </p>
-            );
-          }
-          if (meta.isEntry) {
-            return (
-              <p className="tooltip-value" style={{ color: "#10b981" }}>
-                Entry
-              </p>
-            );
-          }
-          return null;
-        })()}
-    </div>
-  );
-}
-
-CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.number,
-  formatter: PropTypes.func,
-};
 
 function HistogramTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -91,16 +50,14 @@ function HistogramTooltip({ active, payload }) {
   );
 }
 
-HistogramTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-};
-
 function buildPriceKey(opts) {
   if (!opts) return null;
   const assetKey = opts.asset ?? "bitcoin";
   const sourceKey = opts.useSynthetic ? "synthetic" : "real";
-  return `${assetKey}|${sourceKey}`;
+  const resolutionKey = opts.dataResolution ?? "1d";
+  const windowKey =
+    opts.historyWindow != null ? String(opts.historyWindow) : "default";
+  return `${assetKey}|${sourceKey}|${resolutionKey}|${windowKey}`;
 }
 
 export default function BacktestView({
@@ -126,6 +83,24 @@ export default function BacktestView({
   const optionsInitializedRef = useRef(false);
   const pendingRunRef = useRef(null);
 
+  const cryptoFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+      }),
+    []
+  );
+
+  const profitFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
   useEffect(() => {
     if (optionsInitializedRef.current) return;
     if (!options) return;
@@ -142,9 +117,27 @@ export default function BacktestView({
 
   // === Backtest options ===
   const asset = activeOptions?.asset ?? "bitcoin";
+  const assetSymbol =
+    asset === "bitcoin"
+      ? "BTC"
+      : asset === "ethereum"
+      ? "ETH"
+      : asset.toUpperCase();
+  const dataResolution = activeOptions?.dataResolution ?? "1d";
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
   const lookback = activeOptions?.lookback;
   const feePercent = activeOptions?.feePercent ?? 0.05;
+
+  const xAxisUnitLabel = useMemo(() => {
+    switch (dataResolution) {
+      case "1m":
+        return "Minutes";
+      case "1h":
+        return "Hours";
+      default:
+        return "Days";
+    }
+  }, [dataResolution]);
 
   // === Extract stop-loss from graph nodes (for visualization only) ===
   // Looks for an 'ifNode' with a right-side variable like 'entry * 0.95' to infer stop-loss percent
@@ -191,11 +184,28 @@ export default function BacktestView({
   }, [activeOptions]);
 
   // Debug: Log resolved stop-loss percent
+  const syntheticCacheRef = useRef(new Map());
 
-  const syntheticRef = useRef(null);
-  if (syntheticRef.current === null) {
-    syntheticRef.current = generateSyntheticPrices(365, 20000);
-  }
+  const getSyntheticSeries = useCallback((opts) => {
+    const resolution = opts?.dataResolution ?? "1d";
+    const historyWindow = opts?.historyWindow;
+    const cacheKey = `${resolution}|${historyWindow ?? "default"}`;
+
+    if (!syntheticCacheRef.current.has(cacheKey)) {
+      syntheticCacheRef.current.set(
+        cacheKey,
+        generateSyntheticPrices({
+          resolution,
+          interval: historyWindow,
+        })
+      );
+    }
+
+    const bundle = syntheticCacheRef.current.get(cacheKey);
+    if (!bundle) return [];
+    const assetKey = opts?.asset ?? "bitcoin";
+    return bundle[assetKey] || bundle.bitcoin || [];
+  }, []);
 
   const runSimulationWithOptions = useCallback((runOptions, priceSeries) => {
     if (!workerRef.current || !priceSeries?.length) return;
@@ -229,6 +239,23 @@ export default function BacktestView({
     const fetchKey = buildPriceKey(activeOptions);
     const wantsSynthetic = !!activeOptions.useSynthetic;
     const targetAsset = activeOptions.asset ?? "bitcoin";
+    const resolution = activeOptions.dataResolution ?? "1d";
+    const rawWindow = Number(activeOptions.historyWindow);
+    const normalizedWindow =
+      Number.isFinite(rawWindow) && rawWindow > 0
+        ? rawWindow
+        : resolution === "1d"
+        ? 180
+        : resolution === "1h"
+        ? 48
+        : 6;
+
+    const supportsRealResolution = resolution !== "1m";
+    const daysParam =
+      resolution === "1d"
+        ? Math.max(1, Math.min(365, Math.round(normalizedWindow)))
+        : Math.max(1, Math.min(90, Math.ceil(normalizedWindow / 24)));
+    const intervalParam = resolution === "1d" ? "daily" : "hourly";
 
     if (priceKeyRef.current === fetchKey && storedPrices?.length) {
       return;
@@ -237,15 +264,23 @@ export default function BacktestView({
     let cancelled = false;
 
     async function ensurePrices() {
-      if (wantsSynthetic) {
+      if (wantsSynthetic || !supportsRealResolution) {
         if (!cancelled) {
           priceKeyRef.current = fetchKey;
-          setStoredPrices(syntheticRef.current);
+          const syntheticSeries = getSyntheticSeries(activeOptions);
+          setStoredPrices(syntheticSeries);
         }
         return;
       }
 
-      const url = `https://api.coingecko.com/api/v3/coins/${targetAsset}/market_chart?vs_currency=eur&days=365&interval=daily`;
+      const searchParams = new URLSearchParams({
+        vs_currency: "eur",
+        days: String(daysParam),
+      });
+      if (intervalParam) {
+        searchParams.set("interval", intervalParam);
+      }
+      const url = `https://api.coingecko.com/api/v3/coins/${targetAsset}/market_chart?${searchParams.toString()}`;
       const fetchOptions = {
         method: "GET",
         headers: { "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w" },
@@ -258,8 +293,16 @@ export default function BacktestView({
           const data = await response.json();
           const mapped = mapCoinGeckoPricesToOHLC(data.prices || []);
           if (Array.isArray(mapped) && mapped.length > 0) {
+            let limited = mapped;
+            if (resolution === "1d") {
+              const maxPoints = Math.max(1, Math.round(normalizedWindow));
+              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
+            } else if (resolution === "1h") {
+              const maxPoints = Math.max(1, Math.round(normalizedWindow));
+              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
+            }
             priceKeyRef.current = fetchKey;
-            setStoredPrices(mapped);
+            setStoredPrices(limited);
             return;
           }
         } else {
@@ -276,7 +319,8 @@ export default function BacktestView({
 
       if (!cancelled) {
         priceKeyRef.current = fetchKey;
-        setStoredPrices(syntheticRef.current);
+        const fallbackSeries = getSyntheticSeries(activeOptions);
+        setStoredPrices(fallbackSeries);
       }
     }
 
@@ -285,7 +329,7 @@ export default function BacktestView({
     return () => {
       cancelled = true;
     };
-  }, [activeOptions, storedPrices]);
+  }, [activeOptions, storedPrices, getSyntheticSeries]);
 
   useEffect(() => {
     if (!storedPrices || !storedPrices.length) return;
@@ -309,7 +353,7 @@ export default function BacktestView({
     }
   }, [storedPrices, visiblePricePoints]);
 
-  // === NEW: Setup Web Worker ===
+  // === Setup Web Worker ===
   useEffect(() => {
     // Create a new worker instance when the component mounts.
     const worker = new BacktestWorker();
@@ -358,7 +402,7 @@ export default function BacktestView({
     };
   }, []); // Empty dependency array ensures this runs only once.
 
-  // === MODIFIED: The function to trigger the backtest ===
+  // === The function to trigger the backtest ===
   const handleRunBacktest = useCallback(() => {
     if (!workerRef.current || runInProgressRef.current) {
       return;
@@ -437,142 +481,8 @@ export default function BacktestView({
     setTimeout(() => requestAnimationFrame(animateEquity), 200);
   }, [stats, storedPrices]);
 
-  // === Check if indicator is connected to the graph (reachable from Input) ===
-  // Uses BFS to determine if indicatorNode is reachable from inputNode
-  const _isIndicatorConnected = useMemo(() => {
-    if (!activeOptions?.nodes || !activeOptions?.edges) return false;
-
-    const inputNode = activeOptions.nodes.find((n) => n.type === "inputNode");
-    const indicatorNode = activeOptions.nodes.find(
-      (n) => n.type === "inputIndicatorNode"
-    );
-
-    if (!inputNode || !indicatorNode) return false;
-
-    // Build reachability from input
-    const reachable = new Set();
-    const queue = [inputNode.id];
-    const edgeMap = new Map();
-
-    activeOptions.edges.forEach((e) => {
-      if (!edgeMap.has(e.source)) edgeMap.set(e.source, []);
-      edgeMap.get(e.source).push(e.target);
-    });
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (reachable.has(current)) continue;
-      reachable.add(current);
-
-      const neighbors = edgeMap.get(current) || [];
-      neighbors.forEach((n) => queue.push(n));
-    }
-
-    return reachable.has(indicatorNode.id);
-  }, [activeOptions]);
-
   // Memoize trades array to prevent unnecessary re-renders
   const trades = useMemo(() => stats?.trades || [], [stats]);
-
-  const tradeReturns = useMemo(() => {
-    if (!trades.length) return [];
-    return trades
-      .map((trade) => {
-        const { entryPrice, exitPrice } = trade || {};
-        if (!Number.isFinite(entryPrice) || !Number.isFinite(exitPrice)) {
-          return null;
-        }
-        const grossReturn = (exitPrice - entryPrice) / entryPrice;
-        return Number.isFinite(grossReturn) ? grossReturn * 100 : null;
-      })
-      .filter((value) => value != null);
-  }, [trades]);
-
-  const histogramData = useMemo(() => {
-    if (!tradeReturns.length) return [];
-
-    const minReturn = Math.min(...tradeReturns);
-    const maxReturn = Math.max(...tradeReturns);
-
-    if (!Number.isFinite(minReturn) || !Number.isFinite(maxReturn)) {
-      return [];
-    }
-
-    const formatValue = (value) => {
-      const normalized = Math.abs(value) < 0.05 ? 0 : value;
-      return `${normalized.toFixed(1)}%`;
-    };
-
-    if (minReturn === maxReturn) {
-      const singleValue = minReturn;
-      const label = formatValue(singleValue);
-      return [
-        {
-          range: label,
-          count: tradeReturns.length,
-          midpoint: singleValue,
-          start: singleValue,
-          end: singleValue,
-          isPositive: singleValue >= 0,
-        },
-      ];
-    }
-
-    const span = maxReturn - minReturn;
-    const tentativeBins = Math.min(
-      12,
-      Math.max(5, Math.ceil(Math.sqrt(tradeReturns.length)))
-    );
-    const binSize = span / tentativeBins;
-
-    const bins = Array.from({ length: tentativeBins }, (_, index) => {
-      const start = minReturn + index * binSize;
-      const end = index === tentativeBins - 1 ? maxReturn : start + binSize;
-      const midpoint = (start + end) / 2;
-      return {
-        start,
-        end,
-        midpoint,
-        count: 0,
-        isPositive: midpoint >= 0,
-      };
-    });
-
-    tradeReturns.forEach((value) => {
-      const clamped = Math.min(
-        tentativeBins - 1,
-        Math.max(0, Math.floor((value - minReturn) / binSize))
-      );
-      bins[clamped].count += 1;
-    });
-
-    return bins.map((bin) => {
-      const rangeLabel = `${formatValue(bin.start)} to ${formatValue(bin.end)}`;
-      return {
-        range: rangeLabel,
-        count: bin.count,
-        midpoint: bin.midpoint,
-        start: bin.start,
-        end: bin.end,
-        isPositive: bin.isPositive,
-      };
-    });
-  }, [tradeReturns]);
-
-  const maxHistogramCount = useMemo(() => {
-    if (!histogramData.length) return 0;
-    return Math.max(...histogramData.map((bin) => bin.count));
-  }, [histogramData]);
-
-  const positiveZoneOffset = useMemo(() => {
-    if (!histogramData.length) return 100;
-    const firstPositiveIndex = histogramData.findIndex((bin) => bin.end > 0);
-    if (firstPositiveIndex === -1) return 100;
-    return Math.max(
-      0,
-      Math.min(100, (firstPositiveIndex / histogramData.length) * 100)
-    );
-  }, [histogramData]);
 
   // Calculate effective window used in backtest
   const maxWindow = useMemo(
@@ -640,33 +550,44 @@ export default function BacktestView({
   // Quick lookup maps for marking price points with entry/exit/profit flags
   const tradeIndexMaps = useMemo(() => {
     const entrySet = new Set();
-    const exitMap = new Map(); // exitIndex -> { profit: boolean|null }
+    const entryMeta = new Map();
+    const exitMap = new Map(); // exitIndex -> { profit: boolean|null, profitValue: number|null }
     if (Array.isArray(trades) && storedPrices) {
       for (const t of trades) {
         const ei = t.entryIndex;
         const xi = t.exitIndex;
-        if (typeof ei === "number") entrySet.add(ei);
+        if (typeof ei === "number") {
+          entrySet.add(ei);
+          const quantity = Number.isFinite(t.quantity) ? t.quantity : null;
+          entryMeta.set(ei, { quantity });
+        }
         if (typeof xi === "number") {
-          let profit = null;
-          try {
-            const entryPrice =
-              typeof ei === "number" && storedPrices[ei]?.live_price != null
-                ? Number(storedPrices[ei].live_price)
-                : null;
-            const exitPrice =
-              storedPrices[xi]?.live_price != null
-                ? Number(storedPrices[xi].live_price)
-                : null;
-            if (entryPrice != null && exitPrice != null)
-              profit = exitPrice - entryPrice > 0;
-          } catch {
-            profit = null;
+          let profitValue = Number.isFinite(t.profit) ? t.profit : null;
+          let profitFlag = profitValue != null ? profitValue > 0 : null;
+
+          if (profitValue == null) {
+            try {
+              const entryPrice =
+                typeof ei === "number" && storedPrices[ei]?.live_price != null
+                  ? Number(storedPrices[ei].live_price)
+                  : null;
+              const exitPrice =
+                storedPrices[xi]?.live_price != null
+                  ? Number(storedPrices[xi].live_price)
+                  : null;
+              if (entryPrice != null && exitPrice != null) {
+                profitFlag = exitPrice - entryPrice > 0;
+              }
+            } catch {
+              profitFlag = null;
+            }
           }
-          exitMap.set(xi, { profit });
+
+          exitMap.set(xi, { profit: profitFlag, profitValue });
         }
       }
     }
-    return { entrySet, exitMap };
+    return { entrySet, entryMeta, exitMap };
   }, [trades, storedPrices]);
 
   // Prepare chart data for price chart
@@ -689,10 +610,33 @@ export default function BacktestView({
       // annotate entry/exit flags using tradeIndexMaps
       if (tradeIndexMaps) {
         dataPoint.isEntry = tradeIndexMaps.entrySet.has(i);
+        if (dataPoint.isEntry) {
+          const entryDetails = tradeIndexMaps.entryMeta.get(i);
+          if (entryDetails?.quantity != null) {
+            dataPoint.entryQuantity = entryDetails.quantity;
+            dataPoint.assetSymbol = assetSymbol;
+            dataPoint.entryDisplay = `Entry: ${cryptoFormatter.format(
+              entryDetails.quantity
+            )}${assetSymbol}`;
+          } else {
+            dataPoint.entryDisplay = "Entry";
+          }
+        }
         const exitMeta = tradeIndexMaps.exitMap.get(i);
         if (exitMeta) {
           dataPoint.isExit = true;
           dataPoint.exitProfit = !!exitMeta.profit;
+          dataPoint.exitProfitValue = exitMeta.profitValue ?? null;
+          if (exitMeta.profitValue != null) {
+            const formatted = profitFormatter.format(
+              Math.abs(exitMeta.profitValue)
+            );
+            const sign = exitMeta.profitValue >= 0 ? "" : "-";
+            const prefix = exitMeta.profit ? "Profit" : "Loss";
+            dataPoint.exitDisplay = `${prefix}: ${sign}${formatted}€`;
+          } else {
+            dataPoint.exitDisplay = exitMeta.profit ? "Profit" : "Loss";
+          }
         } else {
           dataPoint.isExit = false;
         }
@@ -700,7 +644,15 @@ export default function BacktestView({
 
       return dataPoint;
     });
-  }, [storedPrices, visiblePricePoints, indicatorSeries, tradeIndexMaps]);
+  }, [
+    storedPrices,
+    visiblePricePoints,
+    indicatorSeries,
+    tradeIndexMaps,
+    assetSymbol,
+    cryptoFormatter,
+    profitFormatter,
+  ]);
 
   // Prepare equity chart data
   const equityChartData = useMemo(() => {
@@ -742,18 +694,24 @@ export default function BacktestView({
         exitI < storedPrices.length &&
         storedPrices[exitI]?.live_price != null
       ) {
-        // compute simple profit/loss by comparing entry and exit price (assumes long positions)
-        const entryPrice =
-          typeof ei === "number" && storedPrices[ei]?.live_price != null
-            ? Number(storedPrices[ei].live_price)
-            : null;
         const exitPrice = Number(storedPrices[exitI].live_price);
-        const profit = entryPrice != null ? exitPrice - entryPrice : null;
+        let profitFlag = null;
+        if (Number.isFinite(t.profit)) {
+          profitFlag = t.profit > 0;
+        } else if (typeof ei === "number") {
+          const entryPrice =
+            storedPrices[ei]?.live_price != null
+              ? Number(storedPrices[ei].live_price)
+              : null;
+          if (entryPrice != null) {
+            profitFlag = exitPrice - entryPrice > 0;
+          }
+        }
         exits.push({
           index: exitI,
           time: exitI + 1,
           price: exitPrice,
-          profit: profit != null ? profit > 0 : null,
+          profit: profitFlag,
         });
       }
     });
@@ -786,12 +744,7 @@ export default function BacktestView({
   }, [stats]);
 
   // Asset label for display
-  const assetLabel =
-    asset === "bitcoin"
-      ? "BTC"
-      : asset === "ethereum"
-      ? "ETH"
-      : asset.toUpperCase();
+  const assetLabel = assetSymbol;
 
   // Formatters for chart axes and tooltips
   const formatPrice = useCallback((value) => {
@@ -967,7 +920,7 @@ export default function BacktestView({
                 interval={Math.max(1, Math.floor(storedPrices.length / 8))}
                 height={35}
                 label={{
-                  value: "Day",
+                  value: xAxisUnitLabel,
                   position: "insideBottom",
                   offset: -10,
                   fill: "#94a3b8",
@@ -1117,7 +1070,7 @@ export default function BacktestView({
                 )}
                 height={35}
                 label={{
-                  value: "Day",
+                  value: xAxisUnitLabel,
                   position: "insideBottom",
                   offset: -10,
                   fill: "#94a3b8",
@@ -1178,75 +1131,6 @@ export default function BacktestView({
           <div className="stat-label">Max Drawdown</div>
           <div className="stat-value">{(maxDrawdown * 100).toFixed(1)}%</div>
         </div>
-      </div>
-
-      <div className="backtest-distribution">
-        <div className="distribution-header">
-          <h4>Trade Return Distribution</h4>
-          <div className="distribution-meta">
-            <span>{tradeReturns.length} closed trades</span>
-          </div>
-        </div>
-        {histogramData.length ? (
-          <div
-            className="histogram-wrapper"
-            style={{ "--positive-start": `${positiveZoneOffset}%` }}
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={histogramData}
-                margin={{ top: 20, right: 12, bottom: 24, left: 12 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="rgba(148, 163, 184, 0.4)"
-                />
-                <XAxis
-                  dataKey="range"
-                  tick={{ fill: "#475569", fontSize: 11 }}
-                  interval={0}
-                  height={60}
-                  tickMargin={12}
-                  angle={-35}
-                  textAnchor="end"
-                />
-                <YAxis
-                  allowDecimals={false}
-                  domain={[0, Math.max(maxHistogramCount, 1)]}
-                  tick={{ fill: "#475569", fontSize: 11 }}
-                  axisLine={{ stroke: "#475569" }}
-                  tickLine={{ stroke: "#475569" }}
-                  width={40}
-                  label={{
-                    value: "Trades",
-                    angle: -90,
-                    position: "insideLeft",
-                    fill: "#94a3b8",
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                />
-                <Tooltip
-                  content={<HistogramTooltip />}
-                  cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                />
-                <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {histogramData.map((bin, index) => (
-                    <Cell
-                      key={`bin-${index}`}
-                      fill={bin.isPositive ? "#10b981" : "#ef4444"}
-                      opacity={bin.count ? 0.85 : 0.25}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="histogram-empty">No closed trades yet.</div>
-        )}
       </div>
     </div>
   );

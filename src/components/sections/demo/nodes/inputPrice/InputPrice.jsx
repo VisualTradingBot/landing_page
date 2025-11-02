@@ -5,10 +5,12 @@ import { useState, useEffect, useRef } from "react";
 import { useReactFlow, useEdges } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
+import { useAsset } from "../../AssetContext";
 import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputPrice({ data, id }) {
   const { updateNodeData, getNode } = useReactFlow();
+  const { selectedAsset } = useAsset();
   const edges = useEdges();
   const payloadRef = useRef(null);
 
@@ -31,7 +33,7 @@ export default function InputPrice({ data, id }) {
     ethereum: ethereumLogo,
   };
 
-  const currentAsset = DEFAULT_ASSET;
+  const currentAsset = selectedAsset || DEFAULT_ASSET;
   const assetImage = assetImages[currentAsset] || bitcoinLogo;
 
   const handleTimeFrameChange = (event) => {

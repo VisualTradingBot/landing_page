@@ -202,30 +202,6 @@
     }
   }
 
-  .backtest-tooltip {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(8px);
-
-    .tooltip-label {
-      font-size: 12px;
-      color: #64748b;
-      margin: 0 0 8px 0;
-      font-weight: 500;
-    }
-
-    .tooltip-value {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 4px 0;
-      letter-spacing: -0.01em;
-      color: #1e293b;
-    }
-  }
-
   /* Progress indicator used near the Run button */
   .progress-wrap {
     display: flex;

@@ -38,8 +38,9 @@ import {
 } from "./initial.jsx";
 import {
   DEFAULT_ASSET,
-  DEFAULT_LOOKBACK,
   DEFAULT_FEE_PERCENT,
+  DEFAULT_DATA_RESOLUTION,
+  DEFAULT_SYNTHETIC_INTERVAL,
 } from "./defaults";
 
 export default function Demo() {
@@ -48,6 +49,10 @@ export default function Demo() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
   const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
+  const [dataResolution, setDataResolution] = useState(DEFAULT_DATA_RESOLUTION);
+  const [syntheticInterval, setSyntheticInterval] = useState(
+    DEFAULT_SYNTHETIC_INTERVAL
+  );
   const [inTradeCollapsed, setInTradeCollapsed] = useState(false); // Collapse state for in-trade block
 
   // === Modal state ===
@@ -587,7 +592,16 @@ export default function Demo() {
       opts.asset = inputNode.data.asset;
     }
 
+    const resolvedResolution =
+      inputNode?.data?.resolution || dataResolution || DEFAULT_DATA_RESOLUTION;
+    let resolvedInterval = Number(inputNode?.data?.interval);
+    if (!Number.isFinite(resolvedInterval) || resolvedInterval <= 0) {
+      resolvedInterval = syntheticInterval || DEFAULT_SYNTHETIC_INTERVAL;
+    }
+
     opts.useSynthetic = useSynthetic;
+    opts.dataResolution = resolvedResolution;
+    opts.historyWindow = resolvedInterval;
     // Expose the logical nodes/edges (no layout/position data) to keep the
     // backtest payload stable when users move nodes around in the editor.
     opts.nodes = logicalNodes;
@@ -638,12 +652,27 @@ export default function Demo() {
     }
 
     return opts;
-  }, [logicalNodes, logicalEdges, parameters]);
+  }, [
+    logicalNodes,
+    logicalEdges,
+    parameters,
+    dataResolution,
+    syntheticInterval,
+  ]);
 
   // Debug: log backtestOptions whenever it recomputes
 
   return (
-    <AssetContext.Provider value={{ selectedAsset, setSelectedAsset }}>
+    <AssetContext.Provider
+      value={{
+        selectedAsset,
+        setSelectedAsset,
+        dataResolution,
+        setDataResolution,
+        syntheticInterval,
+        setSyntheticInterval,
+      }}
+    >
       <section id="demo" className="demo">
         {/* === Drag-and-drop algorithm builder === */}
         <div
