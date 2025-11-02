@@ -1,5 +1,14 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+/* eslint-disable react/prop-types */
+import {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+  useTransition,
+} from "react";
 import PropTypes from "prop-types";
+// BacktestView: Visualizes the results of a trading strategy backtest, including price, indicators, equity curve, and trade statistics.
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,63 +18,156 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceDot,
+  BarChart,
+  Bar,
+  Cell,
   ReferenceLine,
 } from "recharts";
+
 import {
   generateSyntheticPrices,
   mapCoinGeckoPricesToOHLC,
-  calculateIndicator,
-} from "../../../../utils/backtest";
-import { executeGraphStrategy } from "../../../../utils/graphExecutor";
+} from "../../../../utils/indicators";
+
+import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
+
 import "./backtest.scss";
 
-// Custom tooltip for the charts
-function CustomTooltip({ active, payload, label, formatter }) {
+import BacktestWorker from "../../../../workers/backtest.worker.js?worker";
+
+function HistogramTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
+
+  const dataPoint = payload[0]?.payload;
+  if (!dataPoint) return null;
 
   return (
     <div className="backtest-tooltip">
-      <p className="tooltip-label">{label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} className="tooltip-value" style={{ color: entry.color }}>
-          {entry.name}: {formatter ? formatter(entry.value) : entry.value}
-        </p>
-      ))}
+      <p className="tooltip-label">Return Range</p>
+      <p className="tooltip-value">{dataPoint.range}</p>
+      <p className="tooltip-value">Trades: {dataPoint.count}</p>
     </div>
   );
 }
 
-CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.string,
-  formatter: PropTypes.func,
-};
+function buildPriceKey(opts) {
+  if (!opts) return null;
+  const assetKey = opts.asset ?? "bitcoin";
+  const sourceKey = opts.useSynthetic ? "synthetic" : "real";
+  const resolutionKey = opts.dataResolution ?? "1d";
+  const windowKey =
+    opts.historyWindow != null ? String(opts.historyWindow) : "default";
+  return `${assetKey}|${sourceKey}|${resolutionKey}|${windowKey}`;
+}
 
 export default function BacktestView({
   options,
   externalControl: _externalControl = false,
-  useSynthetic = false,
 }) {
-  const [stats, setStats] = useState(null);
-  const [storedPrices, setStoredPrices] = useState(null);
-  const [visiblePricePoints, setVisiblePricePoints] = useState(0);
-  const [visibleEquityPoints, setVisibleEquityPoints] = useState(0);
+  // === State for backtest and chart animation ===
+  const [stats, setStats] = useState(null); // Backtest statistics and equity series
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [workerNotice, setWorkerNotice] = useState(null); // non-fatal errors/warnings from worker
+  const [progress, setProgress] = useState(0); // 0..1 progress for worker
+  const workerRef = useRef(null);
+  const runInProgressRef = useRef(false); // prevents duplicate posts to worker
+  const [storedPrices, setStoredPrices] = useState(null); // Price data (real or synthetic)
+  const priceKeyRef = useRef(null); // Tracks which option set the current prices belong to
+  const [visiblePricePoints, setVisiblePricePoints] = useState(0); // Animated price chart points
+  const [visibleEquityPoints, setVisibleEquityPoints] = useState(0); // Animated equity chart points
   const priceAnimationRef = useRef(null);
   const equityAnimationRef = useRef(null);
+  const [, startTransition] = useTransition();
+  const [activeOptions, setActiveOptions] = useState(options);
+  const optionsInitializedRef = useRef(false);
+  const pendingRunRef = useRef(null);
 
-  const asset = options?.asset ?? "bitcoin";
-  const lookback = options?.lookback ?? 30;
-  const feePercent = options?.feePercent ?? 0.05;
+  const cryptoFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+      }),
+    []
+  );
 
-  // Extract stop-loss from graph nodes (for visualization only)
+  const profitFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
+  useEffect(() => {
+    if (optionsInitializedRef.current) return;
+    if (!options) return;
+    setActiveOptions(options);
+    pendingRunRef.current = options;
+    optionsInitializedRef.current = true;
+    setIsLoading(true);
+    setProgress(0);
+    setError(null);
+    setVisiblePricePoints(0);
+    setVisibleEquityPoints(0);
+    setWorkerNotice(null);
+  }, [options]);
+
+  // === Backtest options ===
+  const asset = activeOptions?.asset ?? "bitcoin";
+  const assetSymbol =
+    asset === "bitcoin"
+      ? "BTC"
+      : asset === "ethereum"
+      ? "ETH"
+      : asset.toUpperCase();
+  const dataResolution = activeOptions?.dataResolution ?? "1d";
+  // rely on Demo to provide the canonical lookback; if absent, treat as undefined
+  const lookback = activeOptions?.lookback;
+  const feePercent = activeOptions?.feePercent ?? 0.05;
+
+  const xAxisUnitLabel = useMemo(() => {
+    switch (dataResolution) {
+      case "1m":
+        return "Minutes";
+      case "1h":
+        return "Hours";
+      default:
+        return "Days";
+    }
+  }, [dataResolution]);
+
+  // === Extract stop-loss from graph nodes (for visualization only) ===
+  // Looks for an 'ifNode' with a right-side variable like 'entry * 0.95' to infer stop-loss percent
   const stopLossPercent = useMemo(() => {
-    if (!options?.nodes) return 5;
-    const ifNodes = options.nodes.filter((n) => n.type === "ifNode");
+    if (!activeOptions?.nodes) return 5;
+    const ifNodes = activeOptions.nodes.filter((n) => n.type === "ifNode");
     for (const ifNode of ifNodes) {
       const vars = ifNode.data?.variables || [];
       const rightVar = vars[1];
-      const stopLossValue = rightVar?.parameterData?.value;
+      // Prefer parameterId resolution (keeps in sync with ParameterBlock). Fall back to legacy parameterData.value
+      let stopLossValue = null;
+      const pd = rightVar?.parameterData;
+      if (pd && pd.parameterId) {
+        // Resolve by scanning node-attached parameters (Demo attaches parameters to each node.data.parameters)
+        let resolved = null;
+        for (const n of activeOptions.nodes) {
+          const params = n?.data?.parameters;
+          if (!Array.isArray(params)) continue;
+          const match = params.find(
+            (p) => p.id === pd.parameterId || p.label === pd.label
+          );
+          if (match) {
+            resolved = match;
+            break;
+          }
+        }
+        stopLossValue = resolved?.value ?? pd.value;
+      } else {
+        stopLossValue = pd?.value ?? rightVar?.value ?? null;
+      }
       if (
         typeof stopLossValue === "string" &&
         stopLossValue.includes("entry") &&
@@ -79,23 +181,106 @@ export default function BacktestView({
       }
     }
     return 5;
-  }, [options]);
+  }, [activeOptions]);
 
-  const syntheticRef = useRef(null);
-  if (syntheticRef.current === null) {
-    syntheticRef.current = generateSyntheticPrices(365, 20000);
-  }
+  // Debug: Log resolved stop-loss percent
+  const syntheticCacheRef = useRef(new Map());
 
+  const getSyntheticSeries = useCallback((opts) => {
+    const resolution = opts?.dataResolution ?? "1d";
+    const historyWindow = opts?.historyWindow;
+    const cacheKey = `${resolution}|${historyWindow ?? "default"}`;
+
+    if (!syntheticCacheRef.current.has(cacheKey)) {
+      syntheticCacheRef.current.set(
+        cacheKey,
+        generateSyntheticPrices({
+          resolution,
+          interval: historyWindow,
+        })
+      );
+    }
+
+    const bundle = syntheticCacheRef.current.get(cacheKey);
+    if (!bundle) return [];
+    const assetKey = opts?.asset ?? "bitcoin";
+    return bundle[assetKey] || bundle.bitcoin || [];
+  }, []);
+
+  const runSimulationWithOptions = useCallback((runOptions, priceSeries) => {
+    if (!workerRef.current || !priceSeries?.length) return;
+
+    pendingRunRef.current = null;
+
+    const numericFee = Number(runOptions?.feePercent);
+    const feeForRun = Number.isFinite(numericFee) ? numericFee : 0.05;
+
+    setIsLoading(true);
+    setProgress(0);
+    setError(null);
+    setVisiblePricePoints(0);
+    setVisibleEquityPoints(0);
+    setWorkerNotice(null);
+    runInProgressRef.current = true;
+
+    workerRef.current.postMessage({
+      nodes: runOptions.nodes,
+      edges: runOptions.edges,
+      parameters: runOptions.parameters,
+      prices: priceSeries,
+      feePercent: feeForRun,
+    });
+  }, []);
+
+  // === Fetch price data (CoinGecko or synthetic fallback) ===
   useEffect(() => {
-    let mounted = true;
-    async function initPrices() {
-      if (useSynthetic) {
-        setStoredPrices(syntheticRef.current);
+    if (!activeOptions) return;
+
+    const fetchKey = buildPriceKey(activeOptions);
+    const wantsSynthetic = !!activeOptions.useSynthetic;
+    const targetAsset = activeOptions.asset ?? "bitcoin";
+    const resolution = activeOptions.dataResolution ?? "1d";
+    const rawWindow = Number(activeOptions.historyWindow);
+    const normalizedWindow =
+      Number.isFinite(rawWindow) && rawWindow > 0
+        ? rawWindow
+        : resolution === "1d"
+        ? 180
+        : resolution === "1h"
+        ? 48
+        : 6;
+
+    const supportsRealResolution = resolution !== "1m";
+    const daysParam =
+      resolution === "1d"
+        ? Math.max(1, Math.min(365, Math.round(normalizedWindow)))
+        : Math.max(1, Math.min(90, Math.ceil(normalizedWindow / 24)));
+    const intervalParam = resolution === "1d" ? "daily" : "hourly";
+
+    if (priceKeyRef.current === fetchKey && storedPrices?.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function ensurePrices() {
+      if (wantsSynthetic || !supportsRealResolution) {
+        if (!cancelled) {
+          priceKeyRef.current = fetchKey;
+          const syntheticSeries = getSyntheticSeries(activeOptions);
+          setStoredPrices(syntheticSeries);
+        }
         return;
       }
 
-      let url = `https://api.coingecko.com/api/v3/coins/${asset}/market_chart?vs_currency=eur&days=365&interval=daily`;
-
+      const searchParams = new URLSearchParams({
+        vs_currency: "eur",
+        days: String(daysParam),
+      });
+      if (intervalParam) {
+        searchParams.set("interval", intervalParam);
+      }
+      const url = `https://api.coingecko.com/api/v3/coins/${targetAsset}/market_chart?${searchParams.toString()}`;
       const fetchOptions = {
         method: "GET",
         headers: { "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w" },
@@ -103,11 +288,21 @@ export default function BacktestView({
 
       try {
         const response = await fetch(url, fetchOptions);
+        if (cancelled) return;
         if (response && response.ok) {
           const data = await response.json();
           const mapped = mapCoinGeckoPricesToOHLC(data.prices || []);
           if (Array.isArray(mapped) && mapped.length > 0) {
-            setStoredPrices(mapped);
+            let limited = mapped;
+            if (resolution === "1d") {
+              const maxPoints = Math.max(1, Math.round(normalizedWindow));
+              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
+            } else if (resolution === "1h") {
+              const maxPoints = Math.max(1, Math.round(normalizedWindow));
+              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
+            }
+            priceKeyRef.current = fetchKey;
+            setStoredPrices(limited);
             return;
           }
         } else {
@@ -117,39 +312,127 @@ export default function BacktestView({
           );
         }
       } catch (error) {
-        console.error("Error fetching prices:", error);
+        if (!cancelled) {
+          console.error("Error fetching prices:", error);
+        }
       }
 
-      if (mounted) setStoredPrices(syntheticRef.current);
+      if (!cancelled) {
+        priceKeyRef.current = fetchKey;
+        const fallbackSeries = getSyntheticSeries(activeOptions);
+        setStoredPrices(fallbackSeries);
+      }
     }
 
-    initPrices();
+    ensurePrices();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-  }, [asset, useSynthetic]);
+  }, [activeOptions, storedPrices, getSyntheticSeries]);
 
-  // Re-run backtest whenever storedPrices or parameters change
   useEffect(() => {
-    if (!storedPrices || storedPrices.length === 0) {
-      setStats(null);
+    if (!storedPrices || !storedPrices.length) return;
+    if (!pendingRunRef.current) return;
+
+    const runOptions = pendingRunRef.current;
+    const expectedKey = buildPriceKey(runOptions);
+    if (priceKeyRef.current !== expectedKey) {
       return;
     }
 
-    // Use graph-based executor
-    const result = executeGraphStrategy(
-      storedPrices,
-      options.nodes,
-      options.edges,
-      {
-        feePercent,
-      }
-    );
-    setStats(result);
-  }, [storedPrices, feePercent, options]);
+    pendingRunRef.current = null;
+    runSimulationWithOptions(runOptions, storedPrices);
+  }, [storedPrices, runSimulationWithOptions]);
 
-  // Animate chart reveal
+  // Ensure we display the price/indicator plot once prices load even before a backtest run
+  useEffect(() => {
+    if (storedPrices && storedPrices.length > 0 && visiblePricePoints === 0) {
+      // show full series by default so indicator curves are visible
+      setVisiblePricePoints(storedPrices.length);
+    }
+  }, [storedPrices, visiblePricePoints]);
+
+  // === Setup Web Worker ===
+  useEffect(() => {
+    // Create a new worker instance when the component mounts.
+    const worker = new BacktestWorker();
+    workerRef.current = worker;
+
+    // Define what to do when a message is received from the worker.
+    worker.onmessage = (event) => {
+      const { status, data } = event.data;
+      if (status === "complete") {
+        runInProgressRef.current = false;
+        setProgress(1);
+        // If worker returned errors/warnings as part of 'complete', surface them as non-fatal notices
+        if (data?.errors || data?.error) {
+          setWorkerNotice({
+            type: "error",
+            messages: data.errors || [data.error],
+          });
+          setIsLoading(false);
+          return;
+        }
+        if (data?.warnings) {
+          setWorkerNotice({ type: "warning", messages: data.warnings });
+        } else {
+          setWorkerNotice(null);
+        }
+        startTransition(() => {
+          setStats(data);
+          setIsLoading(false);
+        });
+      } else if (status === "error") {
+        runInProgressRef.current = false;
+        // Non-fatal: show notice but don't unmount the UI
+        setWorkerNotice({ type: "error", messages: [data] });
+        setIsLoading(false); // Stop loading
+      } else if (status === "progress") {
+        // update progress indicator (worker may send { progress: 0..1 } )
+        const p = data?.progress ?? data?.percent ?? 0;
+        setProgress(typeof p === "number" ? p : 0);
+        // we intentionally do not clear runInProgressRef until 'complete' or 'error'
+      }
+    };
+
+    // Cleanup: Terminate the worker when the component unmounts.
+    return () => {
+      worker.terminate();
+    };
+  }, []); // Empty dependency array ensures this runs only once.
+
+  // === The function to trigger the backtest ===
+  const handleRunBacktest = useCallback(() => {
+    if (!workerRef.current || runInProgressRef.current) {
+      return;
+    }
+
+    const nextOptions = options;
+    if (!nextOptions) return;
+
+    const nextKey = buildPriceKey(nextOptions);
+    const hasPricesForRun =
+      storedPrices &&
+      storedPrices.length > 0 &&
+      priceKeyRef.current === nextKey;
+
+    pendingRunRef.current = nextOptions;
+    setActiveOptions(nextOptions);
+
+    if (hasPricesForRun) {
+      runSimulationWithOptions(nextOptions, storedPrices);
+    } else {
+      setIsLoading(true);
+      setProgress(0);
+      setError(null);
+      setVisiblePricePoints(0);
+      setVisibleEquityPoints(0);
+      setWorkerNotice(null);
+    }
+  }, [options, storedPrices, runSimulationWithOptions]);
+
+  // === Animate chart reveal for price and equity ===
   useEffect(() => {
     if (!stats || !storedPrices) return;
 
@@ -198,37 +481,6 @@ export default function BacktestView({
     setTimeout(() => requestAnimationFrame(animateEquity), 200);
   }, [stats, storedPrices]);
 
-  // Check if indicator is connected to the graph (reachable from Input)
-  const isIndicatorConnected = useMemo(() => {
-    if (!options?.nodes || !options?.edges) return false;
-
-    const inputNode = options.nodes.find((n) => n.type === "inputNode");
-    const indicatorNode = options.nodes.find((n) => n.type === "indicatorNode");
-
-    if (!inputNode || !indicatorNode) return false;
-
-    // Build reachability from input
-    const reachable = new Set();
-    const queue = [inputNode.id];
-    const edgeMap = new Map();
-
-    options.edges.forEach((e) => {
-      if (!edgeMap.has(e.source)) edgeMap.set(e.source, []);
-      edgeMap.get(e.source).push(e.target);
-    });
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (reachable.has(current)) continue;
-      reachable.add(current);
-
-      const neighbors = edgeMap.get(current) || [];
-      neighbors.forEach((n) => queue.push(n));
-    }
-
-    return reachable.has(indicatorNode.id);
-  }, [options]);
-
   // Memoize trades array to prevent unnecessary re-renders
   const trades = useMemo(() => stats?.trades || [], [stats]);
 
@@ -237,14 +489,51 @@ export default function BacktestView({
     () => Math.max(1, (storedPrices?.length || 1) - 1),
     [storedPrices]
   );
-  const effectiveLookback = Math.min(lookback, maxWindow);
+  // If lookback is not provided by Demo, fall back to maxWindow (visualization)
+  const numericLookback =
+    lookback != null && !Number.isNaN(Number(lookback))
+      ? Number(lookback)
+      : undefined;
+  const effectiveLookback = Math.min(numericLookback ?? maxWindow, maxWindow);
 
   // Calculate indicator for visualization only if connected
-  const indicatorType = options?.graph?.indicatorType || "30d_high";
+  // Derive indicator type from the inputIndicatorNode (fallback to 30d_high)
+  const indicatorType = useMemo(() => {
+    const inputIndicator = activeOptions?.nodes?.find(
+      (n) => n.type === "inputIndicatorNode"
+    );
+    const raw = inputIndicator?.data?.indicator;
+    if (!raw) return "30d_high";
+    // Normalize a few legacy/display values to internal ids
+    const map = {
+      SMA: "sma",
+      EMA: "ema",
+      RSI: "rsi",
+      ATR: "atr",
+      rolling_high: "30d_high",
+      rolling_low: "30d_low",
+      rollingHigh: "30d_high",
+      rollingLow: "30d_low",
+    };
+    return map[raw] || String(raw).toLowerCase();
+  }, [activeOptions?.nodes]);
+
+  // Get the indicator series from the *simulation results* (the worker).
+  // This ensures the chart *always* matches the simulation.
   const indicatorSeries = useMemo(() => {
-    if (!isIndicatorConnected || !storedPrices) return null;
-    return calculateIndicator(storedPrices, indicatorType, effectiveLookback);
-  }, [isIndicatorConnected, storedPrices, indicatorType, effectiveLookback]);
+    if (!stats?.dataSeries) return null;
+
+    // Find the output name of the indicator (e.g., "indicator_output")
+    // This is the key used in the dataSeries map.
+    const inputIndicator = activeOptions?.nodes?.find(
+      (n) => n.type === "inputIndicatorNode"
+    );
+    const indicatorName = inputIndicator?.data?.outputParamName;
+
+    if (!indicatorName) return null;
+
+    return stats.dataSeries[indicatorName] || null;
+  }, [stats, activeOptions?.nodes]);
 
   // Get display name for indicator
   const indicatorDisplayNames = {
@@ -258,6 +547,48 @@ export default function BacktestView({
     atr: "ATR",
   };
   const indicatorLabel = indicatorDisplayNames[indicatorType] || "Indicator";
+  // Quick lookup maps for marking price points with entry/exit/profit flags
+  const tradeIndexMaps = useMemo(() => {
+    const entrySet = new Set();
+    const entryMeta = new Map();
+    const exitMap = new Map(); // exitIndex -> { profit: boolean|null, profitValue: number|null }
+    if (Array.isArray(trades) && storedPrices) {
+      for (const t of trades) {
+        const ei = t.entryIndex;
+        const xi = t.exitIndex;
+        if (typeof ei === "number") {
+          entrySet.add(ei);
+          const quantity = Number.isFinite(t.quantity) ? t.quantity : null;
+          entryMeta.set(ei, { quantity });
+        }
+        if (typeof xi === "number") {
+          let profitValue = Number.isFinite(t.profit) ? t.profit : null;
+          let profitFlag = profitValue != null ? profitValue > 0 : null;
+
+          if (profitValue == null) {
+            try {
+              const entryPrice =
+                typeof ei === "number" && storedPrices[ei]?.live_price != null
+                  ? Number(storedPrices[ei].live_price)
+                  : null;
+              const exitPrice =
+                storedPrices[xi]?.live_price != null
+                  ? Number(storedPrices[xi].live_price)
+                  : null;
+              if (entryPrice != null && exitPrice != null) {
+                profitFlag = exitPrice - entryPrice > 0;
+              }
+            } catch {
+              profitFlag = null;
+            }
+          }
+
+          exitMap.set(xi, { profit: profitFlag, profitValue });
+        }
+      }
+    }
+    return { entrySet, entryMeta, exitMap };
+  }, [trades, storedPrices]);
 
   // Prepare chart data for price chart
   const priceChartData = useMemo(() => {
@@ -265,18 +596,63 @@ export default function BacktestView({
     return storedPrices.slice(0, visiblePricePoints).map((p, i) => {
       const dataPoint = {
         index: i,
-        time: `Day ${i + 1}`,
-        price: Number(p.close),
+        time: i + 1, // day number (numeric)
+        price: Number(p.live_price),
       };
 
       // Add indicator if available
       if (indicatorSeries && indicatorSeries[i] != null) {
         dataPoint.indicator = indicatorSeries[i];
+        // also expose as "inputIndicator" for a dedicated plotted curve
+        dataPoint.inputIndicator = indicatorSeries[i];
+      }
+
+      // annotate entry/exit flags using tradeIndexMaps
+      if (tradeIndexMaps) {
+        dataPoint.isEntry = tradeIndexMaps.entrySet.has(i);
+        if (dataPoint.isEntry) {
+          const entryDetails = tradeIndexMaps.entryMeta.get(i);
+          if (entryDetails?.quantity != null) {
+            dataPoint.entryQuantity = entryDetails.quantity;
+            dataPoint.assetSymbol = assetSymbol;
+            dataPoint.entryDisplay = `Entry: ${cryptoFormatter.format(
+              entryDetails.quantity
+            )}${assetSymbol}`;
+          } else {
+            dataPoint.entryDisplay = "Entry";
+          }
+        }
+        const exitMeta = tradeIndexMaps.exitMap.get(i);
+        if (exitMeta) {
+          dataPoint.isExit = true;
+          dataPoint.exitProfit = !!exitMeta.profit;
+          dataPoint.exitProfitValue = exitMeta.profitValue ?? null;
+          if (exitMeta.profitValue != null) {
+            const formatted = profitFormatter.format(
+              Math.abs(exitMeta.profitValue)
+            );
+            const sign = exitMeta.profitValue >= 0 ? "" : "-";
+            const prefix = exitMeta.profit ? "Profit" : "Loss";
+            dataPoint.exitDisplay = `${prefix}: ${sign}${formatted}€`;
+          } else {
+            dataPoint.exitDisplay = exitMeta.profit ? "Profit" : "Loss";
+          }
+        } else {
+          dataPoint.isExit = false;
+        }
       }
 
       return dataPoint;
     });
-  }, [storedPrices, visiblePricePoints, indicatorSeries]);
+  }, [
+    storedPrices,
+    visiblePricePoints,
+    indicatorSeries,
+    tradeIndexMaps,
+    assetSymbol,
+    cryptoFormatter,
+    profitFormatter,
+  ]);
 
   // Prepare equity chart data
   const equityChartData = useMemo(() => {
@@ -285,12 +661,12 @@ export default function BacktestView({
       .slice(0, visibleEquityPoints)
       .map((equity, i) => ({
         index: i,
-        time: `Day ${i + 1}`,
+        time: i + 1,
         equity: Number(equity),
       }));
   }, [stats, visibleEquityPoints]);
 
-  // Prepare trade markers data
+  // Prepare trade markers data for chart (entry/exit triangles)
   const tradeMarkers = useMemo(() => {
     if (!storedPrices) return { entries: [], exits: [] };
     const entries = [];
@@ -299,26 +675,43 @@ export default function BacktestView({
     trades.forEach((t) => {
       const ei = t.entryIndex;
       const exitI = t.exitIndex;
-
       if (
         typeof ei === "number" &&
-        typeof exitI === "number" &&
         ei >= 0 &&
         ei < storedPrices.length &&
-        exitI >= 0 &&
-        exitI < storedPrices.length &&
-        storedPrices[ei]?.close != null &&
-        storedPrices[exitI]?.close != null
+        storedPrices[ei]?.live_price != null
       ) {
         entries.push({
           index: ei,
-          time: `Day ${ei + 1}`,
-          price: Number(storedPrices[ei].close),
+          time: ei + 1,
+          price: Number(storedPrices[ei].live_price),
         });
+      }
+
+      if (
+        typeof exitI === "number" &&
+        exitI >= 0 &&
+        exitI < storedPrices.length &&
+        storedPrices[exitI]?.live_price != null
+      ) {
+        const exitPrice = Number(storedPrices[exitI].live_price);
+        let profitFlag = null;
+        if (Number.isFinite(t.profit)) {
+          profitFlag = t.profit > 0;
+        } else if (typeof ei === "number") {
+          const entryPrice =
+            storedPrices[ei]?.live_price != null
+              ? Number(storedPrices[ei].live_price)
+              : null;
+          if (entryPrice != null) {
+            profitFlag = exitPrice - entryPrice > 0;
+          }
+        }
         exits.push({
           index: exitI,
-          time: `Day ${exitI + 1}`,
-          price: Number(storedPrices[exitI].close),
+          time: exitI + 1,
+          price: exitPrice,
+          profit: profitFlag,
         });
       }
     });
@@ -326,10 +719,10 @@ export default function BacktestView({
     return { entries, exits };
   }, [trades, storedPrices]);
 
-  // Get min/max for Y-axis domains
+  // Get min/max for Y-axis domains (with padding)
   const { priceMin, priceMax, pricePadding } = useMemo(() => {
     if (!storedPrices) return { priceMin: 0, priceMax: 1, pricePadding: 0 };
-    const priceValues = storedPrices.map((p) => Number(p.close));
+    const priceValues = storedPrices.map((p) => Number(p.live_price));
     const indicatorValues = indicatorSeries
       ? indicatorSeries.filter((v) => v != null)
       : [];
@@ -350,18 +743,16 @@ export default function BacktestView({
     return { equityMin: min, equityMax: max, equityPadding: padding };
   }, [stats]);
 
-  const assetLabel =
-    asset === "bitcoin"
-      ? "BTC"
-      : asset === "ethereum"
-      ? "ETH"
-      : asset.toUpperCase();
+  // Asset label for display
+  const assetLabel = assetSymbol;
 
+  // Formatters for chart axes and tooltips
   const formatPrice = useCallback((value) => {
     if (value == null) return "";
     return `€${value.toFixed(0)}`;
   }, []);
 
+  // Assumes equity is normalized (1.0 = 0% return)
   const formatEquity = useCallback((value) => {
     if (value == null) return "";
     // Convert normalized equity (starting at 1.0) to percentage return
@@ -369,256 +760,356 @@ export default function BacktestView({
     return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(1)}%`;
   }, []);
 
-  // Early return after all hooks
-  if (!stats || !storedPrices || storedPrices.length === 0) {
+  // Render priority:
+  // 1) Error, 2) No price data, 3) No stats & not loading (show initial run), 4) Full UI
+  if (error) {
+    return <div className="backtest-unavailable">Error: {error}</div>;
+  }
+
+  if (!storedPrices || storedPrices.length === 0) {
     return <div className="backtest-unavailable">Backtest unavailable</div>;
   }
 
-  const { totalReturn, winRate, avgDuration, maxDrawdown } = stats;
+  // If we have prices but no stats yet and we're not loading, allow manual run
+  if (!stats && !isLoading) {
+    return (
+      <div className="backtest-unavailable">
+        <button
+          className="backtest-run-button initial-run"
+          onClick={handleRunBacktest}
+        >
+          ▶️ Run Backtest
+        </button>
+      </div>
+    );
+  }
+
+  const { totalReturn, winRate, avgDuration, maxDrawdown } = stats || {};
 
   return (
     <div className="backtest-panel">
       <div className="backtest-header">
-        <h3>Demo Strategy — {assetLabel} (1y)</h3>
-        <div className="backtest-params">
-          Parameters: lookback={lookback} (using window={effectiveLookback}),
-          stop-loss={stopLossPercent}%, fee={feePercent}%, asset={assetLabel}
+        <div
+          className="backtest-title-row"
+          style={{ alignItems: "center", gap: 12 }}
+        >
+          <h3>Demo Strategy — {assetLabel} (1y)</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button className="backtest-run-button" onClick={handleRunBacktest}>
+              Run Backtest
+            </button>
+            {/* Small inline progress indicator when a run is in progress */}
+            {(isLoading || (progress > 0 && progress < 1)) && (
+              <div className="progress-wrap">
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+                <div style={{ color: "#94a3b8", fontSize: 12 }}>
+                  {Math.round(progress * 100)}%
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="backtest-params-grid">
+          <div className="param-block">
+            <div className="param-label">Lookback Window</div>
+            <div className="param-value">{effectiveLookback}</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Stop Loss</div>
+            <div className="param-value">{stopLossPercent}%</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Fee</div>
+            <div className="param-value">{feePercent}%</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Asset</div>
+            <div className="param-value">{assetLabel}</div>
+          </div>
         </div>
       </div>
+
+      {/* Show non-fatal worker notices (errors / warnings) */}
+      {workerNotice && (
+        <div className={`worker-notice ${workerNotice.type}`}>
+          {Array.isArray(workerNotice.messages) &&
+            workerNotice.messages.map((m, i) => (
+              <div key={i} className="worker-notice-line">
+                {String(m)}
+              </div>
+            ))}
+        </div>
+      )}
 
       {/* Charts Row Container */}
       <div className="backtest-charts-row">
         {/* Price Chart */}
         <div className="backtest-chart-container">
           <div className="chart-title">Price & Indicators</div>
-          <ResponsiveContainer width="100%" height={300}>
-          <LineChart
-            data={priceChartData}
-            margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
-          >
-            <defs>
-              <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor="rgba(148, 163, 184, 0.15)"
-                  stopOpacity="0.8"
-                />
-                <stop
-                  offset="100%"
-                  stopColor="rgba(148, 163, 184, 0.05)"
-                  stopOpacity="0.3"
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              stroke="url(#gridGradient)"
-              strokeDasharray="3 3"
-              vertical={true}
-              horizontal={true}
-            />
-            <XAxis
-              dataKey="time"
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={{ stroke: "#475569" }}
-              interval={Math.floor(storedPrices.length / 8)}
-              height={35}
-              label={{
-                value: "Time",
-                position: "insideBottom",
-                offset: -10,
-                fill: "#94a3b8",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            />
-            <YAxis
-              domain={[priceMin - pricePadding, priceMax + pricePadding]}
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={{ stroke: "#475569" }}
-              tickFormatter={formatPrice}
-              width={65}
-              label={{
-                value: "Price (€)",
-                angle: -90,
-                position: "insideLeft",
-                fill: "#94a3b8",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            />
-            <Tooltip
-              content={<CustomTooltip formatter={formatPrice} />}
-              cursor={{ stroke: "#64748b", strokeWidth: 1 }}
-            />
+          <div className="chart-legend">
+            <div className="legend-item">
+              <span
+                className="legend-line"
+                style={{ background: "#60a5fa" }}
+              ></span>
+              <span>Price</span>
+            </div>
 
-            {/* Price Line */}
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="#60a5fa"
-              strokeWidth={2}
-              dot={false}
-              name="Price"
-              connectNulls
-              isAnimationActive={false}
-            />
-
-            {/* Indicator Line */}
             {indicatorSeries && (
+              <div className="legend-item">
+                <span
+                  className="legend-line"
+                  style={{ background: "#f59e0b" }}
+                ></span>
+                <span>{indicatorLabel}</span>
+              </div>
+            )}
+
+            <div className="legend-item">
+              <span className="legend-triangle-up" style={{ color: "#10b981" }}>
+                ▲
+              </span>
+              <span>Entry</span>
+            </div>
+
+            <div className="legend-item">
+              <span
+                className="legend-triangle-down"
+                style={{ color: "#ef4444" }}
+              >
+                ▼
+              </span>
+              <span>Exit</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart
+              data={priceChartData}
+              margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+            >
+              <defs>
+                <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop
+                    offset="0%"
+                    stopColor="rgba(148, 163, 184, 0.15)"
+                    stopOpacity="0.8"
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="rgba(148, 163, 184, 0.05)"
+                    stopOpacity="0.3"
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="url(#gridGradient)"
+                strokeDasharray="3 3"
+                vertical={true}
+                horizontal={true}
+              />
+              <XAxis
+                dataKey="time"
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                axisLine={{ stroke: "#475569" }}
+                tickLine={{ stroke: "#475569" }}
+                interval={Math.max(1, Math.floor(storedPrices.length / 8))}
+                height={35}
+                label={{
+                  value: xAxisUnitLabel,
+                  position: "insideBottom",
+                  offset: -10,
+                  fill: "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              />
+              <YAxis
+                domain={[priceMin - pricePadding, priceMax + pricePadding]}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                axisLine={{ stroke: "#475569" }}
+                tickLine={{ stroke: "#475569" }}
+                tickFormatter={formatPrice}
+                width={65}
+                label={{
+                  value: "Price (€)",
+                  angle: -90,
+                  position: "insideLeft",
+                  fill: "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              />
+              <Tooltip
+                content={<CustomTooltip formatter={formatPrice} />}
+                cursor={{ stroke: "#64748b", strokeWidth: 1 }}
+              />
+
+              {/* Price Line */}
               <Line
                 type="monotone"
-                dataKey="indicator"
-                stroke="#f59e0b"
-                strokeWidth={1.5}
+                dataKey="price"
+                stroke="#60a5fa"
+                strokeWidth={2}
                 dot={false}
-                name={indicatorLabel}
+                name="Price"
                 connectNulls
                 isAnimationActive={false}
               />
-            )}
 
-            {/* Trade entry markers */}
-            {tradeMarkers.entries.map((entry, idx) => (
-              <ReferenceDot
-                key={`entry-${idx}`}
-                x={entry.time}
-                y={entry.price}
-                r={5}
-                fill="#10b981"
-                stroke="#000"
-                strokeWidth={1.5}
-                isFront={true}
-              />
-            ))}
+              {/* Indicator Line */}
+              {indicatorSeries && (
+                <Line
+                  type="monotone"
+                  dataKey="indicator"
+                  stroke="#f59e0b"
+                  strokeWidth={1.5}
+                  dot={false}
+                  name={indicatorLabel}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              )}
 
-            {/* Trade exit markers */}
-            {tradeMarkers.exits.map((exit, idx) => (
-              <ReferenceDot
-                key={`exit-${idx}`}
-                x={exit.time}
-                y={exit.price}
-                r={5}
-                fill="#ef4444"
-                stroke="#000"
-                strokeWidth={1.5}
-                isFront={true}
-              />
-            ))}
-          </LineChart>
+              {/* Trade entry markers - Green triangles pointing up */}
+              {tradeMarkers.entries.map((entry, idx) => (
+                <ReferenceDot
+                  key={`entry-${idx}`}
+                  x={entry.time}
+                  y={entry.price}
+                  r={0}
+                  fill="#10b981"
+                  stroke="#000000"
+                  strokeWidth={0}
+                  isFront={true}
+                  shape={(props) => (
+                    <g>
+                      <polygon
+                        points={`${props.cx},${props.cy - 5} ${props.cx - 5},${
+                          props.cy + 5
+                        } ${props.cx + 5},${props.cy + 5}`}
+                        fill="#10b981"
+                        stroke="#000000"
+                        strokeWidth={1}
+                      />
+                    </g>
+                  )}
+                />
+              ))}
+
+              {/* Trade exit markers - Red triangles pointing down */}
+              {tradeMarkers.exits.map((exit, idx) => (
+                <ReferenceDot
+                  key={`exit-${idx}`}
+                  x={exit.time}
+                  y={exit.price}
+                  r={0}
+                  fill="#ef4444"
+                  stroke="#000000"
+                  strokeWidth={0}
+                  isFront={true}
+                  shape={(props) => (
+                    <g>
+                      <polygon
+                        points={`${props.cx},${props.cy + 5} ${props.cx - 5},${
+                          props.cy - 5
+                        } ${props.cx + 5},${props.cy - 5}`}
+                        fill="#ef4444"
+                        stroke="#000000"
+                        strokeWidth={1}
+                      />
+                    </g>
+                  )}
+                />
+              ))}
+            </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Equity Chart */}
         <div className="backtest-chart-container">
           <div className="chart-title">Equity Curve</div>
-          <ResponsiveContainer width="100%" height={300}>
-          <LineChart
-            data={equityChartData}
-            margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
-          >
-            <defs>
-              <linearGradient id="equityGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              stroke="url(#gridGradient)"
-              strokeDasharray="3 3"
-              vertical={true}
-              horizontal={true}
-            />
-            <XAxis
-              dataKey="time"
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={{ stroke: "#475569" }}
-              interval={Math.floor(stats.equitySeries.length / 8)}
-              height={35}
-              label={{
-                value: "Time",
-                position: "insideBottom",
-                offset: -10,
-                fill: "#94a3b8",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            />
-            <YAxis
-              domain={[equityMin - equityPadding, equityMax + equityPadding]}
-              tick={{ fill: "#94a3b8", fontSize: 11 }}
-              axisLine={{ stroke: "#475569" }}
-              tickLine={{ stroke: "#475569" }}
-              tickFormatter={formatEquity}
-              width={65}
-              label={{
-                value: "Return (%)",
-                angle: -90,
-                position: "insideLeft",
-                fill: "#94a3b8",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            />
-            <Tooltip
-              content={<CustomTooltip formatter={formatEquity} />}
-              cursor={{ stroke: "#64748b", strokeWidth: 1 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="equity"
-              stroke="#10b981"
-              strokeWidth={2.5}
-              dot={false}
-              name="Equity"
-              fill="url(#equityGradient)"
-              isAnimationActive={false}
-            />
-          </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="backtest-legend">
-        <div className="legend-item">
-          <span
-            className="legend-color"
-            style={{ background: "#10b981" }}
-          ></span>
-          <span>Equity curve</span>
-        </div>
-        <div className="legend-item">
-          <span
-            className="legend-color"
-            style={{ background: "#60a5fa" }}
-          ></span>
-          <span>Price</span>
-        </div>
-        {indicatorSeries && (
-          <div className="legend-item">
-            <span
-              className="legend-color"
-              style={{ background: "#f59e0b" }}
-            ></span>
-            <span>{`${indicatorLabel} (${effectiveLookback}d)`}</span>
+          <div className="chart-legend">
+            <div className="legend-item">
+              <span
+                className="legend-line"
+                style={{ background: "#10b981" }}
+              ></span>
+              <span>Equity</span>
+            </div>
           </div>
-        )}
-        <div className="legend-item">
-          <span
-            className="legend-marker"
-            style={{ background: "#10b981" }}
-          ></span>
-          <span>Entry</span>
-        </div>
-        <div className="legend-item">
-          <span
-            className="legend-marker"
-            style={{ background: "#ef4444" }}
-          ></span>
-          <span>Exit</span>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart
+              data={equityChartData}
+              margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+            >
+              <defs>
+                <linearGradient id="equityGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="url(#gridGradient)"
+                strokeDasharray="3 3"
+                vertical={true}
+                horizontal={true}
+              />
+              <XAxis
+                dataKey="time"
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                axisLine={{ stroke: "#475569" }}
+                tickLine={{ stroke: "#475569" }}
+                interval={Math.max(
+                  1,
+                  Math.floor((stats?.equitySeries?.length || 1) / 8)
+                )}
+                height={35}
+                label={{
+                  value: xAxisUnitLabel,
+                  position: "insideBottom",
+                  offset: -10,
+                  fill: "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              />
+              <YAxis
+                domain={[equityMin - equityPadding, equityMax + equityPadding]}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                axisLine={{ stroke: "#475569" }}
+                tickLine={{ stroke: "#475569" }}
+                tickFormatter={formatEquity}
+                width={65}
+                label={{
+                  value: "Return (%)",
+                  angle: -90,
+                  position: "insideLeft",
+                  fill: "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              />
+              <Tooltip
+                content={<CustomTooltip formatter={formatEquity} />}
+                cursor={{ stroke: "#64748b", strokeWidth: 1 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="equity"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                dot={false}
+                name="Equity"
+                fill="url(#equityGradient)"
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -641,17 +1132,6 @@ export default function BacktestView({
           <div className="stat-value">{(maxDrawdown * 100).toFixed(1)}%</div>
         </div>
       </div>
-
-      {options?.graph && (
-        <div className="backtest-strategy-info">
-          <div className="strategy-description">
-            <strong>Strategy:</strong> If close &gt; {lookback}-day high then{" "}
-            {options.graph.actions?.firstIfTrue || "buy"}, else if close &lt;
-            entry * (1 - {stopLossPercent}%) then{" "}
-            {options.graph.actions?.secondIfTrue || "sell"}.
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -664,7 +1144,7 @@ BacktestView.propTypes = {
     graph: PropTypes.object,
     nodes: PropTypes.array,
     edges: PropTypes.array,
+    parameters: PropTypes.array,
   }),
   externalControl: PropTypes.bool,
-  useSynthetic: PropTypes.bool,
 };

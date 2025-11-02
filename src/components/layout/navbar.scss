@@ -195,6 +195,38 @@
   z-index: 1001;
   touch-action: manipulation; /* Prevent double-tap zoom on touch */
   -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+  
+  /* Remove all default browser styling */
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  
+  /* Remove focus and hover effects */
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: none !important;
+  }
+  
+  &:hover {
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  &:active {
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  &:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
 }
 
 .hamburger {

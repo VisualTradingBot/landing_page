@@ -1,15 +1,85 @@
-.box {
-  height: 100px;
-  background: #f0f0f0;
+// Set Parameter node specific styles
+.set-parameter-container {
+  padding: 8px 0;
+  max-width: 90%;
+  min-width: 0;
+  
+  // Color variants
+  &.green {
+    --parameter-color: #10b981;
+  }
+  
+  &.dark-blue {
+    --parameter-color: #1e40af;
+  }
+  
+  &.pink {
+    --parameter-color: #ec4899;
+  }
+  
+  &.default {
+    --parameter-color: #6b7280;
+  }
 }
 
-ul {
-  list-style: none;
-  li {
-    color: #f0f0f0;
-    background-color: rgb(156, 156, 156);
-    width: fit-content;
-    padding: 5px 10px;
-    border-radius: 5px;
+.parameter-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  
+  .parameter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  
+  .parameter-input-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid var(--parameter-color, #ec4899);
+    border-radius: 6px;
+    background: 
+      radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--parameter-color, #ec4899) 8%, transparent) 0%, transparent 50%),
+      linear-gradient(90deg, color-mix(in srgb, var(--parameter-color, #ec4899) 5%, transparent) 0%, #ffffff 10%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:focus-within {
+      border-color: #000000;
+      background: 
+        radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--parameter-color, #ec4899) 12%, transparent) 0%, transparent 50%),
+        linear-gradient(90deg, color-mix(in srgb, var(--parameter-color, #ec4899) 10%, transparent) 0%, #f8f8f8 10%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:hover {
+      background: 
+        radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--parameter-color, #ec4899) 12%, transparent) 0%, transparent 50%),
+        linear-gradient(90deg, color-mix(in srgb, var(--parameter-color, #ec4899) 10%, transparent) 0%, #f8f8f8 10%);
+      border-color: #000000;
+    }
+    
+    
+    .parameter-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000000;
+      outline: none;
+      
+      &::placeholder {
+        color: #999999;
+        font-style: italic;
+      }
+    }
   }
 }
