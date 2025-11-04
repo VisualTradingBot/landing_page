@@ -240,7 +240,11 @@ export default function InputIndicator({ data, id }) {
   };
 
   return (
-    <NodeDefault id={id} title="Input-Indicator">
+    <NodeDefault
+      id={id}
+      title="Input-Indicator"
+      right={{ active: true, type: "source" }}
+    >
       <div className="input-indicator-container">
         {/* Asset Display */}
         <div className="field-row asset-row">

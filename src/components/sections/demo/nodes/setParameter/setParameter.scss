@@ -1,0 +1,28 @@
+// Passive Set Parameter node styling
+
+.set-parameter-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.set-parameter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 96px;
+}
+
+.set-parameter-subtext {
+  font-size: 11px;
+  color: #4b5563;
+}

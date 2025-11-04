@@ -97,7 +97,11 @@ export default function InputPrice({ data, id }) {
   ]);
 
   return (
-    <NodeDefault id={id} title="Input-Price">
+    <NodeDefault
+      id={id}
+      title="Input-Price"
+      right={{ active: true, type: "source" }}
+    >
       <div className="input-price-container">
         {/* Asset Display */}
         <div className="field-row asset-row">

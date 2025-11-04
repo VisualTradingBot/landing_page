@@ -30,6 +30,7 @@ export default function Record({ data, id }) {
             value={recordType}
             onChange={handleRecordTypeChange}
             className="record-type-select"
+            disabled
           >
             <option value="entry_price">Entry Price</option>
           </select>
