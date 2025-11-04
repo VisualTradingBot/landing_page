@@ -1,284 +1,319 @@
+// External libraries
 import {
   ReactFlow,
   useEdgesState,
   useNodesState,
   addEdge,
-  Panel,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
+// Context
+import { AssetContext } from "./AssetContext";
+
+// Components
 import ParameterBlock from "./parameter-block/ParameterBlock";
 import BacktestView from "./back-test/BacktestView";
 
-// Nodes
-import Execute from "./nodes/execute/Execute";
+// Node components
+import Buy from "./nodes/buy/Buy";
+import Sell from "./nodes/sell/Sell";
+import Record from "./nodes/record/Record";
 import If from "./nodes/if/If";
-import SetParameter from "./nodes/setParameter/SetParameter";
 import Input from "./nodes/input/Input";
-import Indicator from "./nodes/indicator/Indicator";
+import InputIndicator from "./nodes/inputIndicator/InputIndicator";
+import InputPrice from "./nodes/inputPrice/InputPrice";
+import Block from "./nodes/block/Block";
+
+// Styles
 import "./demo.scss";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
-// --- START OF CHANGES ---
+// Initial data and edge types
+import {
+  initialNodes,
+  initialEdges,
+  initialParameters,
+  edgeTypes,
+} from "./initial.jsx";
+import {
+  DEFAULT_ASSET,
+  DEFAULT_FEE_PERCENT,
+  DEFAULT_DATA_RESOLUTION,
+  DEFAULT_SYNTHETIC_INTERVAL,
+} from "./defaults";
 
-// 1. Define initial parameters for the demo strategy.
-const initialParameters = [
-  { id: "param-1", label: "lookback_window", value: "30", family: "variable" },
-  {
-    id: "param-2",
-    label: "stop_loss_level",
-    value: "entry * 0.95",
-    family: "variable",
-  },
-  {
-    id: "param-5",
-    label: "profit_target",
-    value: "entry * 1.10",
-    family: "variable",
-  },
-  { id: "param-3", label: "close_price", value: "close", family: "variable" },
-  { id: "param-4", label: "indicator_output", value: "", family: "variable" },
-  // Separate entry price reference - not affected by multiplications
-  {
-    id: "param-6",
-    label: "entry_price_reference",
-    value: "close",
-    family: "variable",
-  },
-];
+const AUTO_PARAM_SOURCE = "system";
 
-// Helper to find a parameter by its label for easier wiring.
-const getParam = (label) => initialParameters.find((p) => p.label === label);
+const slugify = (label) =>
+  String(label || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "param";
 
-// 2. Pre-configure nodes with data linked to the initial parameters.
-const initialNodes = [
-  {
-    id: "inputNode",
-    type: "inputNode",
-    position: { x: 50, y: 200 },
-    data: {
-      label: "Input",
-      parameters: initialParameters,
-    },
-  },
-  {
-    id: "indicatorNode",
-    type: "indicatorNode",
-    position: { x: 250, y: 200 },
-    data: {
-      label: "Indicator",
-      parameters: initialParameters,
-      variables: [
-        {
-          label: "output",
-          id: `var-indicator-output`,
-          parameterData: {
-            parameterId: getParam("indicator_output").id,
-            ...getParam("indicator_output"),
-          },
-        },
-        {
-          label: "window",
-          id: `var-indicator-window`,
-          parameterData: {
-            parameterId: getParam("lookback_window").id,
-            ...getParam("lookback_window"),
-          },
-        },
-      ],
-    },
-  },
-  {
-    id: "ifNode-1",
-    type: "ifNode",
-    position: { x: 500, y: 100 },
-    data: {
-      label: "If Entry",
-      parameters: initialParameters,
-      isMaster: true, // Mark as master node
-      variables: [
-        {
-          label: "var-1",
-          id: `var-if1-left`,
-          parameterData: {
-            parameterId: getParam("entry_price_reference").id,
-            ...getParam("entry_price_reference"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if1-right`,
-          parameterData: {
-            parameterId: getParam("indicator_output").id,
-            ...getParam("indicator_output"),
-          },
-        },
-        { label: "operator", id: `var-if1-op`, parameterData: ">" },
-      ],
-    },
-  },
-  {
-    id: "executeNode-1",
-    type: "executeNode",
-    position: { x: 500, y: 250 },
-    data: { label: "Execute Buy", action: "buy" },
-  },
-  {
-    id: "ifNode-2",
-    type: "ifNode",
-    position: { x: 750, y: 100 },
-    data: {
-      label: "If Exit (Stop-Loss)",
-      parameters: initialParameters,
-      variables: [
-        {
-          label: "var-1",
-          id: `var-if2-left`,
-          parameterData: {
-            parameterId: getParam("close_price").id,
-            ...getParam("close_price"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if2-right`,
-          parameterData: {
-            parameterId: getParam("stop_loss_level").id,
-            ...getParam("stop_loss_level"),
-          },
-        },
-        { label: "operator", id: `var-if2-op`, parameterData: "<" },
-      ],
-    },
-  },
-  {
-    id: "executeNode-2",
-    type: "executeNode",
-    position: { x: 750, y: 250 },
-    data: { label: "Execute Sell (Stop-Loss)", action: "sell" },
-  },
-  {
-    id: "ifNode-3",
-    type: "ifNode",
-    position: { x: 1000, y: 100 },
-    data: {
-      label: "If Exit (Profit)",
-      parameters: initialParameters,
-      variables: [
-        {
-          label: "var-1",
-          id: `var-if3-left`,
-          parameterData: {
-            parameterId: getParam("close_price").id,
-            ...getParam("close_price"),
-          },
-        },
-        {
-          label: "var-2",
-          id: `var-if3-right`,
-          parameterData: {
-            parameterId: getParam("profit_target").id,
-            ...getParam("profit_target"),
-          },
-        },
-        { label: "operator", id: `var-if3-op`, parameterData: ">" },
-      ],
-    },
-  },
-  {
-    id: "executeNode-3",
-    type: "executeNode",
-    position: { x: 1000, y: 250 },
-    data: { label: "Execute Sell (Profit)", action: "sell" },
-  },
-];
+const deriveAutoParameterDefinitions = (nodes) => {
+  const auto = new Map();
 
-const nodeTypes = {
-  executeNode: Execute,
-  ifNode: If,
-  inputNode: Input,
-  indicatorNode: Indicator,
-  setParameterNode: SetParameter,
+  nodes.forEach((node) => {
+    if (!node || !node.type) return;
+    const data = node.data || {};
+
+    if (node.type === "inputIndicatorNode") {
+      const rawLabel =
+        typeof data.outputParamName === "string" ? data.outputParamName : "";
+      const label = rawLabel.trim() || "indicator_output";
+      if (!auto.has(label)) {
+        auto.set(label, {
+          label,
+          value: label,
+          source: AUTO_PARAM_SOURCE,
+          family: "variable",
+          isDataParameter: true,
+          isAutoGenerated: true,
+        });
+      }
+      return;
+    }
+
+    if (node.type === "inputPriceNode") {
+      const rawLabel =
+        typeof data.outputParamName === "string" ? data.outputParamName : "";
+      const label = rawLabel.trim() || "live_price";
+      if (!auto.has(label)) {
+        auto.set(label, {
+          label,
+          value: label,
+          source: AUTO_PARAM_SOURCE,
+          family: "variable",
+          isDataParameter: true,
+          isAutoGenerated: true,
+        });
+      }
+      return;
+    }
+
+    if (node.type === "recordNode") {
+      const rawRecordType =
+        typeof data.recordType === "string" ? data.recordType : "";
+      const label = rawRecordType.trim() || "entry_price";
+      if (!auto.has(label)) {
+        auto.set(label, {
+          label,
+          value: label === "entry_price" ? "entry" : label,
+          source: AUTO_PARAM_SOURCE,
+          family: "variable",
+          isDataParameter: true,
+          isAutoGenerated: true,
+        });
+      }
+    }
+  });
+
+  return auto;
 };
 
-const initialEdges = [
-  {
-    id: "n1-n2",
-    source: "inputNode",
-    sourceHandle: "inputNode-right",
-    target: "indicatorNode",
-    targetHandle: "indicatorNode-left",
-  },
-  {
-    id: "n3.1-n4.1",
-    source: "ifNode-1",
-    sourceHandle: "ifNode-1-bottom",
-    target: "executeNode-1",
-    targetHandle: "executeNode-1-left",
-    label: "True",
-  },
-  {
-    id: "n3.1-n3.2",
-    source: "ifNode-1",
-    sourceHandle: "ifNode-1-right",
-    target: "ifNode-2",
-    targetHandle: "ifNode-2-top",
-    label: "False",
-  },
-  {
-    id: "n3.2-n4.2",
-    source: "ifNode-2",
-    sourceHandle: "ifNode-2-bottom",
-    target: "executeNode-2",
-    targetHandle: "executeNode-2-left",
-    label: "True",
-  },
-  {
-    id: "n3.2-n3.3",
-    source: "ifNode-2",
-    sourceHandle: "ifNode-2-right",
-    target: "ifNode-3",
-    targetHandle: "ifNode-3-top",
-    label: "False",
-  },
-  {
-    id: "n3.3-n4.3",
-    source: "ifNode-3",
-    sourceHandle: "ifNode-3-bottom",
-    target: "executeNode-3",
-    targetHandle: "executeNode-3-left",
-    label: "True",
-  },
-];
+const reconcileParametersWithAuto = (previous, nodes) => {
+  const autoDefs = deriveAutoParameterDefinitions(nodes);
+  if (!autoDefs.size) {
+    const filtered = previous.filter((param) => !param?.isAutoGenerated);
+    if (filtered.length === previous.length) {
+      return { changed: false, next: previous };
+    }
+    return { changed: true, next: filtered };
+  }
+
+  const next = [];
+  const usedLabels = new Set();
+  const existingIds = new Set();
+  let changed = false;
+
+  previous.forEach((param) => {
+    if (!param) return;
+    existingIds.add(param.id);
+    const label = String(param.label || "").trim();
+    if (!label) {
+      next.push(param);
+      return;
+    }
+
+    if (!autoDefs.has(label)) {
+      if (param.isAutoGenerated) {
+        changed = true;
+        return;
+      }
+      next.push(param);
+      return;
+    }
+
+    usedLabels.add(label);
+    const autoDef = autoDefs.get(label);
+    const merged = {
+      ...param,
+      ...autoDef,
+      id: param.id,
+      value:
+        param.value !== undefined && param.value !== null
+          ? param.value
+          : autoDef.value,
+    };
+
+    if (
+      param.isDataParameter !== merged.isDataParameter ||
+      param.isAutoGenerated !== merged.isAutoGenerated ||
+      param.source !== merged.source ||
+      param.family !== merged.family ||
+      param.label !== merged.label ||
+      param.value !== merged.value
+    ) {
+      changed = true;
+    }
+    next.push(merged);
+  });
+
+  autoDefs.forEach((definition, label) => {
+    if (usedLabels.has(label)) return;
+    const baseId = `auto-${slugify(label)}`;
+    let candidateId = baseId;
+    let suffix = 1;
+    while (existingIds.has(candidateId)) {
+      candidateId = `${baseId}-${suffix++}`;
+    }
+    existingIds.add(candidateId);
+    next.push({ ...definition, id: candidateId });
+    changed = true;
+  });
+
+  if (!changed) {
+    return { changed: false, next: previous };
+  }
+
+  return { changed: true, next };
+};
 
 export default function Demo() {
-  const [parameters, setParameters] = useState(initialParameters);
-  const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // === State for parameters and graph ===
+  const [parameters, setParameters] = useState(initialParameters); // List of user-defined parameters
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
+  const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
+  const [dataResolution, setDataResolution] = useState(DEFAULT_DATA_RESOLUTION);
+  const [syntheticInterval, setSyntheticInterval] = useState(
+    DEFAULT_SYNTHETIC_INTERVAL
+  );
+  const [inTradeCollapsed, setInTradeCollapsed] = useState(false); // Collapse state for in-trade block
 
-  const onConnect = useCallback(
-    (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+  // === Modal state ===
+  const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
+  const [parameterModalType, setParameterModalType] = useState(""); // 'parameter' or 'custom'
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // Show delete confirmation modal
+  const [parameterIndexToDelete, setParameterIndexToDelete] = useState(null); // Index of parameter to delete
+
+  // === ReactFlow event handlers ===
+  // Add a new edge to the graph
+  const handleConnect = useCallback(
+    (connectionParams) => {
+      const { source, sourceHandle } = connectionParams;
+      // The sourceHandle is available during the connection event.
+      // We can add it to the edge payload to be used by the simulator.
+      const edge = { ...connectionParams };
+      if (sourceHandle) {
+        const sourceNode = nodes.find((n) => n.id === source);
+        if (sourceNode && sourceNode.type === "ifNode") {
+          edge.sourceHandle = sourceHandle;
+        }
+      }
+      setEdges((currentEdges) => addEdge(edge, currentEdges));
+    },
+    [setEdges, nodes]
+  );
+
+  // Remove edge on double-click
+  const handleEdgeDoubleClick = useCallback(
+    (event, edge) => {
+      setEdges((currentEdges) => currentEdges.filter((e) => e.id !== edge.id));
+    },
     [setEdges]
   );
 
-  const memoizedNodeTypes = useMemo(() => nodeTypes, []);
+  // === Modal handlers ===
+  const openParameterModal = useCallback((type) => {
+    setParameterModalType(type);
+    setShowParameterModal(true);
+  }, []);
 
-  const containerRef = useRef(null);
+  const openDeleteModal = useCallback((index) => {
+    setParameterIndexToDelete(index);
+    setShowDeleteModal(true);
+  }, []);
+
+  const closeParameterModal = useCallback(() => {
+    setShowParameterModal(false);
+    setParameterModalType("");
+  }, []);
+
+  const closeDeleteModal = useCallback(() => {
+    setShowDeleteModal(false);
+    setParameterIndexToDelete(null);
+  }, []);
+
+  // === Parameter handlers ===
+  const removeParameter = useCallback((index) => {
+    setParameters((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const addParameter = useCallback((newParam) => {
+    setParameters((prev) => [...prev, newParam]);
+  }, []);
+
+  const confirmDeleteParameter = useCallback(() => {
+    if (parameterIndexToDelete !== null) {
+      removeParameter(parameterIndexToDelete);
+    }
+    closeDeleteModal();
+  }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
+
+  // === Node types for ReactFlow ===
+  const toggleInTradeBlock = useCallback(() => {
+    setInTradeCollapsed((prev) => !prev);
+  }, []);
+
+  const nodeTypes = useMemo(
+    () => ({
+      buyNode: (props) => (
+        <Buy
+          {...props}
+          onToggleInTrade={toggleInTradeBlock}
+          isInTradeCollapsed={inTradeCollapsed}
+        />
+      ),
+      sellNode: (props) => <Sell {...props} />,
+      recordNode: Record,
+      ifNode: If,
+      inputNode: (props) => <Input {...props} />,
+      inputIndicatorNode: (props) => <InputIndicator {...props} />,
+      inputPriceNode: (props) => <InputPrice {...props} />,
+      blockNode: Block,
+    }),
+    [toggleInTradeBlock, inTradeCollapsed]
+  );
+
+  // === ReactFlow viewport extent ===
+  const containerRef = useRef();
   const [translateExtent, setTranslateExtent] = useState([
+    [1920, 1080],
     [0, 0],
-    [1200, 800],
   ]);
 
+  // Dynamically update the viewport extent based on container size
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     function updateExtent() {
-      const width = el.clientWidth || 1200;
-      const height = el.clientHeight || 800;
+      const width = el.clientWidth;
+      const height = el.clientHeight;
       setTranslateExtent([
-        [0, 0],
-        [Math.max(1200, width), Math.max(800, height)],
+        [-2.5 * width, -1.5 * height],
+        [1.5 * width, 1.5 * height],
       ]);
     }
 
@@ -288,6 +323,7 @@ export default function Demo() {
     return () => ro.disconnect();
   }, []);
 
+  // Warn if nodes or edges are in an invalid state (for debugging)
   useEffect(() => {
     nodes.forEach((node) => {
       if (!node || !node.position) return;
@@ -307,120 +343,672 @@ export default function Demo() {
     });
   }, [nodes, edges]);
 
-  const handleAddParameter = useCallback(() => {
-    const newParameter = {
-      label: "parameter" + (parameters.length + 1),
-      value: "value" + (parameters.length + 1),
-      family: "variable",
-      id: `${+new Date()}`,
-    };
+  // Update all nodes with the latest parameters when parameters change
+  useEffect(() => {
+    // Only update nodes if the parameters array is not already present on the node.data
+    setNodes((prevNodes) => {
+      let changed = false;
+      const next = prevNodes.map((node) => {
+        // Fast path: same reference (most common)
+        if (node.data && node.data.parameters === parameters) return node;
 
-    setParameters((prev) => [...prev, newParameter]);
-  }, [parameters, setParameters]);
+        // If parameters deeply equal to existing, keep node as-is
+        const existing = node.data && node.data.parameters;
+        const existingJson = existing ? JSON.stringify(existing) : null;
+        const newJson = parameters ? JSON.stringify(parameters) : null;
+        if (existingJson === newJson) return node;
 
-  const handleRemoveParameter = useCallback(
-    (index) => {
-      setParameters((prev) => prev.filter((_, i) => i !== index));
-    },
-    [setParameters]
+        changed = true;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            parameters: parameters,
+          },
+        };
+      });
+
+      return changed ? next : prevNodes;
+    });
+  }, [parameters, setNodes]);
+
+  useEffect(() => {
+    setParameters((prev) => {
+      const { changed, next } = reconcileParametersWithAuto(prev, nodes);
+      return changed ? next : prev;
+    });
+  }, [nodes, setParameters]);
+
+  // === Backtest options for BacktestView ===
+  // Create lightweight signatures of nodes/edges that exclude layout/position
+  // so backtestOptions doesn't recompute when the user moves nodes around.
+  const nodesSignature = useMemo(() => {
+    try {
+      return JSON.stringify(
+        nodes.map((n) => ({ id: n.id, type: n.type, data: n.data }))
+      );
+    } catch {
+      return String(nodes.length);
+    }
+  }, [nodes]);
+
+  const edgesSignature = useMemo(() => {
+    try {
+      return JSON.stringify(
+        edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+          type: e.type,
+        }))
+      );
+    } catch {
+      return String(edges.length);
+    }
+  }, [edges]);
+
+  const blockNode = useMemo(
+    () =>
+      nodes.find(
+        (n) => n.type === "blockNode" && n.data?.label === "In a trade"
+      ) || null,
+    [nodes]
   );
 
-  // Update nodes when parameters change
-  // This ensures nodes receive the updated parameters array, and individual node components
-  // (like VariableFieldStandalone) will handle updating their own parameterData
+  const FALLBACK_BLOCK_SIZE = 700;
+  const BLOCK_PADDING = 32;
+
+  const blockBounds = useMemo(() => {
+    if (!blockNode?.position) return null;
+    const width = blockNode.width ?? FALLBACK_BLOCK_SIZE;
+    const height = blockNode.height ?? FALLBACK_BLOCK_SIZE;
+    return {
+      minX: blockNode.position.x,
+      maxX: blockNode.position.x + width,
+      minY: blockNode.position.y,
+      maxY: blockNode.position.y + height,
+    };
+  }, [blockNode]);
+
+  // Parse the signatures back into lightweight structures for computing
+  // options. This avoids referencing the full `nodes`/`edges` arrays inside
+  // the main backtestOptions useMemo so position-only changes won't force
+  // recomputation.
+  const nodeMetaById = useMemo(() => {
+    const map = new Map();
+    nodes.forEach((node) => {
+      map.set(node.id, {
+        position: node.position || null,
+        width: node.width,
+        height: node.height,
+        positionAbsolute: node.positionAbsolute || null,
+      });
+    });
+    return map;
+  }, [nodes]);
+
+  const nodesById = useMemo(() => {
+    const map = new Map();
+    nodes.forEach((node) => {
+      map.set(node.id, node);
+    });
+    return map;
+  }, [nodes]);
+
+  const anchorNodeId = useMemo(() => {
+    if (blockNode?.data?.anchorNodeId) {
+      return blockNode.data.anchorNodeId;
+    }
+    const firstBuy = nodes.find((n) => n.type === "buyNode");
+    return firstBuy ? firstBuy.id : null;
+  }, [blockNode, nodes]);
+
+  const inTradeNodeIds = useMemo(() => {
+    const ids = new Set();
+    nodes.forEach((node) => {
+      if (node.id === blockNode?.id) return;
+      if (node.data?.preventInTradeGrouping) {
+        return;
+      }
+      if (node.data?.forceInTradeGrouping) {
+        ids.add(node.id);
+        return;
+      }
+      if (!blockBounds) return;
+      const pos = node.position;
+      if (!pos) return;
+      if (
+        pos.x >= blockBounds.minX &&
+        pos.x <= blockBounds.maxX &&
+        pos.y >= blockBounds.minY &&
+        pos.y <= blockBounds.maxY
+      ) {
+        ids.add(node.id);
+      }
+    });
+    return ids;
+  }, [nodes, blockBounds, blockNode?.id]);
+
+  const handleNodesChange = useCallback(
+    (changes) => {
+      const bufferedChanges = [...changes];
+      let anchorDeltaX = 0;
+      let anchorDeltaY = 0;
+      let anchorMoved = false;
+
+      if (anchorNodeId && blockNode) {
+        const existingIds = new Set(bufferedChanges.map((change) => change.id));
+
+        changes.forEach((change) => {
+          if (
+            change.type !== "position" ||
+            !change.position ||
+            change.id !== anchorNodeId
+          ) {
+            return;
+          }
+
+          const meta = nodeMetaById.get(change.id);
+          const previous = meta?.position;
+          if (!previous) return;
+
+          const deltaX = change.position.x - previous.x;
+          const deltaY = change.position.y - previous.y;
+          if (!deltaX && !deltaY) return;
+
+          anchorMoved = true;
+          anchorDeltaX += deltaX;
+          anchorDeltaY += deltaY;
+
+          const appendChange = (nodeId) => {
+            if (!nodeId || existingIds.has(nodeId)) return;
+            const targetMeta = nodeMetaById.get(nodeId);
+            if (!targetMeta?.position) return;
+            const node = nodesById.get(nodeId);
+            if (node?.data?.preventInTradeGrouping) return;
+
+            const nextChange = {
+              id: nodeId,
+              type: "position",
+              position: {
+                x: targetMeta.position.x + deltaX,
+                y: targetMeta.position.y + deltaY,
+              },
+            };
+
+            if (targetMeta.positionAbsolute) {
+              nextChange.positionAbsolute = {
+                x: targetMeta.positionAbsolute.x + deltaX,
+                y: targetMeta.positionAbsolute.y + deltaY,
+              };
+            }
+
+            bufferedChanges.push(nextChange);
+            existingIds.add(nodeId);
+          };
+
+          appendChange(blockNode.id);
+
+          inTradeNodeIds.forEach((nodeId) => {
+            if (nodeId === change.id) return;
+            appendChange(nodeId);
+          });
+        });
+      }
+
+      const boundsForClamp =
+        anchorMoved && blockBounds
+          ? {
+              minX: blockBounds.minX + anchorDeltaX,
+              maxX: blockBounds.maxX + anchorDeltaX,
+              minY: blockBounds.minY + anchorDeltaY,
+              maxY: blockBounds.maxY + anchorDeltaY,
+            }
+          : blockBounds;
+
+      if (!boundsForClamp || inTradeNodeIds.size === 0) {
+        onNodesChange(bufferedChanges);
+        return;
+      }
+
+      const minX = boundsForClamp.minX + BLOCK_PADDING;
+      const minY = boundsForClamp.minY + BLOCK_PADDING;
+      const nextChanges = bufferedChanges.map((change) => {
+        if (change.type !== "position" || !change.position) {
+          return change;
+        }
+
+        if (!inTradeNodeIds.has(change.id)) {
+          return change;
+        }
+
+        const meta = nodeMetaById.get(change.id) || {};
+        const width = meta.width ?? 180;
+        const height = meta.height ?? 140;
+
+        const maxX = Math.max(
+          minX,
+          boundsForClamp.maxX - width - BLOCK_PADDING
+        );
+        const maxY = Math.max(
+          minY,
+          boundsForClamp.maxY - height - BLOCK_PADDING
+        );
+
+        const clampedX = Math.min(Math.max(change.position.x, minX), maxX);
+        const clampedY = Math.min(Math.max(change.position.y, minY), maxY);
+
+        if (clampedX === change.position.x && clampedY === change.position.y) {
+          return change;
+        }
+
+        const nextChange = {
+          ...change,
+          position: { x: clampedX, y: clampedY },
+        };
+
+        if (change.positionAbsolute) {
+          nextChange.positionAbsolute = {
+            x: Math.min(Math.max(change.positionAbsolute.x, minX), maxX),
+            y: Math.min(Math.max(change.positionAbsolute.y, minY), maxY),
+          };
+        }
+
+        return nextChange;
+      });
+
+      onNodesChange(nextChanges);
+    },
+    [
+      onNodesChange,
+      blockBounds,
+      inTradeNodeIds,
+      nodeMetaById,
+      blockNode,
+      anchorNodeId,
+      nodesById,
+    ]
+  );
+
   useEffect(() => {
-    _setNodes((prevNodes) =>
-      prevNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          parameters: parameters,
-        },
-      }))
-    );
-  }, [parameters, _setNodes]);
+    if (!blockNode) return;
+
+    const hiddenClass = "in-trade-hidden";
+    const applyClassName = (className, hidden) => {
+      const tokens = new Set((className || "").split(/\s+/).filter(Boolean));
+      if (hidden) {
+        tokens.add(hiddenClass);
+      } else {
+        tokens.delete(hiddenClass);
+      }
+      return tokens.size ? Array.from(tokens).join(" ") : undefined;
+    };
+
+    setNodes((prevNodes) => {
+      let changed = false;
+      const nextNodes = prevNodes.map((node) => {
+        const isInTrade =
+          node.id === blockNode.id || inTradeNodeIds.has(node.id);
+        const shouldHide = isInTrade && inTradeCollapsed;
+
+        const nextClassName = applyClassName(node.className, shouldHide);
+        const classChanged = nextClassName !== (node.className || undefined);
+
+        let nextData = node.data;
+        let dataChanged = false;
+        if (isInTrade) {
+          const currentHidden = node.data?.isInTradeHidden ?? false;
+          if (currentHidden !== shouldHide) {
+            nextData = { ...(node.data || {}), isInTradeHidden: shouldHide };
+            dataChanged = true;
+          }
+        } else if (node.data?.isInTradeHidden !== undefined) {
+          const { isInTradeHidden, ...rest } = node.data;
+          nextData = rest;
+          dataChanged = true;
+        }
+
+        const isAnchor = anchorNodeId && node.id === anchorNodeId;
+        const needsDraggableUpdate = isAnchor
+          ? node.draggable !== inTradeCollapsed
+          : Object.prototype.hasOwnProperty.call(node, "draggable") &&
+            !isAnchor;
+
+        if (!classChanged && !dataChanged && !needsDraggableUpdate) {
+          return node;
+        }
+
+        const updated = { ...node };
+
+        if (classChanged) {
+          if (nextClassName === undefined) {
+            delete updated.className;
+          } else {
+            updated.className = nextClassName;
+          }
+        }
+
+        if (dataChanged) {
+          updated.data = nextData;
+        }
+
+        if (isAnchor) {
+          updated.draggable = inTradeCollapsed;
+        } else if (Object.prototype.hasOwnProperty.call(updated, "draggable")) {
+          delete updated.draggable;
+        }
+
+        changed = true;
+        return updated;
+      });
+
+      return changed ? nextNodes : prevNodes;
+    });
+  }, [anchorNodeId, blockNode, inTradeCollapsed, inTradeNodeIds, setNodes]);
+
+  useEffect(() => {
+    setEdges((prevEdges) => {
+      let changed = false;
+      const nextEdges = prevEdges.map((edge) => {
+        const inside =
+          inTradeNodeIds.has(edge.source) && inTradeNodeIds.has(edge.target);
+        const shouldHide = inTradeCollapsed && inside;
+        if ((edge.hidden ?? false) === shouldHide) {
+          return edge;
+        }
+        changed = true;
+        return { ...edge, hidden: shouldHide };
+      });
+      return changed ? nextEdges : prevEdges;
+    });
+  }, [inTradeCollapsed, inTradeNodeIds, setEdges]);
+
+  const logicalNodes = useMemo(() => {
+    try {
+      const parsed = JSON.parse(nodesSignature);
+      return parsed.map((node) => {
+        const meta = nodeMetaById.get(node.id);
+        if (!meta) return node;
+        return {
+          ...node,
+          position: meta.position,
+          width: meta.width,
+          height: meta.height,
+        };
+      });
+    } catch {
+      return [];
+    }
+  }, [nodesSignature, nodeMetaById]);
+
+  const logicalEdges = useMemo(() => {
+    try {
+      return JSON.parse(edgesSignature);
+    } catch {
+      return [];
+    }
+  }, [edgesSignature]);
 
   const backtestOptions = useMemo(() => {
     const opts = {
-      asset: "bitcoin",
-      feePercent: 0.05,
+      asset: DEFAULT_ASSET,
+      feePercent: DEFAULT_FEE_PERCENT,
       useGraphExecutor: true,
     };
-
-    // Find input node to determine data source and asset
-    const inputNode = nodes.find((n) => n.type === "inputNode");
+    // Find input node to determine data source and asset using the
+    // position-agnostic logical nodes.
+    const inputNode = logicalNodes.find((n) => n.type === "inputNode");
     const useSynthetic = inputNode?.data?.dataSource !== "real";
 
     if (inputNode?.data?.asset) {
       opts.asset = inputNode.data.asset;
     }
 
-    opts.useSynthetic = useSynthetic;
-    opts.nodes = nodes;
-    opts.edges = edges;
-
-    // Extract lookback and indicator info for visualization only
-    const indicator = nodes.find((n) => n.type === "indicatorNode");
-    if (indicator?.data?.variables) {
-      const windowVar = indicator.data.variables.find(
-        (v) => v.label === "window"
-      );
-      const windowValue = windowVar?.parameterData?.value;
-      const n = Number(windowValue);
-      if (!Number.isNaN(n) && n > 0) {
-        opts.lookback = n;
-      }
+    const resolvedResolution =
+      inputNode?.data?.resolution || dataResolution || DEFAULT_DATA_RESOLUTION;
+    let resolvedInterval = Number(inputNode?.data?.interval);
+    if (!Number.isFinite(resolvedInterval) || resolvedInterval <= 0) {
+      resolvedInterval = syntheticInterval || DEFAULT_SYNTHETIC_INTERVAL;
     }
-    if (!opts.lookback) opts.lookback = 30;
 
-    // Get indicator type for visualization
-    const indicatorType = indicator?.data?.type || "30d_high";
-    opts.graph = { indicatorType };
+    opts.useSynthetic = useSynthetic;
+    opts.dataResolution = resolvedResolution;
+    opts.historyWindow = resolvedInterval;
+    // Expose the logical nodes/edges (no layout/position data) to keep the
+    // backtest payload stable when users move nodes around in the editor.
+    opts.nodes = logicalNodes;
+    opts.edges = logicalEdges;
+    opts.parameters = parameters;
+
+    // Derive lookback from inputIndicator node (prefers explicit numeric value,
+    // then bound parameter wiring). Fallback to parameter labeled 'lookback'
+    // on the input node, then finally default to 30.
+    try {
+      const inputIndicator = logicalNodes.find(
+        (n) => n.type === "inputIndicatorNode"
+      );
+      let computedLookback = undefined;
+
+      if (inputIndicator) {
+        // 1) prefer a canonical numeric lookback on the node
+        const lb = inputIndicator.data?.lookback;
+        if (lb != null && lb !== "") computedLookback = Number(lb);
+
+        // 2) then prefer a bound parameter value if present
+        const lbVar = inputIndicator.data?.lookbackVariable?.parameterData;
+        if (lbVar && lbVar.value != null && String(lbVar.value).trim() !== "") {
+          const num = Number(lbVar.value);
+          if (!Number.isNaN(num)) computedLookback = num;
+        }
+      }
+
+      // 3) fallback: check top-level input node parameters for a parameter named 'lookback'
+      if (computedLookback == null) {
+        const inputNode = logicalNodes.find((n) => n.type === "inputNode");
+        const paramLookback = inputNode?.data?.parameters?.find(
+          (p) => String(p.label).toLowerCase() === "lookback"
+        )?.value;
+        if (paramLookback != null && String(paramLookback).trim() !== "") {
+          const num2 = Number(paramLookback);
+          if (!Number.isNaN(num2)) computedLookback = num2;
+        }
+      }
+
+      // 4) default
+      opts.lookback =
+        computedLookback != null && !Number.isNaN(Number(computedLookback))
+          ? Number(computedLookback)
+          : 30;
+    } catch {
+      opts.lookback = 30;
+    }
 
     return opts;
-  }, [nodes, edges]);
+  }, [
+    logicalNodes,
+    logicalEdges,
+    parameters,
+    dataResolution,
+    syntheticInterval,
+  ]);
 
   return (
-    <section id="demo" className="demo">
-      <div ref={containerRef} style={{ width: "100%", height: "50vh" }}>
-        <ReactFlow
-          defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
-          nodes={nodes}
-          nodeTypes={memoizedNodeTypes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          preventScrolling={false}
-          autoPanOnNodeDrag={false}
-          maxZoom={0.9}
-          minZoom={0.9}
-          panOnDrag={false}
-          panOnScroll={false}
-          zoomOnScroll={false}
-          zoomOnPinch={false}
-          translateExtent={translateExtent}
+    <AssetContext.Provider
+      value={{
+        selectedAsset,
+        setSelectedAsset,
+        dataResolution,
+        setDataResolution,
+        syntheticInterval,
+        setSyntheticInterval,
+      }}
+    >
+      <section id="demo" className="demo">
+        {/* === Drag-and-drop algorithm builder === */}
+        <div
+          ref={containerRef}
+          style={{
+            width: "100%",
+            height: "75vh",
+            minHeight: "650px",
+            position: "relative",
+            background: "transparent",
+          }}
         >
-          <Panel position="bottom-left">
+          <ReactFlow
+            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+            nodes={nodes}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            edges={edges}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={handleConnect}
+            onEdgeDoubleClick={handleEdgeDoubleClick}
+            defaultEdgeOptions={{ type: "shortStep" }}
+            connectionLineType="step"
+            connectionLineStyle={{
+              strokeWidth: 3,
+              stroke: "#000000",
+              strokeDasharray: "5,5",
+            }}
+            preventScrolling={false}
+            autoPanOnNodeDrag={true}
+            maxZoom={1.2}
+            minZoom={0.6}
+            panOnDrag={true}
+            panOnScroll={false}
+            zoomOnScroll={true}
+            zoomOnPinch={true}
+            fitView={false}
+            translateExtent={translateExtent}
+          >
             <ParameterBlock
-              handleRemoveParameter={handleRemoveParameter}
-              handleAddParameter={handleAddParameter}
+              handleRemoveParameter={removeParameter}
+              handleAddParameter={addParameter}
               parameters={parameters}
               setParameters={setParameters}
+              onShowModal={openParameterModal}
+              onShowDeleteModal={openDeleteModal}
             />
-          </Panel>
-        </ReactFlow>
-      </div>
+          </ReactFlow>
+        </div>
 
-      <div className="divider"></div>
+        <div className="divider"></div>
 
-      <div className="backtest">
-        <BacktestView
-          options={backtestOptions}
-          externalControl
-          useSynthetic={backtestOptions.useSynthetic}
-        />
-      </div>
-    </section>
+        {/* === Backtest results section === */}
+        <div className="backtest">
+          <BacktestView options={backtestOptions} externalControl />
+        </div>
+
+        {/* === Add Parameter / Custom Parameter Modal === */}
+        {showParameterModal && (
+          <div
+            className="fullscreen-modal-overlay"
+            onClick={closeParameterModal}
+          >
+            <div
+              className="fullscreen-modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="fullscreen-modal-header">
+                <h2>
+                  {parameterModalType === "parameter"
+                    ? "Add Parameter"
+                    : "Add Custom Parameter"}
+                </h2>
+                <button
+                  className="fullscreen-modal-close"
+                  onClick={closeParameterModal}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="fullscreen-modal-body">
+                <div className="coming-soon-content">
+                  <h3>Coming Soon</h3>
+                  <p>
+                    {parameterModalType === "parameter"
+                      ? "This feature will allow you to add parameters from the library to your strategy."
+                      : "This feature will allow you to create custom parameters for your strategy."}
+                  </p>
+                  <div className="feature-preview">
+                    <h4>Planned Features:</h4>
+                    <ul>
+                      <li>Parameter library with pre-built options</li>
+                      <li>Custom parameter creation wizard</li>
+                      <li>Parameter validation and testing</li>
+                      <li>Import/export parameter sets</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="fullscreen-modal-footer">
+                <button
+                  className="fullscreen-modal-btn fullscreen-modal-btn-primary"
+                  onClick={closeParameterModal}
+                >
+                  Got It
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === Delete Confirmation Modal === */}
+        {showDeleteModal && (
+          <div className="fullscreen-modal-overlay" onClick={closeDeleteModal}>
+            <div
+              className="fullscreen-modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="fullscreen-modal-header">
+                <h2>Delete Parameter</h2>
+                <button
+                  className="fullscreen-modal-close"
+                  onClick={closeDeleteModal}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="fullscreen-modal-body">
+                <div className="delete-confirmation-content">
+                  <h3>Delete Parameter</h3>
+                  <p>
+                    This action cannot be undone. The parameter will be
+                    permanently removed from your strategy.
+                  </p>
+                  {parameterIndexToDelete !== null && (
+                    <div className="parameter-preview">
+                      <strong>Parameter:</strong>{" "}
+                      {parameters[parameterIndexToDelete]?.label}
+                      <br />
+                      <strong>Value:</strong>{" "}
+                      {parameters[parameterIndexToDelete]?.value}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="fullscreen-modal-footer">
+                <button
+                  className="fullscreen-modal-btn fullscreen-modal-btn-secondary"
+                  onClick={closeDeleteModal}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="fullscreen-modal-btn fullscreen-modal-btn-danger"
+                  onClick={confirmDeleteParameter}
+                >
+                  Delete Parameter
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </AssetContext.Provider>
   );
 }
