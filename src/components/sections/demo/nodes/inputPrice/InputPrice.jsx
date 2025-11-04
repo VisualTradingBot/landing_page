@@ -14,7 +14,7 @@ export default function InputPrice({ data, id }) {
   const payloadRef = useRef(null);
 
   // State for the form fields
-  const [timeFrame, setTimeFrame] = useState(data?.timeFrame || "1h");
+  const [timeFrame, setTimeFrame] = useState(data?.timeFrame || "1d");
   const [type, setType] = useState(data?.type || "instant");
   const [format, setFormat] = useState(data?.format || "close");
 
@@ -97,7 +97,11 @@ export default function InputPrice({ data, id }) {
   ]);
 
   return (
-    <NodeDefault id={id} title="Input-Price">
+    <NodeDefault
+      id={id}
+      title="Input-Price"
+      right={{ active: true, type: "source" }}
+    >
       <div className="input-price-container">
         {/* Asset Display */}
         <div className="field-row asset-row">
@@ -126,10 +130,13 @@ export default function InputPrice({ data, id }) {
             value={timeFrame}
             onChange={handleTimeFrameChange}
             className="field-select"
+            disabled
           >
             <option value="1m">1 minute</option>
             <option value="1h">1 hour</option>
-            <option value="1d">1 day</option>
+            <option value="1d" default>
+              1 day
+            </option>
           </select>
         </div>
 
@@ -140,8 +147,11 @@ export default function InputPrice({ data, id }) {
             value={type}
             onChange={handleTypeChange}
             className="field-select"
+            disabled
           >
-            <option value="instant">Instant</option>
+            <option value="instant" default>
+              Instant
+            </option>
             <option value="market">Market</option>
             <option value="limit">Limit</option>
             <option value="stop">Stop</option>
@@ -156,8 +166,11 @@ export default function InputPrice({ data, id }) {
             value={format}
             onChange={handleFormatChange}
             className="field-select"
+            disabled
           >
-            <option value="close">Close</option>
+            <option value="close" default>
+              Close
+            </option>
             <option value="open">Open</option>
             <option value="high">High</option>
             <option value="low">Low</option>

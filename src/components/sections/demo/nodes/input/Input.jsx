@@ -13,7 +13,6 @@ import { useAsset } from "../../AssetContext";
 const RESOLUTION_LIMITS = {
   "1d": { min: 7, max: 365, unit: "days" },
   "1h": { min: 24, max: 4320, unit: "hours" },
-  "1m": { min: 1, max: 24, unit: "hours" },
 };
 
 const clampInterval = (value, { min, max }) => {
@@ -23,9 +22,8 @@ const clampInterval = (value, { min, max }) => {
 
 export default function Input({ id, data }) {
   const { updateNodeData } = useReactFlow();
-  const [dataSource, setDataSource] = useState(data?.dataSource || "synthetic");
   const [asset, setAsset] = useState(data?.asset || DEFAULT_ASSET);
-  const [type, setType] = useState(data?.type || "batch");
+  const [type, setType] = useState(data?.type || "realtime");
   const initialResolution = data?.resolution || DEFAULT_DATA_RESOLUTION;
   const [resolution, setResolution] = useState(initialResolution);
   const boundsForInitial = RESOLUTION_LIMITS[initialResolution];
@@ -35,10 +33,15 @@ export default function Input({ id, data }) {
       : DEFAULT_INTERVAL_BY_RESOLUTION[initialResolution] ||
         boundsForInitial?.min ||
         30;
-  const [historyWindow, setHistoryWindow] = useState(String(defaultInterval));
+  const [historyWindow, setHistoryWindowValue] = useState(
+    String(defaultInterval)
+  );
 
-  const { setSelectedAsset, setDataResolution, setSyntheticInterval } =
-    useAsset();
+  const {
+    setSelectedAsset,
+    setDataResolution,
+    setHistoryWindow: setHistoryWindowCtx,
+  } = useAsset();
 
   const intervalBounds = useMemo(
     () =>
@@ -57,14 +60,12 @@ export default function Input({ id, data }) {
 
     updateNodeData(id, {
       asset,
-      dataSource,
       type,
       resolution,
       interval: intervalValue,
     });
   }, [
     asset,
-    dataSource,
     type,
     resolution,
     historyWindow,
@@ -98,9 +99,9 @@ export default function Input({ id, data }) {
   useEffect(() => {
     const numeric = Number(historyWindow);
     if (Number.isFinite(numeric) && numeric > 0) {
-      setSyntheticInterval(clampInterval(numeric, intervalBounds));
+      setHistoryWindowCtx(clampInterval(numeric, intervalBounds));
     }
-  }, [historyWindow, intervalBounds, setSyntheticInterval]);
+  }, [historyWindow, intervalBounds, setHistoryWindowCtx]);
 
   const handleAssetChange = (newAsset) => {
     setAsset(newAsset);
@@ -113,7 +114,7 @@ export default function Input({ id, data }) {
     const bounds = RESOLUTION_LIMITS[nextResolution];
     const defaultValue =
       DEFAULT_INTERVAL_BY_RESOLUTION[nextResolution] || bounds.min;
-    setHistoryWindow((prev) => {
+    setHistoryWindowValue((prev) => {
       const numericPrev = Number(prev);
       if (Number.isFinite(numericPrev)) {
         return clampInterval(numericPrev, bounds);
@@ -124,38 +125,22 @@ export default function Input({ id, data }) {
 
   const handleHistoryWindowChange = (value) => {
     const cleaned = value.replace(/[^0-9-]/g, "").replace(/(?!^)-/g, "");
-    setHistoryWindow(cleaned);
+    setHistoryWindowValue(cleaned);
   };
 
   const clampHistoryWindowDisplay = () => {
     const numeric = Number(historyWindow);
     if (!Number.isFinite(numeric) || numeric <= 0) {
-      setHistoryWindow(String(intervalBounds.min));
+      setHistoryWindowValue(String(intervalBounds.min));
       return;
     }
     const clamped = clampInterval(numeric, intervalBounds);
-    setHistoryWindow(String(clamped));
+    setHistoryWindowValue(String(clamped));
   };
 
   return (
-    <NodeDefault id={id} title="Test Parameters">
+    <NodeDefault id={id} title="Back-Test Data-Set">
       <div className="input-container">
-        <div className="field-row">
-          <label className="field-label">Data Source:</label>
-          <select
-            className="field-select"
-            value={dataSource}
-            onChange={(e) => {
-              const value = e.target.value;
-              setDataSource(value);
-              updateNodeData(id, { dataSource: value });
-            }}
-          >
-            <option value="synthetic">Synthetic</option>
-            <option value="real">Real (CoinGecko)</option>
-          </select>
-        </div>
-
         <div className="field-row">
           <label className="field-label">Asset:</label>
           <select
@@ -182,10 +167,12 @@ export default function Input({ id, data }) {
               handleResolutionChange(value);
               updateNodeData(id, { resolution: value });
             }}
+            disabled
           >
-            <option value="1d">1 Day</option>
+            <option value="1d" default>
+              1 Day
+            </option>
             <option value="1h">1 Hour</option>
-            <option value="1m">1 Minute</option>
           </select>
         </div>
 
@@ -211,6 +198,7 @@ export default function Input({ id, data }) {
           <select
             className="field-select"
             value={type}
+            disabled
             onChange={(e) => {
               const value = e.target.value;
               setType(value);
@@ -219,7 +207,9 @@ export default function Input({ id, data }) {
           >
             <option value="batch">Batch</option>
             <option value="stream">Stream</option>
-            <option value="realtime">Real-time</option>
+            <option value="realtime" default>
+              Real-Time
+            </option>
           </select>
         </div>
       </div>

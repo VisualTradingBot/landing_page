@@ -179,26 +179,6 @@
       user-select: none !important;
     }
 
-    .react-flow__node {
-      transition: opacity 0.24s ease, transform 0.24s ease, box-shadow 0.3s ease;
-      will-change: opacity, transform;
-
-      &:hover {
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-      }
-
-      // Prevent ReactFlow from adding borders when form elements are focused
-      &:focus,
-      &:focus-within,
-      &.selected,
-      &.selectable:focus {
-        outline: none !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-      }
-    }
-
     .react-flow__node.in-trade-hidden {
       opacity: 0;
       transform: scale(0.96) translateY(12px);

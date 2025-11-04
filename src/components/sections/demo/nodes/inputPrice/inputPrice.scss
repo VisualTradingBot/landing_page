@@ -22,12 +22,12 @@
 
 .field-row.asset-row {
   justify-content: flex-end;
-  
-  .field-label{
+
+  .field-label {
     margin: 0;
     text-align: right;
   }
-  
+
   .asset-display {
     flex: 0 0 auto;
     margin-left: 8px;
@@ -94,7 +94,7 @@
   option {
     background: #ffffff;
     color: #000000;
-    
+
     &:hover {
       background: #000000;
       color: #ffffff;
