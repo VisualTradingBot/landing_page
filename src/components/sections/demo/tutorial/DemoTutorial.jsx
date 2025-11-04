@@ -96,36 +96,31 @@ export default function DemoTutorial({
   );
 
   // Get DOM rect for ReactFlow nodes
-  const getNodeDOMRects = useCallback(
-    (nodeIds) => {
-      const rects = nodeIds
-        .map((nodeId) => {
-          const element = document.querySelector(
-            `[data-id="${nodeId}"]`
-          );
-          return element ? element.getBoundingClientRect() : null;
-        })
-        .filter((rect) => rect !== null);
+  const getNodeDOMRects = useCallback((nodeIds) => {
+    const rects = nodeIds
+      .map((nodeId) => {
+        const element = document.querySelector(`[data-id="${nodeId}"]`);
+        return element ? element.getBoundingClientRect() : null;
+      })
+      .filter((rect) => rect !== null);
 
-      if (rects.length === 0) return null;
+    if (rects.length === 0) return null;
 
-      // Calculate combined bounding box
-      const minLeft = Math.min(...rects.map((r) => r.left));
-      const maxRight = Math.max(...rects.map((r) => r.right));
-      const minTop = Math.min(...rects.map((r) => r.top));
-      const maxBottom = Math.max(...rects.map((r) => r.bottom));
+    // Calculate combined bounding box
+    const minLeft = Math.min(...rects.map((r) => r.left));
+    const maxRight = Math.max(...rects.map((r) => r.right));
+    const minTop = Math.min(...rects.map((r) => r.top));
+    const maxBottom = Math.max(...rects.map((r) => r.bottom));
 
-      return {
-        left: minLeft,
-        top: minTop,
-        right: maxRight,
-        bottom: maxBottom,
-        width: maxRight - minLeft,
-        height: maxBottom - minTop,
-      };
-    },
-    []
-  );
+    return {
+      left: minLeft,
+      top: minTop,
+      right: maxRight,
+      bottom: maxBottom,
+      width: maxRight - minLeft,
+      height: maxBottom - minTop,
+    };
+  }, []);
 
   // Zoom to step targets
   const zoomToStep = useCallback(
@@ -232,7 +227,9 @@ export default function DemoTutorial({
           } else {
             highlight.style.display = "none";
           }
-        } else if (highlight.classList.contains("tutorial-highlight-backtest")) {
+        } else if (
+          highlight.classList.contains("tutorial-highlight-backtest")
+        ) {
           const element = document.querySelector(".backtest");
           if (element) {
             const rect = element.getBoundingClientRect();

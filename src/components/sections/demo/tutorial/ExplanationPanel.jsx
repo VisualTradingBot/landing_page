@@ -87,11 +87,17 @@ export default function ExplanationPanel({
       </div>
       <div className="explanation-panel-footer">
         {onSkip && (
-          <button className="explanation-btn explanation-btn-secondary" onClick={onSkip}>
+          <button
+            className="explanation-btn explanation-btn-secondary"
+            onClick={onSkip}
+          >
             Skip Tutorial
           </button>
         )}
-        <button className="explanation-btn explanation-btn-primary" onClick={onNext}>
+        <button
+          className="explanation-btn explanation-btn-primary"
+          onClick={onNext}
+        >
           {step < totalSteps ? "Next" : "Got It"}
         </button>
       </div>

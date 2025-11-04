@@ -547,6 +547,71 @@ select option:hover {
     filter: brightness(0.5);
     transition: opacity 0.3s ease, filter 0.3s ease;
   }
+
+  // Tutorial active state - dim non-highlighted elements, keep highlighted ones fully visible
+  &.tutorial-active {
+    .react-flow__node {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+
+      // Highlighted nodes remain fully visible (transparent background, no dimming)
+      &[data-highlight="true"] {
+        opacity: 1 !important;
+        z-index: 1000;
+        transform: scale(1.02);
+        background: transparent !important;
+      }
+    }
+
+    .react-flow__edge {
+      opacity: 0.3;
+      transition: opacity 0.3s ease;
+    }
+
+    // Dim backtest and parameter block when highlighting graph
+    .backtest,
+    .parameter-block {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+  }
+
+  // Highlight backtest section during tutorial
+  &.tutorial-backtest-active {
+    .react-flow {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+
+    .parameter-block {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+
+    .backtest {
+      opacity: 1 !important;
+      background: transparent !important;
+    }
+  }
+
+  // Highlight parameter block during tutorial
+  &.tutorial-parameter-active {
+    .react-flow {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+
+    .backtest {
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+
+    .parameter-block,
+    [class*="parameters-dropdown"] {
+      opacity: 1 !important;
+      background: transparent !important;
+    }
+  }
 }
 
 // Highlight backtest section during tutorial

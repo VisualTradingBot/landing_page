@@ -243,9 +243,7 @@ export default function Demo() {
     <AssetContext.Provider value={{ selectedAsset, setSelectedAsset }}>
       <section
         id="demo"
-        className={`demo ${
-          isTutorialActive ? "tutorial-active" : ""
-        }`}
+        className={`demo ${isTutorialActive ? "tutorial-active" : ""}`}
         ref={demoSectionRef}
       >
         <ReactFlowProvider>
