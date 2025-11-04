@@ -2,16 +2,15 @@ import "./inputPrice.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
 import { useState, useEffect, useRef } from "react";
-import { useReactFlow, useEdges } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
 import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputPrice({ data, id }) {
-  const { updateNodeData, getNode } = useReactFlow();
+  const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
-  const edges = useEdges();
   const payloadRef = useRef(null);
 
   // State for the form fields
@@ -60,27 +59,22 @@ export default function InputPrice({ data, id }) {
     }
   };
 
-  // Update node data and maintain connection with SetParameter nodes
+  // Update node data and keep output parameter name in sync with node configuration
   useEffect(() => {
     if (!id || !updateNodeData) return;
 
-    // Find connected SetParameter node if it exists
-    let setParamNode = null;
-    for (const edge of edges) {
-      if (edge.source !== id) continue;
-      const candidate = getNode(edge.target);
-      if (candidate?.type === "setParameterNode") {
-        setParamNode = candidate;
-        break;
-      }
-    }
+    const explicitOutput =
+      typeof data?.outputParamName === "string"
+        ? data.outputParamName.trim()
+        : "";
+    const outputParamName = explicitOutput || "live_price";
 
     // Prepare canonical data structure for parser
     const updatedData = {
       timeFrame,
       type,
       format,
-      outputParamName: setParamNode?.data?.parameterName || "live_price",
+      outputParamName,
       parameters: data?.parameters, // Preserve parameter bindings
       priceParamData: priceVariable.parameterData,
     };
@@ -98,17 +92,12 @@ export default function InputPrice({ data, id }) {
     type,
     format,
     priceVariable,
-    edges,
+    data?.outputParamName,
     data?.parameters,
-    getNode,
   ]);
 
   return (
-    <NodeDefault
-      id={id}
-      title="Input-Price"
-      right={{ active: true, type: "source" }}
-    >
+    <NodeDefault id={id} title="Input-Price">
       <div className="input-price-container">
         {/* Asset Display */}
         <div className="field-row asset-row">

@@ -2,16 +2,15 @@ import "./inputIndicator.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useReactFlow, useEdges } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
 import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputIndicator({ data, id }) {
-  const { updateNodeData, getNode } = useReactFlow();
+  const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
-  const edges = useEdges();
 
   const payloadRef = useRef(null);
 
@@ -127,15 +126,11 @@ export default function InputIndicator({ data, id }) {
   useEffect(() => {
     if (!id || !updateNodeData) return;
 
-    let setParamNode = null;
-    for (const edge of edges) {
-      if (edge.source !== id) continue;
-      const candidate = getNode(edge.target);
-      if (candidate?.type === "setParameterNode") {
-        setParamNode = candidate;
-        break;
-      }
-    }
+    const explicitOutput =
+      typeof data?.outputParamName === "string"
+        ? data.outputParamName.trim()
+        : "";
+    const outputParamName = explicitOutput || "indicator_output";
 
     // Prepare canonical data structure for parser
     const paramData = lookbackVariable.parameterData || {};
@@ -151,9 +146,7 @@ export default function InputIndicator({ data, id }) {
       resolution,
       lookbackUnit,
       lookback: lookbackValue ?? 30,
-      // If we have a connected SetParameter, use its name as our output parameter
-      outputParamName:
-        setParamNode?.data?.parameterName?.trim() || "indicator_output",
+      outputParamName,
       // Keep a reference to the parameter mapping for later resolution
       lookbackParamName:
         lookbackVariable.paramName || lookbackVariable.parameterData.label,
@@ -174,9 +167,8 @@ export default function InputIndicator({ data, id }) {
     indicator,
     id,
     updateNodeData,
-    edges,
-    data,
-    getNode,
+    data?.outputParamName,
+    data?.parameters,
   ]);
 
   // Sync with global parameter updates emitted by ParameterBlock
@@ -248,11 +240,7 @@ export default function InputIndicator({ data, id }) {
   };
 
   return (
-    <NodeDefault
-      id={id}
-      title="Input-Indicator"
-      right={{ active: true, type: "source" }}
-    >
+    <NodeDefault id={id} title="Input-Indicator">
       <div className="input-indicator-container">
         {/* Asset Display */}
         <div className="field-row asset-row">
