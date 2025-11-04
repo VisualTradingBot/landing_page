@@ -11,6 +11,10 @@
   align-items: center;
   gap: 12px;
   justify-content: space-between;
+
+  label {
+    width: 120px;
+  }
 }
 
 .asset-display {
@@ -20,23 +24,23 @@
   justify-content: flex-end;
 }
 
-.field-row.asset-row {
-  justify-content: flex-end;
-  
-  .field-label {
-    margin-right: auto;
-  }
-  
-  .asset-display {
-    flex: 0 0 auto;
-    margin-left: 8px;
-  }
-}
-
 .asset-image {
   width: 24px;
   height: 24px;
   object-fit: contain;
+}
+
+.field-row.asset-row {
+  justify-content: flex-end;
+
+  .field-label {
+    margin-right: auto;
+  }
+
+  .asset-display {
+    flex: 0 0 auto;
+    margin-left: 8px;
+  }
 }
 
 .asset-fallback {
@@ -62,7 +66,6 @@
   flex: 1;
   min-width: 60px;
 }
-
 
 .parameter-placeholder {
   flex: 1;
@@ -178,7 +181,7 @@
   option {
     background: #ffffff;
     color: #000000;
-    
+
     &:hover {
       background: #000000;
       color: #ffffff;
@@ -236,7 +239,7 @@
   option {
     background: #ffffff;
     color: #000000;
-    
+
     &:hover {
       background: #000000;
       color: #ffffff;
