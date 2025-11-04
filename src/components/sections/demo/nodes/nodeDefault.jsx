@@ -36,49 +36,50 @@ export default function NodeDefault({
 
   return (
     <div className="node-default">
-      {topHandle.active && (
-        <Handle
-          id={topHandle.id}
-          type={topHandle.type}
-          position={Position.Top}
-          className="node-handle node-handle--top"
-          onPointerDown={addActiveWhilePointerDown}
-          aria-label={`connect-to-${title}-top`}
-        />
-      )}
-      {bottom.active && (
-        <Handle
-          id={bottomHandle.id}
-          type={bottomHandle.type}
-          position={Position.Bottom}
-          className="node-handle node-handle--bottom"
-          onPointerDown={addActiveWhilePointerDown}
-          aria-label={`connect-from-${title}-bottom`}
-        />
-      )}
-      {leftHandle.active && (
-        <Handle
-          id={leftHandle.id}
-          type={leftHandle.type}
-          position={Position.Left}
-          className="node-handle node-handle--left"
-          onPointerDown={addActiveWhilePointerDown}
-          aria-label={`connect-to-${title}-left`}
-        />
-      )}
-      {rightHandle.active && (
-        <Handle
-          id={rightHandle.id}
-          type={rightHandle.type}
-          position={Position.Right}
-          className="node-handle node-handle--right"
-          onPointerDown={addActiveWhilePointerDown}
-          aria-label={`connect-from-${title}-right`}
-        />
-      )}
-
       <div className="node-default-header">{title}</div>
-      <div className="node-default-body">{children}</div>
+      <div className="node-default-body">
+        {children}
+        {topHandle.active && (
+          <Handle
+            id={topHandle.id}
+            type={topHandle.type}
+            position={Position.Top}
+            className="node-handle node-handle--top"
+            onPointerDown={addActiveWhilePointerDown}
+            aria-label={`connect-to-${title}-top`}
+          />
+        )}
+        {bottomHandle.active && (
+          <Handle
+            id={bottomHandle.id}
+            type={bottomHandle.type}
+            position={Position.Bottom}
+            className="node-handle node-handle--bottom"
+            onPointerDown={addActiveWhilePointerDown}
+            aria-label={`connect-from-${title}-bottom`}
+          />
+        )}
+        {leftHandle.active && (
+          <Handle
+            id={leftHandle.id}
+            type={leftHandle.type}
+            position={Position.Left}
+            className="node-handle node-handle--left"
+            onPointerDown={addActiveWhilePointerDown}
+            aria-label={`connect-to-${title}-left`}
+          />
+        )}
+        {rightHandle.active && (
+          <Handle
+            id={rightHandle.id}
+            type={rightHandle.type}
+            position={Position.Right}
+            className="node-handle node-handle--right"
+            onPointerDown={addActiveWhilePointerDown}
+            aria-label={`connect-from-${title}-right`}
+          />
+        )}
+      </div>
     </div>
   );
 }

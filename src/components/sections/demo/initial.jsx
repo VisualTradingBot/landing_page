@@ -104,7 +104,7 @@ const initialNodes = [
       const lookbackBinding = bindParam("lookback");
       const indicatorBinding = bindParam("indicator_output");
       return {
-        resolution: "1h",
+        resolution: "1d",
         lookbackUnit: "d",
         indicator: "sma",
         lookback: Number(lookbackBinding?.value) || 30,
@@ -127,7 +127,7 @@ const initialNodes = [
     data: (() => {
       const livePriceBinding = bindParam("live_price");
       return {
-        timeFrame: "1h",
+        timeFrame: "1d",
         type: "instant",
         format: "close",
         outputParamName: livePriceBinding?.label || "live_price",
@@ -138,13 +138,56 @@ const initialNodes = [
     })(),
   },
   {
+    id: "setParameterNode-indicator",
+    type: "setParameterNode",
+    position: { x: 400, y: 200 },
+    data: (() => {
+      const indicatorBinding = bindParam("indicator_output");
+      return {
+        parameterId: indicatorBinding?.parameterId,
+        parameterLabel: indicatorBinding?.label || "indicator_output",
+        parameterName: indicatorBinding?.label || "indicator_output",
+        parameterData: indicatorBinding
+          ? { ...indicatorBinding }
+          : {
+              label: "indicator_output",
+              value: "indicator_output",
+              source: "system",
+            },
+        parameters: initialParameters,
+        preventInTradeGrouping: true,
+      };
+    })(),
+  },
+  {
+    id: "setParameterNode-price",
+    type: "setParameterNode",
+    position: { x: 150, y: 420 },
+    data: (() => {
+      const priceBinding = bindParam("live_price");
+      return {
+        parameterId: priceBinding?.parameterId,
+        parameterLabel: priceBinding?.label || "live_price",
+        parameterName: priceBinding?.label || "live_price",
+        parameterData: priceBinding
+          ? { ...priceBinding }
+          : {
+              label: "live_price",
+              value: "live_price",
+              source: "system",
+            },
+        parameters: initialParameters,
+        preventInTradeGrouping: true,
+      };
+    })(),
+  },
+  {
     id: "inputNode",
     type: "inputNode",
     position: { x: -200, y: 550 },
     data: {
-      type: "batch",
+      type: "realtime",
       asset: "bitcoin",
-      dataSource: "synthetic",
       resolution: DEFAULT_DATA_RESOLUTION,
       interval: DEFAULT_INTERVAL_BY_RESOLUTION[DEFAULT_DATA_RESOLUTION],
       parameters: initialParameters,
@@ -282,6 +325,28 @@ const initialNodes = [
     },
   },
   {
+    id: "setParameterNode-entry",
+    type: "setParameterNode",
+    position: { x: 880, y: 620 },
+    data: (() => {
+      const entryBinding = bindParam("entry_price");
+      return {
+        parameterId: entryBinding?.parameterId,
+        parameterLabel: entryBinding?.label || "entry_price",
+        parameterName: entryBinding?.label || "entry_price",
+        parameterData: entryBinding
+          ? { ...entryBinding }
+          : {
+              label: "entry_price",
+              value: "entry",
+              source: "system",
+            },
+        parameters: initialParameters,
+        preventInTradeGrouping: true,
+      };
+    })(),
+  },
+  {
     id: "blockNode-1",
     type: "blockNode",
     position: { x: 930, y: 50 },
@@ -329,6 +394,43 @@ const edgeTypes = {
 };
 
 const initialEdges = [
+  {
+    id: "indicator-to-parameter",
+    source: "inputIndicatorNode",
+    target: "setParameterNode-indicator",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  {
+    id: "price-to-parameter",
+    source: "inputPriceNode",
+    target: "setParameterNode-price",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
+  {
+    id: "record-to-parameter",
+    source: "recordNode-1",
+    sourceHandle: "recordNode-1-right",
+    target: "setParameterNode-entry",
+    type: "dataFlow",
+    animated: true,
+    style: {
+      stroke: "#000000",
+      strokeWidth: 3,
+      strokeDasharray: "5,5",
+    },
+  },
   // Entry decision - True path
   {
     id: "n3.1-n4.1",

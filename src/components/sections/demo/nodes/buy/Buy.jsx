@@ -217,8 +217,11 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
             value={type}
             onChange={handleTypeChange}
             className="type-select"
+            disabled
           >
-            <option value="market">Market</option>
+            <option value="market" default>
+              Market
+            </option>
             <option value="limit">Limit</option>
             <option value="stop">Stop</option>
             <option value="stop_limit">Stop Limit</option>
