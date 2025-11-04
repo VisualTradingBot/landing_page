@@ -104,7 +104,7 @@ const initialNodes = [
       const lookbackBinding = bindParam("lookback");
       const indicatorBinding = bindParam("indicator_output");
       return {
-        resolution: "1h",
+        resolution: "1d",
         lookbackUnit: "d",
         indicator: "sma",
         lookback: Number(lookbackBinding?.value) || 30,
@@ -127,7 +127,7 @@ const initialNodes = [
     data: (() => {
       const livePriceBinding = bindParam("live_price");
       return {
-        timeFrame: "1h",
+        timeFrame: "1d",
         type: "instant",
         format: "close",
         outputParamName: livePriceBinding?.label || "live_price",
@@ -142,9 +142,8 @@ const initialNodes = [
     type: "inputNode",
     position: { x: -200, y: 550 },
     data: {
-      type: "batch",
+      type: "realtime",
       asset: "bitcoin",
-      dataSource: "synthetic",
       resolution: DEFAULT_DATA_RESOLUTION,
       interval: DEFAULT_INTERVAL_BY_RESOLUTION[DEFAULT_DATA_RESOLUTION],
       parameters: initialParameters,

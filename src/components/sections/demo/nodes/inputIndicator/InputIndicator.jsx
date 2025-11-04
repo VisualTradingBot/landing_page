@@ -269,10 +269,13 @@ export default function InputIndicator({ data, id }) {
             value={resolution}
             onChange={handleResolutionChange}
             className="field-select"
+            disabled
           >
             <option value="1m">1 minute</option>
             <option value="1h">1 hour</option>
-            <option value="1d">1 day</option>
+            <option value="1d" default>
+              1 day
+            </option>
           </select>
         </div>
 
@@ -309,9 +312,12 @@ export default function InputIndicator({ data, id }) {
               value={lookbackUnit}
               onChange={handleLookbackUnitChange}
               className="field-select lookback-unit"
+              disabled
             >
               <option value="m">minute</option>
-              <option value="h">hour</option>
+              <option value="h" default>
+                hour
+              </option>
               <option value="d">day</option>
             </select>
           </div>

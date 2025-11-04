@@ -18,22 +18,31 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceDot,
-  BarChart,
-  Bar,
-  Cell,
-  ReferenceLine,
 } from "recharts";
 
-import {
-  generateSyntheticPrices,
-  mapCoinGeckoPricesToOHLC,
-} from "../../../../utils/indicators";
+import { mapCoinGeckoPricesToOHLC } from "../../../../utils/indicators";
 
 import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
 
 import "./backtest.scss";
 
 import BacktestWorker from "../../../../workers/backtest.worker.js?worker";
+
+const priceCache = new Map();
+
+const MAX_FETCH_CONFIG = {
+  "1d": { days: 365, interval: "daily" },
+  "1h": { days: 90, interval: "hourly" },
+};
+
+const DEFAULT_WINDOW_BY_RESOLUTION = {
+  "1d": 180,
+  "1h": 48,
+};
+
+const COINGECKO_HEADERS = {
+  "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w",
+};
 
 function HistogramTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -53,11 +62,8 @@ function HistogramTooltip({ active, payload }) {
 function buildPriceKey(opts) {
   if (!opts) return null;
   const assetKey = opts.asset ?? "bitcoin";
-  const sourceKey = opts.useSynthetic ? "synthetic" : "real";
   const resolutionKey = opts.dataResolution ?? "1d";
-  const windowKey =
-    opts.historyWindow != null ? String(opts.historyWindow) : "default";
-  return `${assetKey}|${sourceKey}|${resolutionKey}|${windowKey}`;
+  return `${assetKey}|${resolutionKey}`;
 }
 
 export default function BacktestView({
@@ -130,8 +136,6 @@ export default function BacktestView({
 
   const xAxisUnitLabel = useMemo(() => {
     switch (dataResolution) {
-      case "1m":
-        return "Minutes";
       case "1h":
         return "Hours";
       default:
@@ -184,29 +188,6 @@ export default function BacktestView({
   }, [activeOptions]);
 
   // Debug: Log resolved stop-loss percent
-  const syntheticCacheRef = useRef(new Map());
-
-  const getSyntheticSeries = useCallback((opts) => {
-    const resolution = opts?.dataResolution ?? "1d";
-    const historyWindow = opts?.historyWindow;
-    const cacheKey = `${resolution}|${historyWindow ?? "default"}`;
-
-    if (!syntheticCacheRef.current.has(cacheKey)) {
-      syntheticCacheRef.current.set(
-        cacheKey,
-        generateSyntheticPrices({
-          resolution,
-          interval: historyWindow,
-        })
-      );
-    }
-
-    const bundle = syntheticCacheRef.current.get(cacheKey);
-    if (!bundle) return [];
-    const assetKey = opts?.asset ?? "bitcoin";
-    return bundle[assetKey] || bundle.bitcoin || [];
-  }, []);
-
   const runSimulationWithOptions = useCallback((runOptions, priceSeries) => {
     if (!workerRef.current || !priceSeries?.length) return;
 
@@ -232,30 +213,84 @@ export default function BacktestView({
     });
   }, []);
 
-  // === Fetch price data (CoinGecko or synthetic fallback) ===
+  const resolveFetchConfig = useCallback((resolution, requestedWindow) => {
+    const config = MAX_FETCH_CONFIG[resolution] || MAX_FETCH_CONFIG["1d"];
+    const defaultWindow = DEFAULT_WINDOW_BY_RESOLUTION[resolution] ?? 180;
+    const windowSize =
+      Number.isFinite(requestedWindow) && requestedWindow > 0
+        ? Math.min(
+            requestedWindow,
+            config.days * (resolution === "1h" ? 24 : 1)
+          )
+        : defaultWindow;
+
+    const daysParam =
+      resolution === "1h"
+        ? Math.max(1, Math.ceil(windowSize / 24))
+        : Math.max(1, Math.round(windowSize));
+
+    return {
+      days: Math.min(config.days, daysParam),
+      interval: config.interval,
+      windowSize,
+    };
+  }, []);
+
+  const fetchCoinGeckoPrices = useCallback(
+    async (assetId, resolution, windowSize) => {
+      const { days, interval } = resolveFetchConfig(resolution, windowSize);
+      const searchParams = new URLSearchParams({
+        vs_currency: "eur",
+        days: String(days),
+        interval,
+      });
+
+      const url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?${searchParams.toString()}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: COINGECKO_HEADERS,
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `CoinGecko request failed with status ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      const mapped = mapCoinGeckoPricesToOHLC(data.prices || []);
+      if (!Array.isArray(mapped) || !mapped.length) {
+        throw new Error("CoinGecko returned empty price data");
+      }
+      return mapped;
+    },
+    [resolveFetchConfig]
+  );
+
+  const getCachedPrices = useCallback(
+    async (assetId, resolution, windowSize) => {
+      const cacheKey = `${assetId}|${resolution}`;
+      const cached = priceCache.get(cacheKey);
+      if (cached && cached.length) {
+        return cached;
+      }
+
+      const fresh = await fetchCoinGeckoPrices(assetId, resolution, windowSize);
+      priceCache.set(cacheKey, fresh);
+      return fresh;
+    },
+    [fetchCoinGeckoPrices]
+  );
+
+  // === Fetch price data (CoinGecko with caching) ===
   useEffect(() => {
     if (!activeOptions) return;
 
     const fetchKey = buildPriceKey(activeOptions);
-    const wantsSynthetic = !!activeOptions.useSynthetic;
     const targetAsset = activeOptions.asset ?? "bitcoin";
     const resolution = activeOptions.dataResolution ?? "1d";
     const rawWindow = Number(activeOptions.historyWindow);
-    const normalizedWindow =
-      Number.isFinite(rawWindow) && rawWindow > 0
-        ? rawWindow
-        : resolution === "1d"
-        ? 180
-        : resolution === "1h"
-        ? 48
-        : 6;
-
-    const supportsRealResolution = resolution !== "1m";
-    const daysParam =
-      resolution === "1d"
-        ? Math.max(1, Math.min(365, Math.round(normalizedWindow)))
-        : Math.max(1, Math.min(90, Math.ceil(normalizedWindow / 24)));
-    const intervalParam = resolution === "1d" ? "daily" : "hourly";
+    const { windowSize } = resolveFetchConfig(resolution, rawWindow);
 
     if (priceKeyRef.current === fetchKey && storedPrices?.length) {
       return;
@@ -264,63 +299,23 @@ export default function BacktestView({
     let cancelled = false;
 
     async function ensurePrices() {
-      if (wantsSynthetic || !supportsRealResolution) {
-        if (!cancelled) {
-          priceKeyRef.current = fetchKey;
-          const syntheticSeries = getSyntheticSeries(activeOptions);
-          setStoredPrices(syntheticSeries);
-        }
-        return;
-      }
-
-      const searchParams = new URLSearchParams({
-        vs_currency: "eur",
-        days: String(daysParam),
-      });
-      if (intervalParam) {
-        searchParams.set("interval", intervalParam);
-      }
-      const url = `https://api.coingecko.com/api/v3/coins/${targetAsset}/market_chart?${searchParams.toString()}`;
-      const fetchOptions = {
-        method: "GET",
-        headers: { "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w" },
-      };
-
       try {
-        const response = await fetch(url, fetchOptions);
+        const series = await getCachedPrices(
+          targetAsset,
+          resolution,
+          windowSize
+        );
         if (cancelled) return;
-        if (response && response.ok) {
-          const data = await response.json();
-          const mapped = mapCoinGeckoPricesToOHLC(data.prices || []);
-          if (Array.isArray(mapped) && mapped.length > 0) {
-            let limited = mapped;
-            if (resolution === "1d") {
-              const maxPoints = Math.max(1, Math.round(normalizedWindow));
-              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
-            } else if (resolution === "1h") {
-              const maxPoints = Math.max(1, Math.round(normalizedWindow));
-              limited = mapped.slice(-Math.min(mapped.length, maxPoints));
-            }
-            priceKeyRef.current = fetchKey;
-            setStoredPrices(limited);
-            return;
-          }
-        } else {
-          console.warn(
-            "CoinGecko response not ok, status=",
-            response && response.status
-          );
-        }
+        priceKeyRef.current = fetchKey;
+        const limited = series.slice(
+          -Math.min(series.length, Math.max(1, Math.round(windowSize)))
+        );
+        setStoredPrices(limited);
       } catch (error) {
         if (!cancelled) {
           console.error("Error fetching prices:", error);
+          setError("Failed to load price data. Please try again later.");
         }
-      }
-
-      if (!cancelled) {
-        priceKeyRef.current = fetchKey;
-        const fallbackSeries = getSyntheticSeries(activeOptions);
-        setStoredPrices(fallbackSeries);
       }
     }
 
@@ -329,7 +324,7 @@ export default function BacktestView({
     return () => {
       cancelled = true;
     };
-  }, [activeOptions, storedPrices, getSyntheticSeries]);
+  }, [activeOptions, storedPrices, resolveFetchConfig, getCachedPrices]);
 
   useEffect(() => {
     if (!storedPrices || !storedPrices.length) return;
