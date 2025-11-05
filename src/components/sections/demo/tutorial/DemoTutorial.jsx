@@ -1,65 +1,28 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useReactFlow } from "@xyflow/react";
+import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { tutorialSteps, TUTORIAL_STORAGE_KEY } from "./tutorialSteps";
 import ExplanationPanel from "./ExplanationPanel";
 import "./tutorial.scss";
 
-export default function DemoTutorial({
-  nodes,
-  isTutorialActive,
-  onTutorialComplete,
-  onTutorialStart,
-}) {
-  const { fitView, getViewport, setViewport } = useReactFlow();
-  const [currentStep, setCurrentStep] = useState(0);
+function DemoTutorialInner({ nodes, onTutorialComplete, onExpandInTrade }) {
+  const { fitView, getViewport } = useReactFlow();
+  const [currentStep, setCurrentStep] = useState(-1); // -1 means not started
   const [targetRect, setTargetRect] = useState(null);
   const overlayRef = useRef(null);
-  const demoSectionRef = useRef(null);
-  const observerRef = useRef(null);
-  const hasCheckedRef = useRef(false);
 
-  // Check if tutorial should be shown when demo section comes into view
+  // Start tutorial when component mounts (if not completed)
   useEffect(() => {
     const hasCompletedTutorial =
       localStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
 
-    if (hasCompletedTutorial || hasCheckedRef.current) return;
-
-    const demoSection = document.getElementById("demo");
-    if (!demoSection) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (
-            entry.isIntersecting &&
-            !hasCheckedRef.current &&
-            !hasCompletedTutorial
-          ) {
-            hasCheckedRef.current = true;
-            onTutorialStart();
-            // Wait a bit for ReactFlow to initialize
-            setTimeout(() => {
-              setCurrentStep(0);
-            }, 500);
-          }
-        });
-      },
-      {
-        threshold: 0.3,
-        rootMargin: "-50px 0px -50px 0px",
-      }
-    );
-
-    observer.observe(demoSection);
-    observerRef.current = observer;
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [onTutorialStart]);
+    if (!hasCompletedTutorial && currentStep === -1) {
+      // Wait a bit for ReactFlow to initialize, then start with step 0
+      const timer = setTimeout(() => {
+        setCurrentStep(0);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
 
   // Calculate bounding box for multiple nodes
   const calculateNodesBounds = useCallback(
@@ -70,8 +33,8 @@ export default function DemoTutorial({
       if (targetNodes.length === 0) return null;
 
       const positions = targetNodes.map((node) => ({
-        x: node.position.x,
-        y: node.position.y,
+        x: node.position?.x || 0,
+        y: node.position?.y || 0,
         width: node.width || 200,
         height: node.height || 100,
       }));
@@ -95,169 +58,279 @@ export default function DemoTutorial({
     [nodes]
   );
 
-  // Get DOM rect for ReactFlow nodes
-  const getNodeDOMRects = useCallback((nodeIds) => {
-    const rects = nodeIds
-      .map((nodeId) => {
-        const element = document.querySelector(`[data-id="${nodeId}"]`);
-        return element ? element.getBoundingClientRect() : null;
-      })
-      .filter((rect) => rect !== null);
+  // Get DOM rect for ReactFlow nodes with padding and title inclusion
+  const getNodeDOMRects = useCallback(
+    (nodeIds, step) => {
+      const padding = 5; // 5px padding as requested
+      const rects = nodeIds
+        .map((nodeId) => {
+          const element = document.querySelector(
+            `[data-id="${nodeId}"]`
+          );
+          return element ? element.getBoundingClientRect() : null;
+        })
+        .filter((rect) => rect !== null);
 
-    if (rects.length === 0) return null;
+      if (rects.length === 0) return null;
 
-    // Calculate combined bounding box
-    const minLeft = Math.min(...rects.map((r) => r.left));
-    const maxRight = Math.max(...rects.map((r) => r.right));
-    const minTop = Math.min(...rects.map((r) => r.top));
-    const maxBottom = Math.max(...rects.map((r) => r.bottom));
+      // Special handling for "In trade" block - include the title and gradient border
+      if (step && step.nodeIds && step.nodeIds.includes("blockNode-1")) {
+        const blockElement = document.querySelector(`[data-id="blockNode-1"]`);
+        if (blockElement) {
+          const blockRect = blockElement.getBoundingClientRect();
+          // Include the header (title) in the bounding box
+          const header = blockElement.querySelector(".node-default-header");
+          if (header) {
+            const headerRect = header.getBoundingClientRect();
+            return {
+              left: Math.min(blockRect.left, headerRect.left) - padding,
+              top: Math.min(blockRect.top, headerRect.top) - padding,
+              right: Math.max(blockRect.right, headerRect.right) + padding,
+              bottom: Math.max(blockRect.bottom, headerRect.bottom) + padding,
+              width: Math.max(blockRect.right, headerRect.right) - Math.min(blockRect.left, headerRect.left) + (padding * 2),
+              height: Math.max(blockRect.bottom, headerRect.bottom) - Math.min(blockRect.top, headerRect.top) + (padding * 2),
+            };
+          }
+          // If no header found, use block rect with padding
+          return {
+            left: blockRect.left - padding,
+            top: blockRect.top - padding,
+            right: blockRect.right + padding,
+            bottom: blockRect.bottom + padding,
+            width: blockRect.width + (padding * 2),
+            height: blockRect.height + (padding * 2),
+          };
+        }
+      }
 
-    return {
-      left: minLeft,
-      top: minTop,
-      right: maxRight,
-      bottom: maxBottom,
-      width: maxRight - minLeft,
-      height: maxBottom - minTop,
-    };
-  }, []);
+      // Calculate combined bounding box for multiple nodes
+      const minLeft = Math.min(...rects.map((r) => r.left));
+      const maxRight = Math.max(...rects.map((r) => r.right));
+      const minTop = Math.min(...rects.map((r) => r.top));
+      const maxBottom = Math.max(...rects.map((r) => r.bottom));
+
+      return {
+        left: minLeft - padding,
+        top: minTop - padding,
+        right: maxRight + padding,
+        bottom: maxBottom + padding,
+        width: maxRight - minLeft + (padding * 2),
+        height: maxBottom - minTop + (padding * 2),
+      };
+    },
+    []
+  );
 
   // Zoom to step targets
   const zoomToStep = useCallback(
     (step) => {
       if (!step) return;
 
-      if (step.type === "graph" && step.nodeIds) {
-        const bounds = calculateNodesBounds(step.nodeIds);
-        if (bounds) {
-          // Zoom to fit multiple nodes with padding
-          const padding = 100;
-          fitView({
-            minZoom: 0.8,
-            maxZoom: 1.0,
-            duration: 800,
-            padding: padding,
-            nodes: step.nodeIds.map((id) => ({ id })),
-          });
+      // Handle expanding in-trade block if needed
+      if (step.expandInTrade && onExpandInTrade) {
+        onExpandInTrade(false); // false means expanded (not collapsed)
+      }
 
-          // Wait for zoom animation, then get DOM rects
-          setTimeout(() => {
-            const rects = getNodeDOMRects(step.nodeIds);
+      if (step.type === "graph" && step.nodeIds) {
+        // Smooth zoom to fit multiple nodes with padding
+        fitView({
+          minZoom: 0.7,
+          maxZoom: 1.0,
+          duration: 600,
+          padding: 100,
+          nodes: step.nodeIds.map((id) => ({ id })),
+        });
+
+        // Get DOM rects with progressive updates during animation
+        // Start immediately and update progressively
+        const startTime = Date.now();
+        const duration = 600; // Match fitView duration
+        
+        const updateRect = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          
+          const rects = getNodeDOMRects(step.nodeIds, step);
+          if (rects) {
             setTargetRect(rects);
-          }, 850);
-        }
-      } else if (step.type === "backtest" && step.selector) {
+          }
+          
+          if (progress < 1) {
+            requestAnimationFrame(updateRect);
+          }
+        };
+        
+        // Start updating immediately and continue until animation completes
+        requestAnimationFrame(updateRect);
+        
+        // Final update after animation completes
+        setTimeout(() => {
+          const rects = getNodeDOMRects(step.nodeIds, step);
+          setTargetRect(rects);
+        }, duration + 50);
+      } else if ((step.type === "parameter" || step.type === "backtest") && step.selector) {
         const element = document.querySelector(step.selector);
         if (element) {
-          // Scroll to backtest section
+          // Smooth scroll to element
           element.scrollIntoView({ behavior: "smooth", block: "center" });
 
-          // Get rect after scroll
-          setTimeout(() => {
+          // For backtest, include the title "Demo Strategy ..."
+          if (step.type === "backtest") {
+            const padding = 5;
+            // Find the backtest container
+            const backtestContainer = element.closest(".backtest") || element;
+            const titleElement = backtestContainer.querySelector("h3");
+            
+            if (titleElement) {
+              const containerRect = backtestContainer.getBoundingClientRect();
+              const titleRect = titleElement.getBoundingClientRect();
+              
+              // Include title in the bounding box
+              const rect = {
+                left: Math.min(containerRect.left, titleRect.left) - padding,
+                top: Math.min(containerRect.top, titleRect.top) - padding,
+                right: Math.max(containerRect.right, titleRect.right) + padding,
+                bottom: Math.max(containerRect.bottom, titleRect.bottom) + padding,
+                width: Math.max(containerRect.right, titleRect.right) - Math.min(containerRect.left, titleRect.left) + (padding * 2),
+                height: Math.max(containerRect.bottom, titleRect.bottom) - Math.min(containerRect.top, titleRect.top) + (padding * 2),
+              };
+              
+              // Progressive updates during scroll
+              const startTime = Date.now();
+              const duration = 500;
+              
+              const updateRect = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                
+                // Recalculate during scroll
+                const currentContainerRect = backtestContainer.getBoundingClientRect();
+                const currentTitleRect = titleElement.getBoundingClientRect();
+                
+                const currentRect = {
+                  left: Math.min(currentContainerRect.left, currentTitleRect.left) - padding,
+                  top: Math.min(currentContainerRect.top, currentTitleRect.top) - padding,
+                  right: Math.max(currentContainerRect.right, currentTitleRect.right) + padding,
+                  bottom: Math.max(currentContainerRect.bottom, currentTitleRect.bottom) + padding,
+                  width: Math.max(currentContainerRect.right, currentTitleRect.right) - Math.min(currentContainerRect.left, currentTitleRect.left) + (padding * 2),
+                  height: Math.max(currentContainerRect.bottom, currentTitleRect.bottom) - Math.min(currentContainerRect.top, currentTitleRect.top) + (padding * 2),
+                };
+                
+                setTargetRect(currentRect);
+                
+                if (progress < 1) {
+                  requestAnimationFrame(updateRect);
+                }
+              };
+              
+              requestAnimationFrame(updateRect);
+              
+              // Final update
+              setTimeout(() => {
+                const finalContainerRect = backtestContainer.getBoundingClientRect();
+                const finalTitleRect = titleElement.getBoundingClientRect();
+                setTargetRect({
+                  left: Math.min(finalContainerRect.left, finalTitleRect.left) - padding,
+                  top: Math.min(finalContainerRect.top, finalTitleRect.top) - padding,
+                  right: Math.max(finalContainerRect.right, finalTitleRect.right) + padding,
+                  bottom: Math.max(finalContainerRect.bottom, finalTitleRect.bottom) + padding,
+                  width: Math.max(finalContainerRect.right, finalTitleRect.right) - Math.min(finalContainerRect.left, finalTitleRect.left) + (padding * 2),
+                  height: Math.max(finalContainerRect.bottom, finalTitleRect.bottom) - Math.min(finalContainerRect.top, finalTitleRect.top) + (padding * 2),
+                });
+              }, duration + 50);
+            } else {
+              // Fallback if no title found
+              const rect = element.getBoundingClientRect();
+              setTargetRect({
+                left: rect.left - 5,
+                top: rect.top - 5,
+                right: rect.right + 5,
+                bottom: rect.bottom + 5,
+                width: rect.width + 10,
+                height: rect.height + 10,
+              });
+            }
+          } else {
+            // For parameter block, just add padding
+            const padding = 5;
             const rect = element.getBoundingClientRect();
-            setTargetRect(rect);
-          }, 600);
+            setTargetRect({
+              left: rect.left - padding,
+              top: rect.top - padding,
+              right: rect.right + padding,
+              bottom: rect.bottom + padding,
+              width: rect.width + (padding * 2),
+              height: rect.height + (padding * 2),
+            });
+          }
         }
       }
     },
-    [fitView, calculateNodesBounds, getNodeDOMRects]
+    [fitView, getNodeDOMRects, onExpandInTrade]
   );
 
   // Handle step changes
   useEffect(() => {
     if (currentStep >= 0 && currentStep < tutorialSteps.length) {
       const step = tutorialSteps[currentStep];
-      zoomToStep(step);
-
+      
       // Update demo section class based on step type
       const demoSection = document.getElementById("demo");
       if (demoSection) {
         if (step.type === "backtest") {
           demoSection.classList.add("tutorial-backtest-active");
           demoSection.classList.remove("tutorial-active");
+        } else if (step.type === "parameter") {
+          demoSection.classList.add("tutorial-parameter-active");
+          demoSection.classList.remove("tutorial-active", "tutorial-backtest-active");
         } else {
           demoSection.classList.add("tutorial-active");
-          demoSection.classList.remove("tutorial-backtest-active");
+          demoSection.classList.remove("tutorial-backtest-active", "tutorial-parameter-active");
         }
       }
 
+      zoomToStep(step);
+
       // Mark nodes as highlighted
-      nodes.forEach((node) => {
-        const element = document.querySelector(`[data-id="${node.id}"]`);
-        if (element) {
-          if (step.type === "graph" && step.nodeIds?.includes(node.id)) {
-            element.setAttribute("data-highlight", "true");
-          } else {
-            element.removeAttribute("data-highlight");
+      if (step.type === "graph" && step.nodeIds) {
+        nodes.forEach((node) => {
+          const element = document.querySelector(`[data-id="${node.id}"]`);
+          if (element) {
+            if (step.nodeIds.includes(node.id)) {
+              element.setAttribute("data-highlight", "true");
+            } else {
+              element.removeAttribute("data-highlight");
+            }
           }
-        }
-      });
+        });
+      }
     }
 
     return () => {
-      // Cleanup on unmount or step change
+      // Cleanup on step change
       const demoSection = document.getElementById("demo");
       if (demoSection) {
-        demoSection.classList.remove("tutorial-backtest-active");
+        demoSection.classList.remove("tutorial-backtest-active", "tutorial-parameter-active", "tutorial-active");
       }
     };
   }, [currentStep, zoomToStep, nodes]);
 
-  // Update highlight overlays position continuously
+  // Update single highlight overlay position (calculates bounding box for all elements)
   useEffect(() => {
-    if (!overlayRef.current || currentStep < 0) return;
+    if (!overlayRef.current || currentStep < 0 || !targetRect) return;
 
-    const updatePositions = () => {
-      const overlay = overlayRef.current;
-      if (!overlay) return;
+    const overlay = overlayRef.current;
+    const highlight = overlay.querySelector(".tutorial-highlight");
+    if (!highlight) return;
 
-      const highlights = overlay.querySelectorAll(".tutorial-highlight");
-
-      highlights.forEach((highlight) => {
-        const nodeId = highlight.getAttribute("data-node-id");
-        if (nodeId) {
-          const element = document.querySelector(`[data-id="${nodeId}"]`);
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            highlight.style.left = `${rect.left - 4}px`;
-            highlight.style.top = `${rect.top - 4}px`;
-            highlight.style.width = `${rect.width + 8}px`;
-            highlight.style.height = `${rect.height + 8}px`;
-            highlight.style.display = "block";
-          } else {
-            highlight.style.display = "none";
-          }
-        } else if (
-          highlight.classList.contains("tutorial-highlight-backtest")
-        ) {
-          const element = document.querySelector(".backtest");
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            highlight.style.left = `${rect.left - 4}px`;
-            highlight.style.top = `${rect.top - 4}px`;
-            highlight.style.width = `${rect.width + 8}px`;
-            highlight.style.height = `${rect.height + 8}px`;
-            highlight.style.display = "block";
-          } else {
-            highlight.style.display = "none";
-          }
-        }
-      });
-    };
-
-    updatePositions();
-
-    // Update on scroll and resize
-    const interval = setInterval(updatePositions, 100);
-    window.addEventListener("scroll", updatePositions, true);
-    window.addEventListener("resize", updatePositions);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("scroll", updatePositions, true);
-      window.removeEventListener("resize", updatePositions);
-    };
-  }, [currentStep]);
+    // Use the targetRect which already contains the bounding box with padding
+    // No additional padding needed since it's already included in targetRect
+    highlight.style.left = `${targetRect.left}px`;
+    highlight.style.top = `${targetRect.top}px`;
+    highlight.style.width = `${targetRect.width}px`;
+    highlight.style.height = `${targetRect.height}px`;
+    highlight.style.display = "block";
+  }, [currentStep, targetRect]);
 
   // Update target rect on window resize
   useEffect(() => {
@@ -265,12 +338,48 @@ export default function DemoTutorial({
       if (currentStep >= 0 && currentStep < tutorialSteps.length) {
         const step = tutorialSteps[currentStep];
         if (step.type === "graph" && step.nodeIds) {
-          const rects = getNodeDOMRects(step.nodeIds);
+          const rects = getNodeDOMRects(step.nodeIds, step);
           setTargetRect(rects);
-        } else if (step.type === "backtest" && step.selector) {
+        } else if (step.selector) {
           const element = document.querySelector(step.selector);
           if (element) {
-            setTargetRect(element.getBoundingClientRect());
+            const padding = 5;
+            if (step.type === "backtest") {
+              const backtestContainer = element.closest(".backtest") || element;
+              const titleElement = backtestContainer.querySelector("h3");
+              if (titleElement) {
+                const containerRect = backtestContainer.getBoundingClientRect();
+                const titleRect = titleElement.getBoundingClientRect();
+                setTargetRect({
+                  left: Math.min(containerRect.left, titleRect.left) - padding,
+                  top: Math.min(containerRect.top, titleRect.top) - padding,
+                  right: Math.max(containerRect.right, titleRect.right) + padding,
+                  bottom: Math.max(containerRect.bottom, titleRect.bottom) + padding,
+                  width: Math.max(containerRect.right, titleRect.right) - Math.min(containerRect.left, titleRect.left) + (padding * 2),
+                  height: Math.max(containerRect.bottom, titleRect.bottom) - Math.min(containerRect.top, titleRect.top) + (padding * 2),
+                });
+              } else {
+                const rect = element.getBoundingClientRect();
+                setTargetRect({
+                  left: rect.left - padding,
+                  top: rect.top - padding,
+                  right: rect.right + padding,
+                  bottom: rect.bottom + padding,
+                  width: rect.width + (padding * 2),
+                  height: rect.height + (padding * 2),
+                });
+              }
+            } else {
+              const rect = element.getBoundingClientRect();
+              setTargetRect({
+                left: rect.left - padding,
+                top: rect.top - padding,
+                right: rect.right + padding,
+                bottom: rect.bottom + padding,
+                width: rect.width + (padding * 2),
+                height: rect.height + (padding * 2),
+              });
+            }
           }
         }
       }
@@ -284,6 +393,7 @@ export default function DemoTutorial({
   const handleNext = useCallback(() => {
     if (currentStep < tutorialSteps.length - 1) {
       setCurrentStep(currentStep + 1);
+      setTargetRect(null); // Clear target rect for smooth transition
     } else {
       // Tutorial complete
       localStorage.setItem(TUTORIAL_STORAGE_KEY, "true");
@@ -303,25 +413,14 @@ export default function DemoTutorial({
       ? tutorialSteps[currentStep]
       : null;
 
-  if (!isTutorialActive || !currentStepData) return null;
+  if (currentStep < 0 || !currentStepData) return null;
 
   return (
     <>
-      {/* Dimming overlay */}
+      {/* Dimming overlay with single highlight box */}
       <div ref={overlayRef} className="tutorial-overlay">
-        {/* Highlight holes for active elements */}
-        {currentStepData.type === "graph" &&
-          currentStepData.nodeIds &&
-          currentStepData.nodeIds.map((nodeId) => (
-            <div
-              key={nodeId}
-              className="tutorial-highlight"
-              data-node-id={nodeId}
-            />
-          ))}
-        {currentStepData.type === "backtest" && (
-          <div className="tutorial-highlight tutorial-highlight-backtest" />
-        )}
+        {/* Single highlight box that contains all highlighted elements */}
+        <div className="tutorial-highlight" />
       </div>
 
       {/* Explanation panel */}
@@ -338,5 +437,33 @@ export default function DemoTutorial({
         />
       )}
     </>
+  );
+}
+
+export default function DemoTutorial({ nodes, onTutorialComplete, onExpandInTrade }) {
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const hasCompletedTutorial =
+      localStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
+
+    if (!hasCompletedTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  if (!showTutorial) return null;
+
+  return (
+    <ReactFlowProvider>
+      <DemoTutorialInner
+        nodes={nodes}
+        onTutorialComplete={() => {
+          setShowTutorial(false);
+          onTutorialComplete();
+        }}
+        onExpandInTrade={onExpandInTrade}
+      />
+    </ReactFlowProvider>
   );
 }

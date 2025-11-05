@@ -28,19 +28,23 @@ export default function ExplanationPanel({
     let top = 0;
     let left = 0;
 
-    // Calculate position based on preferred position relative to target
-    if (position === "bottom") {
-      top = targetRect.bottom + padding;
-      left = targetRect.left + targetRect.width / 2 - panelWidth / 2;
-    } else if (position === "top") {
-      top = targetRect.top - panelHeight - padding;
-      left = targetRect.left + targetRect.width / 2 - panelWidth / 2;
-    } else if (position === "right") {
+    // Calculate position - always place on the side (right) to avoid overlaying
+    // Check if there's space on the right, otherwise use left
+    const spaceOnRight = viewportWidth - targetRect.right - padding;
+    const spaceOnLeft = targetRect.left - padding;
+
+    if (spaceOnRight >= panelWidth + 20) {
+      // Place on the right side
       top = targetRect.top + targetRect.height / 2 - panelHeight / 2;
       left = targetRect.right + padding;
-    } else if (position === "left") {
+    } else if (spaceOnLeft >= panelWidth + 20) {
+      // Place on the left side
       top = targetRect.top + targetRect.height / 2 - panelHeight / 2;
       left = targetRect.left - panelWidth - padding;
+    } else {
+      // Fallback: place below if no side space
+      top = targetRect.bottom + padding;
+      left = targetRect.left + targetRect.width / 2 - panelWidth / 2;
     }
 
     // Adjust to keep panel within viewport
@@ -87,17 +91,11 @@ export default function ExplanationPanel({
       </div>
       <div className="explanation-panel-footer">
         {onSkip && (
-          <button
-            className="explanation-btn explanation-btn-secondary"
-            onClick={onSkip}
-          >
+          <button className="explanation-btn explanation-btn-secondary" onClick={onSkip}>
             Skip Tutorial
           </button>
         )}
-        <button
-          className="explanation-btn explanation-btn-primary"
-          onClick={onNext}
-        >
+        <button className="explanation-btn explanation-btn-primary" onClick={onNext}>
           {step < totalSteps ? "Next" : "Got It"}
         </button>
       </div>
