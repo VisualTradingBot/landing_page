@@ -286,8 +286,7 @@
         display: flex;
         gap: 12px;
 
-        .add-parameter-btn,
-        .add-custom-parameter-btn {
+        .add-parameter-btn {
           background: #ffffff;
           color: #000000;
           border: 2px solid #000000;
@@ -305,16 +304,6 @@
           &:hover {
             background: #000000;
             color: #ffffff;
-          }
-        }
-
-        .add-custom-parameter-btn {
-          background: #000000;
-          color: #ffffff;
-
-          &:hover {
-            background: #ffffff;
-            color: #000000;
           }
         }
       }
@@ -425,6 +414,15 @@
             flex: 1;
             font-size: 12px;
             font-weight: 800;
+          }
+
+          .group-subtitle {
+            margin-left: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.8);
           }
 
           .group-count {
@@ -642,6 +640,57 @@
 
           &:hover {
             color: #666666;
+          }
+
+          .parameter-group-control {
+            display: flex;
+            align-items: center;
+          }
+
+          .parameter-group-chip {
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+          }
+
+          .parameter-group-chip:hover {
+            background: #000000;
+            color: #ffffff;
+          }
+
+          .parameter-group-chip.disabled {
+            cursor: default;
+            background: #f3f4f6;
+            color: #4b5563;
+            border-color: #d1d5db;
+            opacity: 0.7;
+            pointer-events: none;
+          }
+
+          .parameter-group-input {
+            border: 1px solid #000000;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 11px;
+            min-width: 120px;
+            background: #ffffff;
+            color: #000000;
+
+            &:focus {
+              outline: none;
+              border-color: #000000;
+              box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+            }
           }
 
           .parameter-value-readonly {
@@ -1125,6 +1174,74 @@
           }
         }
       }
+    }
+  }
+
+  .parameter-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+
+    .form-field {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 8px !important;
+    }
+
+    label,
+    .form-label {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.6px !important;
+      color: #000000 !important;
+      margin: 0 !important;
+    }
+
+    input[type="text"] {
+      width: 100% !important;
+      border: 2px solid #000000 !important;
+      border-radius: 2px !important;
+      padding: 10px 12px !important;
+      font-size: 13px !important;
+      font-family: inherit !important;
+      font-weight: 500 !important;
+
+      &:focus {
+        outline: none !important;
+        background: #f8f8f8 !important;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08) !important;
+      }
+    }
+
+    .radio-group {
+      display: flex !important;
+      gap: 16px !important;
+      flex-wrap: wrap !important;
+    }
+
+    .radio-option {
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+    }
+
+    .form-hint {
+      margin: 0 !important;
+      font-size: 12px !important;
+      color: #666666 !important;
+      line-height: 1.4 !important;
+    }
+
+    .form-error {
+      margin: 0 !important;
+      font-size: 12px !important;
+      color: #b91c1c !important;
+      font-weight: 700 !important;
     }
   }
 

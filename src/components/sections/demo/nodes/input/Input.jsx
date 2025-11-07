@@ -1,12 +1,13 @@
 import "./input.scss";
 import NodeDefault from "../nodeDefault";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
 import PropTypes from "prop-types";
 import {
   DEFAULT_ASSET,
   DEFAULT_DATA_RESOLUTION,
   DEFAULT_INTERVAL_BY_RESOLUTION,
+  DEFAULT_FEE_PERCENT,
 } from "../../defaults.js";
 import { useAsset } from "../../AssetContext";
 
@@ -27,6 +28,27 @@ export default function Input({ id, data }) {
   const initialResolution = data?.resolution || DEFAULT_DATA_RESOLUTION;
   const [resolution, setResolution] = useState(initialResolution);
   const boundsForInitial = RESOLUTION_LIMITS[initialResolution];
+  const {
+    setSelectedAsset,
+    setDataResolution,
+    setHistoryWindow: setHistoryWindowCtx,
+    setFeePercent: setFeePercentCtx,
+    feePercent: contextFeePercent,
+  } = useAsset();
+  const skipContextSyncRef = useRef(false);
+
+  const deriveInitialFeePercent = () => {
+    const raw =
+      data?.feePercent ??
+      data?.feePercentage ??
+      contextFeePercent ??
+      DEFAULT_FEE_PERCENT;
+    return String(raw);
+  };
+
+  const [feePercentInput, setFeePercentInput] = useState(
+    deriveInitialFeePercent
+  );
   const defaultInterval =
     data?.interval && Number.isFinite(Number(data.interval))
       ? clampInterval(Number(data.interval), boundsForInitial)
@@ -36,12 +58,6 @@ export default function Input({ id, data }) {
   const [historyWindow, setHistoryWindowValue] = useState(
     String(defaultInterval)
   );
-
-  const {
-    setSelectedAsset,
-    setDataResolution,
-    setHistoryWindow: setHistoryWindowCtx,
-  } = useAsset();
 
   const intervalBounds = useMemo(
     () =>
@@ -58,11 +74,15 @@ export default function Input({ id, data }) {
         ? clampInterval(numericInterval, intervalBounds)
         : intervalBounds.min;
 
+    const numericFee = Number(feePercentInput);
     updateNodeData(id, {
       asset,
       type,
       resolution,
       interval: intervalValue,
+      feePercent: Number.isFinite(numericFee)
+        ? numericFee
+        : DEFAULT_FEE_PERCENT,
     });
   }, [
     asset,
@@ -70,6 +90,7 @@ export default function Input({ id, data }) {
     resolution,
     historyWindow,
     intervalBounds,
+    feePercentInput,
     id,
     updateNodeData,
   ]);
@@ -83,6 +104,37 @@ export default function Input({ id, data }) {
     const incomingResolution = data?.resolution;
     setResolution(incomingResolution);
   }, [data?.resolution, resolution]);
+
+  useEffect(() => {
+    let nextFee = null;
+    if (data?.feePercent != null) {
+      nextFee = data.feePercent;
+    } else if (data?.feePercentage != null) {
+      nextFee = data.feePercentage;
+    }
+
+    if (nextFee == null) return;
+
+    const nextString = String(nextFee);
+    setFeePercentInput((prev) => (prev === nextString ? prev : nextString));
+
+    const numeric = Number(nextFee);
+    if (Number.isFinite(numeric)) {
+      skipContextSyncRef.current = true;
+      setFeePercentCtx((prev) => (prev === numeric ? prev : numeric));
+    }
+  }, [data?.feePercent, data?.feePercentage, setFeePercentCtx]);
+
+  useEffect(() => {
+    if (contextFeePercent == null) return;
+    if (skipContextSyncRef.current) {
+      skipContextSyncRef.current = false;
+      return;
+    }
+
+    const next = String(contextFeePercent);
+    setFeePercentInput((prev) => (prev === next ? prev : next));
+  }, [contextFeePercent]);
 
   useEffect(() => {
     if (asset) {
@@ -136,6 +188,17 @@ export default function Input({ id, data }) {
     }
     const clamped = clampInterval(numeric, intervalBounds);
     setHistoryWindowValue(String(clamped));
+  };
+
+  const handleFeePercentChange = (value) => {
+    const cleaned = value.replace(/[^0-9.-]/g, "");
+    setFeePercentInput(cleaned);
+    const numeric = Number(cleaned);
+    if (Number.isFinite(numeric)) {
+      skipContextSyncRef.current = true;
+      setFeePercentCtx(numeric);
+      updateNodeData(id, { feePercent: numeric });
+    }
   };
 
   return (
@@ -211,6 +274,22 @@ export default function Input({ id, data }) {
               Real-Time
             </option>
           </select>
+        </div>
+
+        <div className="field-row">
+          <label className="field-label">Fee percentage:</label>
+          <div className="field-history">
+            <input
+              type="text"
+              className="field-input"
+              value={feePercentInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                handleFeePercentChange(value);
+              }}
+            />
+            <span className="field-suffix">%</span>
+          </div>
         </div>
       </div>
     </NodeDefault>

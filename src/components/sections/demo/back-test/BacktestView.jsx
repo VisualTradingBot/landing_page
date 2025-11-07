@@ -44,21 +44,6 @@ const COINGECKO_HEADERS = {
   "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w",
 };
 
-function HistogramTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-
-  const dataPoint = payload[0]?.payload;
-  if (!dataPoint) return null;
-
-  return (
-    <div className="backtest-tooltip">
-      <p className="tooltip-label">Return Range</p>
-      <p className="tooltip-value">{dataPoint.range}</p>
-      <p className="tooltip-value">Trades: {dataPoint.count}</p>
-    </div>
-  );
-}
-
 function buildPriceKey(opts) {
   if (!opts) return null;
   const assetKey = opts.asset ?? "bitcoin";
@@ -131,7 +116,7 @@ export default function BacktestView({
       : asset.toUpperCase();
   const dataResolution = activeOptions?.dataResolution ?? "1d";
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
-  const lookback = activeOptions?.lookback;
+  const lookback = activeOptions?.lookback ?? 30;
   const feePercent = activeOptions?.feePercent ?? 0.05;
 
   const xAxisUnitLabel = useMemo(() => {
@@ -489,6 +474,7 @@ export default function BacktestView({
     lookback != null && !Number.isNaN(Number(lookback))
       ? Number(lookback)
       : undefined;
+
   const effectiveLookback = Math.min(numericLookback ?? maxWindow, maxWindow);
 
   // Calculate indicator for visualization only if connected
