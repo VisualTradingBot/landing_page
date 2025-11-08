@@ -106,6 +106,7 @@ export default function Navbar({ onOpenModal }) {
           <a href="#build" onClick={(e) => { e.preventDefault(); trackClick('desktop-nav-build'); scrollToSection('build'); }}>BUILD</a>
           <a href="#test" onClick={(e) => { e.preventDefault(); trackClick('desktop-nav-test'); scrollToSection('test'); }}>TEST</a>
           <a href="#trade" onClick={(e) => { e.preventDefault(); trackClick('desktop-nav-trade'); scrollToSection('trade'); }}>TRADE</a>
+          <a href="#demo" onClick={(e) => { e.preventDefault(); trackClick('desktop-nav-demo'); scrollToSection('demo'); }}>DEMO</a>
           <a href="#faq" onClick={(e) => { e.preventDefault(); trackClick('desktop-nav-faq'); scrollToSection('faq'); }}>FAQ</a>
           <a href="#contact" onClick={handleContactClick}>CONTACT US</a>
         </nav>
@@ -116,6 +117,7 @@ export default function Navbar({ onOpenModal }) {
           {/* Navigation links - only show on screens < 1024px */}
           <div className="mobile-nav-links">
             <a href="#build" onClick={(e) => { e.preventDefault(); trackClick('mobile-nav-build'); scrollToSection('build'); closeMobileMenu(); }}>BUILD</a>
+            <a href="#demo" onClick={(e) => { e.preventDefault(); trackClick('mobile-nav-demo'); scrollToSection('demo'); closeMobileMenu(); }}>DEMO</a>
             <a href="#test" onClick={(e) => { e.preventDefault(); trackClick('mobile-nav-test'); scrollToSection('test'); closeMobileMenu(); }}>TEST</a>
             <a href="#trade" onClick={(e) => { e.preventDefault(); trackClick('mobile-nav-trade'); scrollToSection('trade'); closeMobileMenu(); }}>TRADE</a>
             <a href="#faq" onClick={(e) => { e.preventDefault(); trackClick('mobile-nav-faq'); scrollToSection('faq'); closeMobileMenu(); }}>FAQ</a>

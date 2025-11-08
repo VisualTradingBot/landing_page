@@ -44,21 +44,6 @@ const COINGECKO_HEADERS = {
   "x-cg-demo-api-key": "CG-QimdPsyLSKFzBLJHXU2TtZ4w",
 };
 
-function HistogramTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-
-  const dataPoint = payload[0]?.payload;
-  if (!dataPoint) return null;
-
-  return (
-    <div className="backtest-tooltip">
-      <p className="tooltip-label">Return Range</p>
-      <p className="tooltip-value">{dataPoint.range}</p>
-      <p className="tooltip-value">Trades: {dataPoint.count}</p>
-    </div>
-  );
-}
-
 function buildPriceKey(opts) {
   if (!opts) return null;
   const assetKey = opts.asset ?? "bitcoin";
@@ -68,7 +53,8 @@ function buildPriceKey(opts) {
 
 export default function BacktestView({
   options,
-  externalControl: _externalControl = false,
+  onRegisterRunHandler,
+  onRunStateChange,
 }) {
   // === State for backtest and chart animation ===
   const [stats, setStats] = useState(null); // Backtest statistics and equity series
@@ -88,6 +74,7 @@ export default function BacktestView({
   const [activeOptions, setActiveOptions] = useState(options);
   const optionsInitializedRef = useRef(false);
   const pendingRunRef = useRef(null);
+  const animationRequestedRef = useRef(false);
 
   const cryptoFormatter = useMemo(
     () =>
@@ -131,7 +118,7 @@ export default function BacktestView({
       : asset.toUpperCase();
   const dataResolution = activeOptions?.dataResolution ?? "1d";
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
-  const lookback = activeOptions?.lookback;
+  const lookback = activeOptions?.lookback ?? 30;
   const feePercent = activeOptions?.feePercent ?? 0.05;
 
   const xAxisUnitLabel = useMemo(() => {
@@ -202,15 +189,16 @@ export default function BacktestView({
     setVisiblePricePoints(0);
     setVisibleEquityPoints(0);
     setWorkerNotice(null);
+    animationRequestedRef.current = true;
     runInProgressRef.current = true;
 
-    workerRef.current.postMessage({
-      nodes: runOptions.nodes,
-      edges: runOptions.edges,
-      parameters: runOptions.parameters,
-      prices: priceSeries,
-      feePercent: feeForRun,
-    });
+      workerRef.current.postMessage({
+        nodes: runOptions.nodes,
+        edges: runOptions.edges,
+        parameters: runOptions.parameters,
+        prices: priceSeries,
+        feePercent: feeForRun,
+      });
   }, []);
 
   const resolveFetchConfig = useCallback((resolution, requestedWindow) => {
@@ -282,17 +270,43 @@ export default function BacktestView({
     [fetchCoinGeckoPrices]
   );
 
+  const resolveWindowSpec = useCallback(
+    (opts) => {
+      if (!opts) {
+        return null;
+      }
+      const baseKey = buildPriceKey(opts);
+      const resolution = opts.dataResolution ?? "1d";
+      const rawWindow = Number(opts.historyWindow);
+      const { windowSize } = resolveFetchConfig(resolution, rawWindow);
+      const normalizedWindow = Math.max(1, Math.round(windowSize));
+
+      return {
+        baseKey,
+        windowKey: `${baseKey}|${normalizedWindow}`,
+        windowSize,
+        normalizedWindow,
+        asset: opts.asset ?? "bitcoin",
+        resolution,
+      };
+    },
+    [resolveFetchConfig]
+  );
+
   // === Fetch price data (CoinGecko with caching) ===
   useEffect(() => {
     if (!activeOptions) return;
 
-    const fetchKey = buildPriceKey(activeOptions);
-    const targetAsset = activeOptions.asset ?? "bitcoin";
-    const resolution = activeOptions.dataResolution ?? "1d";
-    const rawWindow = Number(activeOptions.historyWindow);
-    const { windowSize } = resolveFetchConfig(resolution, rawWindow);
+    const spec = resolveWindowSpec(activeOptions);
+    if (!spec) return;
 
-    if (priceKeyRef.current === fetchKey && storedPrices?.length) {
+    const { windowKey, windowSize, normalizedWindow, asset: targetAsset, resolution } =
+      spec;
+
+    if (
+      priceKeyRef.current === windowKey &&
+      storedPrices?.length === normalizedWindow
+    ) {
       return;
     }
 
@@ -300,16 +314,10 @@ export default function BacktestView({
 
     async function ensurePrices() {
       try {
-        const series = await getCachedPrices(
-          targetAsset,
-          resolution,
-          windowSize
-        );
+        const series = await getCachedPrices(targetAsset, resolution, windowSize);
         if (cancelled) return;
-        priceKeyRef.current = fetchKey;
-        const limited = series.slice(
-          -Math.min(series.length, Math.max(1, Math.round(windowSize)))
-        );
+        priceKeyRef.current = windowKey;
+        const limited = series.slice(-Math.min(series.length, normalizedWindow));
         setStoredPrices(limited);
       } catch (error) {
         if (!cancelled) {
@@ -324,28 +332,37 @@ export default function BacktestView({
     return () => {
       cancelled = true;
     };
-  }, [activeOptions, storedPrices, resolveFetchConfig, getCachedPrices]);
+  }, [activeOptions, storedPrices, resolveWindowSpec, getCachedPrices]);
 
   useEffect(() => {
     if (!storedPrices || !storedPrices.length) return;
     if (!pendingRunRef.current) return;
 
     const runOptions = pendingRunRef.current;
-    const expectedKey = buildPriceKey(runOptions);
-    if (priceKeyRef.current !== expectedKey) {
+    const runSpec = resolveWindowSpec(runOptions);
+    if (!runSpec) {
+      return;
+    }
+    if (priceKeyRef.current !== runSpec.windowKey) {
       return;
     }
 
     pendingRunRef.current = null;
     runSimulationWithOptions(runOptions, storedPrices);
-  }, [storedPrices, runSimulationWithOptions]);
+  }, [storedPrices, runSimulationWithOptions, resolveWindowSpec]);
 
   // Ensure we display the price/indicator plot once prices load even before a backtest run
   useEffect(() => {
-    if (storedPrices && storedPrices.length > 0 && visiblePricePoints === 0) {
-      // show full series by default so indicator curves are visible
-      setVisiblePricePoints(storedPrices.length);
+    if (
+      animationRequestedRef.current ||
+      !storedPrices ||
+      !storedPrices.length ||
+      visiblePricePoints !== 0
+    ) {
+      return;
     }
+    // show full series by default so indicator curves are visible when no animation is pending
+    setVisiblePricePoints(storedPrices.length);
   }, [storedPrices, visiblePricePoints]);
 
   // === Setup Web Worker ===
@@ -377,9 +394,19 @@ export default function BacktestView({
         startTransition(() => {
           setStats(data);
           setIsLoading(false);
+          if (typeof onRunStateChange === "function") {
+            onRunStateChange({
+              isLoading: false,
+              progress: 1,
+              hasStats: true,
+              hasPrices: Boolean(storedPrices && storedPrices.length > 0),
+              completed: true,
+            });
+          }
         });
       } else if (status === "error") {
         runInProgressRef.current = false;
+        animationRequestedRef.current = false;
         // Non-fatal: show notice but don't unmount the UI
         setWorkerNotice({ type: "error", messages: [data] });
         setIsLoading(false); // Stop loading
@@ -406,11 +433,13 @@ export default function BacktestView({
     const nextOptions = options;
     if (!nextOptions) return;
 
-    const nextKey = buildPriceKey(nextOptions);
+    const nextSpec = resolveWindowSpec(nextOptions);
+    const nextKey = nextSpec?.windowKey;
     const hasPricesForRun =
       storedPrices &&
       storedPrices.length > 0 &&
-      priceKeyRef.current === nextKey;
+      priceKeyRef.current === nextKey &&
+      storedPrices.length === (nextSpec?.normalizedWindow ?? storedPrices.length);
 
     pendingRunRef.current = nextOptions;
     setActiveOptions(nextOptions);
@@ -424,16 +453,56 @@ export default function BacktestView({
       setVisiblePricePoints(0);
       setVisibleEquityPoints(0);
       setWorkerNotice(null);
+      animationRequestedRef.current = true;
     }
-  }, [options, storedPrices, runSimulationWithOptions]);
+  }, [options, storedPrices, runSimulationWithOptions, resolveWindowSpec]);
+
+  useEffect(() => {
+    if (typeof onRegisterRunHandler === "function") {
+      onRegisterRunHandler(handleRunBacktest);
+      return () => onRegisterRunHandler(null);
+    }
+    return undefined;
+  }, [handleRunBacktest, onRegisterRunHandler]);
+
+  useEffect(() => {
+    if (typeof onRunStateChange === "function") {
+      onRunStateChange({
+        isLoading,
+        progress,
+        hasStats: Boolean(stats),
+        hasPrices: Boolean(storedPrices && storedPrices.length > 0),
+      });
+    }
+  }, [isLoading, progress, stats, storedPrices, onRunStateChange]);
 
   // === Animate chart reveal for price and equity ===
   useEffect(() => {
-    if (!stats || !storedPrices) return;
+    if (
+      !animationRequestedRef.current ||
+      !stats ||
+      !storedPrices ||
+      !stats.equitySeries
+    ) {
+      return;
+    }
 
+    const totalPricePoints = storedPrices.length;
+    const totalEquityPoints = stats.equitySeries.length;
     const ANIMATION_DURATION = 1200;
 
-    // Animate price chart
+    let priceFrameId = null;
+    let equityFrameId = null;
+    let equityTimeoutId = null;
+    let priceComplete = false;
+    let equityComplete = false;
+
+    const finishIfDone = () => {
+      if (priceComplete && equityComplete) {
+        animationRequestedRef.current = false;
+      }
+    };
+
     const animatePrice = (timestamp) => {
       if (!priceAnimationRef.current) {
         priceAnimationRef.current = timestamp;
@@ -441,16 +510,19 @@ export default function BacktestView({
 
       const elapsed = timestamp - priceAnimationRef.current;
       const progress = Math.min(1, elapsed / ANIMATION_DURATION);
-      const nextCount = Math.round(progress * storedPrices.length);
+      const nextCount = Math.round(progress * totalPricePoints);
 
       setVisiblePricePoints(nextCount);
 
       if (progress < 1) {
-        requestAnimationFrame(animatePrice);
+        priceFrameId = requestAnimationFrame(animatePrice);
+      } else {
+        priceComplete = true;
+        setVisiblePricePoints(totalPricePoints);
+        finishIfDone();
       }
     };
 
-    // Animate equity chart with slight delay
     const animateEquity = (timestamp) => {
       if (!equityAnimationRef.current) {
         equityAnimationRef.current = timestamp;
@@ -458,12 +530,16 @@ export default function BacktestView({
 
       const elapsed = timestamp - equityAnimationRef.current;
       const progress = Math.min(1, elapsed / ANIMATION_DURATION);
-      const nextCount = Math.round(progress * stats.equitySeries.length);
+      const nextCount = Math.round(progress * totalEquityPoints);
 
       setVisibleEquityPoints(nextCount);
 
       if (progress < 1) {
-        requestAnimationFrame(animateEquity);
+        equityFrameId = requestAnimationFrame(animateEquity);
+      } else {
+        equityComplete = true;
+        setVisibleEquityPoints(totalEquityPoints);
+        finishIfDone();
       }
     };
 
@@ -471,9 +547,19 @@ export default function BacktestView({
     priceAnimationRef.current = null;
     equityAnimationRef.current = null;
 
-    // Start animations
-    requestAnimationFrame(animatePrice);
-    setTimeout(() => requestAnimationFrame(animateEquity), 200);
+    priceFrameId = requestAnimationFrame(animatePrice);
+    equityTimeoutId = setTimeout(
+      () => {
+        equityFrameId = requestAnimationFrame(animateEquity);
+      },
+      200
+    );
+
+    return () => {
+      if (priceFrameId) cancelAnimationFrame(priceFrameId);
+      if (equityFrameId) cancelAnimationFrame(equityFrameId);
+      if (equityTimeoutId) clearTimeout(equityTimeoutId);
+    };
   }, [stats, storedPrices]);
 
   // Memoize trades array to prevent unnecessary re-renders
@@ -489,6 +575,7 @@ export default function BacktestView({
     lookback != null && !Number.isNaN(Number(lookback))
       ? Number(lookback)
       : undefined;
+
   const effectiveLookback = Math.min(numericLookback ?? maxWindow, maxWindow);
 
   // Calculate indicator for visualization only if connected
@@ -768,13 +855,8 @@ export default function BacktestView({
   // If we have prices but no stats yet and we're not loading, allow manual run
   if (!stats && !isLoading) {
     return (
-      <div className="backtest-unavailable">
-        <button
-          className="backtest-run-button initial-run"
-          onClick={handleRunBacktest}
-        >
-          ▶️ Run Backtest
-        </button>
+      <div className="backtest-unavailable backtest-waiting">
+        <p>Backtest results will appear here after you run the simulation.</p>
       </div>
     );
   }
@@ -789,25 +871,19 @@ export default function BacktestView({
           style={{ alignItems: "center", gap: 12 }}
         >
           <h3>Demo Strategy — {assetLabel} (1y)</h3>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button className="backtest-run-button" onClick={handleRunBacktest}>
-              Run Backtest
-            </button>
-            {/* Small inline progress indicator when a run is in progress */}
-            {(isLoading || (progress > 0 && progress < 1)) && (
-              <div className="progress-wrap">
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.round(progress * 100)}%` }}
-                  />
-                </div>
-                <div style={{ color: "#94a3b8", fontSize: 12 }}>
-                  {Math.round(progress * 100)}%
-                </div>
+          {/* {(isLoading || (progress > 0 && progress < 1)) && (
+            <div className="progress-wrap" style={{ marginLeft: "auto" }}>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
               </div>
-            )}
-          </div>
+              <div style={{ color: "#94a3b8", fontSize: 12 }}>
+                {Math.round(progress * 100)}%
+              </div>
+            </div>
+          )} */}
         </div>
         <div className="backtest-params-grid">
           <div className="param-block">
@@ -886,6 +962,7 @@ export default function BacktestView({
             <LineChart
               data={priceChartData}
               margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+              syncId="backtest-sync"
             >
               <defs>
                 <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
@@ -1041,6 +1118,7 @@ export default function BacktestView({
             <LineChart
               data={equityChartData}
               margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+              syncId="backtest-sync"
             >
               <defs>
                 <linearGradient id="equityGradient" x1="0" x2="0" y1="0" y2="1">
@@ -1130,6 +1208,12 @@ export default function BacktestView({
     </div>
   );
 }
+
+BacktestView.propTypes = {
+  options: PropTypes.object,
+  onRegisterRunHandler: PropTypes.func,
+  onRunStateChange: PropTypes.func,
+};
 
 BacktestView.propTypes = {
   options: PropTypes.shape({
