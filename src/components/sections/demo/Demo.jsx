@@ -310,6 +310,7 @@ export default function Demo() {
   });
   const [hasPendingChanges, setHasPendingChanges] = useState(true);
   const lastRunOptionsSignatureRef = useRef(null);
+  const pendingSinceLastRunRef = useRef(false);
 
   const handleRegisterRunHandler = useCallback((handler) => {
     runBacktestHandlerRef.current =
@@ -1179,8 +1180,14 @@ export default function Demo() {
   }, [parameters]);
 
   const scalarOptionsSignature = useMemo(
-    () => JSON.stringify({ dataResolution, historyWindow, feePercent }),
-    [dataResolution, historyWindow, feePercent]
+    () =>
+      JSON.stringify({
+        asset: selectedAsset,
+        dataResolution,
+        historyWindow,
+        feePercent,
+      }),
+    [selectedAsset, dataResolution, historyWindow, feePercent]
   );
 
   const optionsSignature = useMemo(() => {
@@ -1203,12 +1210,16 @@ export default function Demo() {
   useEffect(() => {
     if (!optionsSignature) return;
     if (!lastRunOptionsSignatureRef.current) {
+      pendingSinceLastRunRef.current = true;
       setHasPendingChanges(true);
       return;
     }
-    setHasPendingChanges(
-      lastRunOptionsSignatureRef.current !== optionsSignature
-    );
+    if (lastRunOptionsSignatureRef.current !== optionsSignature) {
+      pendingSinceLastRunRef.current = true;
+      setHasPendingChanges(true);
+    } else {
+      setHasPendingChanges(pendingSinceLastRunRef.current);
+    }
   }, [optionsSignature]);
 
   const handleRunBacktestStatusChange = useCallback(
@@ -1222,6 +1233,7 @@ export default function Demo() {
       }));
       if (completed && optionsSignature) {
         lastRunOptionsSignatureRef.current = optionsSignature;
+        pendingSinceLastRunRef.current = false;
         setHasPendingChanges(false);
       }
     },

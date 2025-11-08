@@ -191,6 +191,10 @@ const initialNodes = [
     id: "inputNode",
     type: "inputNode",
     position: { x: -200, y: 550 },
+    hidden: true,
+    selectable: false,
+    draggable: false,
+    style: { opacity: 0, pointerEvents: "none" },
     data: {
       type: "realtime",
       asset: "bitcoin",
