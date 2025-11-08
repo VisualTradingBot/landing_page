@@ -91,6 +91,10 @@
   padding-right: 32px;
   appearance: none;
 
+  &:disabled {
+    cursor: var(--locked-cursor);
+  }
+
   option {
     background: #ffffff;
     color: #000000;

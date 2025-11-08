@@ -222,21 +222,44 @@ export default function Input({ id, data }) {
 
         <div className="field-row">
           <label className="field-label">Data Resolution:</label>
-          <select
-            className="field-select"
-            value={resolution}
-            onChange={(e) => {
-              const value = e.target.value;
-              handleResolutionChange(value);
-              updateNodeData(id, { resolution: value });
-            }}
-            disabled
-          >
-            <option value="1d" default>
-              1 Day
-            </option>
-            <option value="1h">1 Hour</option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              className="field-select"
+              value={resolution}
+              onChange={(e) => {
+                const value = e.target.value;
+                handleResolutionChange(value);
+                updateNodeData(id, { resolution: value });
+              }}
+              disabled
+            >
+              <option value="1d" default>
+                1 Day
+              </option>
+              <option value="1h">1 Hour</option>
+            </select>
+            <span
+              className="field-lock"
+              aria-hidden="true"
+              title="Locked parameter"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect
+                  x="3.25"
+                  y="7.25"
+                  width="9.5"
+                  height="7.5"
+                  rx="1.5"
+                />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div className="field-row">
@@ -258,22 +281,45 @@ export default function Input({ id, data }) {
 
         <div className="field-row">
           <label className="field-label">Type:</label>
-          <select
-            className="field-select"
-            value={type}
-            disabled
-            onChange={(e) => {
-              const value = e.target.value;
-              setType(value);
-              updateNodeData(id, { type: value });
-            }}
-          >
-            <option value="batch">Batch</option>
-            <option value="stream">Stream</option>
-            <option value="realtime" default>
-              Real-Time
-            </option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              className="field-select"
+              value={type}
+              disabled
+              onChange={(e) => {
+                const value = e.target.value;
+                setType(value);
+                updateNodeData(id, { type: value });
+              }}
+            >
+              <option value="batch">Batch</option>
+              <option value="stream">Stream</option>
+              <option value="realtime" default>
+                Real-Time
+              </option>
+            </select>
+            <span
+              className="field-lock"
+              aria-hidden="true"
+              title="Locked parameter"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect
+                  x="3.25"
+                  y="7.25"
+                  width="9.5"
+                  height="7.5"
+                  rx="1.5"
+                />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div className="field-row">

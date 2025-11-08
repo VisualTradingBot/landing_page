@@ -321,6 +321,12 @@ export default function Demo() {
     if (runBacktestHandlerRef.current) {
       runBacktestHandlerRef.current();
     }
+    if (backtestSectionRef.current) {
+      backtestSectionRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   }, []);
 
   const runProgressPercent = Math.round((backtestStatus.progress || 0) * 100);
@@ -550,6 +556,7 @@ export default function Demo() {
 
   // === ReactFlow viewport extent ===
   const containerRef = useRef();
+  const backtestSectionRef = useRef(null);
   const [translateExtent, setTranslateExtent] = useState([
     [1920, 1080],
     [0, 0],
@@ -1298,7 +1305,7 @@ export default function Demo() {
         <div className="divider"></div>
 
         {/* === Backtest results section === */}
-        <div className="backtest">
+        <div className="backtest" ref={backtestSectionRef}>
           <BacktestView
             options={backtestOptions}
             onRegisterRunHandler={handleRegisterRunHandler}

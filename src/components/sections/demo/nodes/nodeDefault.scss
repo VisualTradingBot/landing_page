@@ -439,3 +439,55 @@ label {
     opacity: 0;
   }
 }
+
+.field-control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  select,
+  input,
+  textarea {
+    flex: 1;
+  }
+}
+
+:root {
+  --locked-cursor: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3crect width='24' height='24' fill='%23ffffff' fill-opacity='0'/%3e%3ctext x='12' y='13' font-size='18' text-anchor='middle' dominant-baseline='middle' fill='%23000000'%3e%E2%A6%B8%3c/text%3e%3c/svg%3e") 12 12, not-allowed;
+}
+
+.field-control--locked {
+  select,
+  input,
+  textarea {
+    background-color: #f8fafc;
+    color: #64748b;
+    cursor: var(--locked-cursor);
+  }
+
+  .field-lock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+  }
+}
+
+.field-lock {
+  font-family: "ShareTechMono", "JetBrains Mono", "Inter", sans-serif;
+  letter-spacing: 0.05em;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: #111827;
+    stroke-width: 1.2px;
+    fill: none;
+    circle {
+      fill: #111827;
+      stroke: none;
+    }
+  }
+}
