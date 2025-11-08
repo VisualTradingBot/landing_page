@@ -962,6 +962,7 @@ export default function BacktestView({
             <LineChart
               data={priceChartData}
               margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+              syncId="backtest-sync"
             >
               <defs>
                 <linearGradient id="gridGradient" x1="0" x2="0" y1="0" y2="1">
@@ -1117,6 +1118,7 @@ export default function BacktestView({
             <LineChart
               data={equityChartData}
               margin={{ left: 60, right: 30, top: 20, bottom: 40 }}
+              syncId="backtest-sync"
             >
               <defs>
                 <linearGradient id="equityGradient" x1="0" x2="0" y1="0" y2="1">

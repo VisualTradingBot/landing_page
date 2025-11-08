@@ -268,8 +268,40 @@ export default function Demo() {
   const [parameters, setParameters] = useState(initialParameters); // List of user-defined parameters
   const [nodes, setNodes, rawOnNodesChange] = useNodesState(initialNodes); // Graph nodes
   const [edges, setEdges, rawOnEdgesChange] = useEdgesState(initialEdges); // Graph edges
+  const isDraggingRef = useRef(false);
+  const dragIdleTimeoutRef = useRef(null);
+  const autoParamsSignatureRef = useRef(null);
+  useEffect(
+    () => () => {
+      if (dragIdleTimeoutRef.current) {
+        clearTimeout(dragIdleTimeoutRef.current);
+      }
+    },
+    []
+  );
   const onNodesChange = useCallback(
     (changes) => {
+      if (dragIdleTimeoutRef.current) {
+        clearTimeout(dragIdleTimeoutRef.current);
+        dragIdleTimeoutRef.current = null;
+      }
+
+      const isDraggingUpdate = changes.some(
+        (change) => change.type === "position" && change.dragging
+      );
+      const hasPositionChange = changes.some(
+        (change) => change.type === "position"
+      );
+
+      if (isDraggingUpdate) {
+        isDraggingRef.current = true;
+      } else if (isDraggingRef.current && hasPositionChange) {
+        dragIdleTimeoutRef.current = setTimeout(() => {
+          isDraggingRef.current = false;
+          dragIdleTimeoutRef.current = null;
+        }, 80);
+      }
+
       rawOnNodesChange(changes);
     },
     [rawOnNodesChange]
@@ -565,6 +597,7 @@ export default function Demo() {
 
   const measureNodeDimensions = useCallback(() => {
     if (typeof window === "undefined") return;
+    if (isDraggingRef.current) return;
     const scopeRoot = containerRef.current;
     if (!scopeRoot) return;
 
@@ -662,41 +695,6 @@ export default function Demo() {
   }, [nodes, edges]);
 
   // Update all nodes with the latest parameters when parameters change
-  useEffect(() => {
-    // Only update nodes if the parameters array is not already present on the node.data
-    setNodes((prevNodes) => {
-      let changed = false;
-      const next = prevNodes.map((node) => {
-        // Fast path: same reference (most common)
-        if (node.data && node.data.parameters === parameters) return node;
-
-        // If parameters deeply equal to existing, keep node as-is
-        const existing = node.data && node.data.parameters;
-        const existingJson = existing ? JSON.stringify(existing) : null;
-        const newJson = parameters ? JSON.stringify(parameters) : null;
-        if (existingJson === newJson) return node;
-
-        changed = true;
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            parameters: parameters,
-          },
-        };
-      });
-
-      return changed ? next : prevNodes;
-    });
-  }, [parameters, setNodes]);
-
-  useEffect(() => {
-    setParameters((prev) => {
-      const { changed, next } = reconcileParametersWithAuto(prev, nodes);
-      return changed ? next : prev;
-    });
-  }, [nodes, setParameters]);
-
   // === Backtest options for BacktestView ===
   // Create lightweight signatures of nodes/edges that exclude layout/position
   // so backtestOptions doesn't recompute when the user moves nodes around.
@@ -730,6 +728,37 @@ export default function Demo() {
       return String(edges.length);
     }
   }, [edges]);
+
+  useEffect(() => {
+    setNodes((prevNodes) => {
+      let changed = false;
+      const next = prevNodes.map((node) => {
+        if (node.data?.parameters === parameters) {
+          return node;
+        }
+        changed = true;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            parameters,
+          },
+        };
+      });
+      return changed ? next : prevNodes;
+    });
+  }, [parameters, nodesSignature, setNodes]);
+
+  useEffect(() => {
+    if (autoParamsSignatureRef.current === nodesSignature) {
+      return;
+    }
+    autoParamsSignatureRef.current = nodesSignature;
+    setParameters((prev) => {
+      const { changed, next } = reconcileParametersWithAuto(prev, nodes);
+      return changed ? next : prev;
+    });
+  }, [nodesSignature, nodes, setParameters]);
 
   const blockNode = useMemo(
     () =>

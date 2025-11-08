@@ -168,7 +168,7 @@ const initialNodes = [
   {
     id: "setParameterNode-price",
     type: "setParameterNode",
-    position: { x: 150, y: 420 },
+    position: { x: 200, y: 420 },
     data: (() => {
       const priceBinding = bindParam("live_price");
       return {
