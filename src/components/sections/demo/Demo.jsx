@@ -1245,6 +1245,7 @@ export default function Demo() {
         {/* === Drag-and-drop algorithm builder === */}
         <div
           ref={containerRef}
+          className="demo-flow-canvas"
           style={{
             width: "100%",
             height: "75vh",
@@ -1302,7 +1303,7 @@ export default function Demo() {
           </div>
         </div>
 
-        <div className="divider"></div>
+        {/* <div className="divider-demo"></div> */}
 
         {/* === Backtest results section === */}
         <div className="backtest" ref={backtestSectionRef}>

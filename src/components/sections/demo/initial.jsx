@@ -146,7 +146,7 @@ const initialNodes = [
   {
     id: "setParameterNode-indicator",
     type: "setParameterNode",
-    position: { x: 400, y: 200 },
+    position: { x: 400, y: 160 },
     data: (() => {
       const indicatorBinding = bindParam("indicator_output");
       return {
@@ -203,7 +203,7 @@ const initialNodes = [
   {
     id: "ifNode-1",
     type: "ifNode",
-    position: { x: 400, y: 300 },
+    position: { x: 350, y: 280 },
     data: {
       label: "If Entry",
       parameters: initialParameters,
@@ -233,7 +233,7 @@ const initialNodes = [
   {
     id: "buyNode-1",
     type: "buyNode",
-    position: { x: 640, y: 430 },
+    position: { x: 610, y: 430 },
     data: {
       label: "Buy",
       action: "buy",
@@ -322,7 +322,7 @@ const initialNodes = [
   {
     id: "recordNode-1",
     type: "recordNode",
-    position: { x: 638, y: 610 },
+    position: { x: 638, y: 620 },
     data: {
       recordType: "entry_price",
       recordValue: "",
@@ -333,7 +333,7 @@ const initialNodes = [
   {
     id: "setParameterNode-entry",
     type: "setParameterNode",
-    position: { x: 880, y: 620 },
+    position: { x: 960, y: 640 },
     data: (() => {
       const entryBinding = bindParam("entry_price");
       return {

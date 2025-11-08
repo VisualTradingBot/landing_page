@@ -13,6 +13,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden !important; // Contain content properly
   z-index: 1000 !important; // Ensure it's above other elements
+  margin-top: 10px;
   
   // Draggable state styling
   &.dragging {

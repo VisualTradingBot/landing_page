@@ -29,12 +29,16 @@
     // Purple border
     background: transparent !important; // Transparent body
     width: 100% !important;
-    border: 3px solid var(--accent) !important;
+    border: 3px solid transparent ;
+    border-radius: 12px !important;
+    border-image: linear-gradient(135deg,  #e83dff, #9a02ff, #1f02ff) 1;
     height: calc(100% - 40px) !important; // Full height minus header
     pointer-events: none !important; // Disable body interactions
     box-shadow: none !important; // No hover shadow
     transform: none !important; // No hover transform
     transition: opacity 0.24s ease, transform 0.24s ease !important;
+  
+    
   }
 
   // Disable all hover effects
