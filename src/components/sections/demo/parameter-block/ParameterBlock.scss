@@ -9,7 +9,7 @@
   flex-direction: column;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease-out;
   width: 500px;
-  max-width: 90vw;
+  max-width: 95vw;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden !important; // Contain content properly
   z-index: 1000 !important; // Ensure it's above other elements
@@ -421,6 +421,8 @@
             flex: 1;
             font-size: 12px;
             font-weight: 800;
+
+          
           }
           
           .group-count {
@@ -687,7 +689,19 @@
           &:hover {
             color: #666666;
           }
-          
+
+          .parameter-value-editable {
+            display: inline-block;
+            min-width: 140px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+            padding-bottom: 2px;
+            transition: border-color 0.2s ease;
+          }
+
+          .parameter-value-editable:hover {
+            border-color: #000000;
+          }
+
           .parameter-value-readonly {
             color: #666666;
             font-style: italic;

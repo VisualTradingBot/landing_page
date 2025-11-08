@@ -29,7 +29,7 @@ const buildDragPayload = (param) => ({
 const SECTION_CONFIG = {
   system: {
     title: "System Parameters",
-    className: "data",
+    className: "bot-received",
     order: 0,
     defaultGroup: "System",
   },
@@ -525,6 +525,7 @@ export default function ParameterBlock({
               />
             ) : (
               <span
+                className="parameter-value-editable"
                 onClick={() =>
                   startEditing(originalIndex, "value", param.value)
                 }
@@ -630,11 +631,7 @@ export default function ParameterBlock({
                     >
                       <span className="group-title">
                         {group.title}
-                        {group.groupName ? (
-                          <span className="group-subtitle">
-                            {group.groupName}
-                          </span>
-                        ) : null}
+                        
                       </span>
                       <span className="group-count">
                         ({group.params.length})
