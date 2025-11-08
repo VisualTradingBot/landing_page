@@ -3,6 +3,11 @@ import "./ParameterBlock.scss";
 import PropTypes from "prop-types";
 
 const PARAMETERS_UPDATED_EVENT = "parametersUpdated";
+const SYSTEM_COLOR_VARIANTS = [
+  "system-variant-1",
+  "system-variant-2",
+  "system-variant-3",
+];
 const normalizeValue = (value) => {
   if (value === null || value === undefined) {
     return "";
@@ -13,7 +18,7 @@ const normalizeValue = (value) => {
 const buildDragPayload = (param) => ({
   label: param.label,
   value: param.value,
-  family: param.family || "variable",
+  family: param.isDataParameter ? "variable" : param.family || "variable",
   id: param.id,
   source: param.source || "user",
   isDataParameter: Boolean(param.isDataParameter),
@@ -61,7 +66,7 @@ export default function ParameterBlock({
 
   const classifyParameter = useCallback((param) => {
     if (param.isDataParameter) {
-      return { type: "system", color: "purple", icon: "◆" };
+      return { type: "system", color: SYSTEM_COLOR_VARIANTS[0], icon: "⬤" };
     }
 
     const label = normalizeValue(param.label).toLowerCase();
@@ -89,12 +94,22 @@ export default function ParameterBlock({
   }, []);
 
   const decoratedParameters = useMemo(() => {
+    let systemColorIndex = 0;
+
     return parameters.map((param) => {
       const value = normalizeValue(param.value);
       const paramType = classifyParameter(param);
+      if (param.isDataParameter) {
+        const variant =
+          SYSTEM_COLOR_VARIANTS[
+            systemColorIndex % SYSTEM_COLOR_VARIANTS.length
+          ];
+        systemColorIndex += 1;
+        paramType.color = variant;
+      }
       const rawFamily = normalizeValue(param.family);
       const family = param.isDataParameter
-        ? "system"
+        ? "variable"
         : rawFamily === "relational"
         ? "variable"
         : rawFamily || paramType.type || "variable";

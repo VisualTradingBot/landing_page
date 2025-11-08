@@ -6,6 +6,45 @@ import { useReactFlow } from "@xyflow/react";
 
 const DEFAULT_LABEL = "parameter";
 const DEFAULT_SOURCE = "system";
+const SYSTEM_COLOR_VARIANTS = [
+  "system-variant-1",
+  "system-variant-2",
+  "system-variant-3",
+];
+
+const pickSystemVariantByLabel = (label) => {
+  if (typeof label !== "string") {
+    return null;
+  }
+  const normalized = label.toLowerCase();
+  if (normalized.includes("live")) {
+    return "system-variant-1";
+  }
+  if (normalized.includes("output") || normalized.includes("indicator")) {
+    return "system-variant-2";
+  }
+  if (normalized.includes("entry")) {
+    return "system-variant-3";
+  }
+  if (normalized.includes("close")) {
+    return "system-variant-3";
+  }
+  return null;
+};
+
+const getSystemColorVariant = (identifier) => {
+  const sourceString = String(identifier || "");
+  if (!sourceString) {
+    return SYSTEM_COLOR_VARIANTS[0];
+  }
+
+  let hash = 0;
+  for (let index = 0; index < sourceString.length; index += 1) {
+    hash += sourceString.charCodeAt(index);
+  }
+
+  return SYSTEM_COLOR_VARIANTS[hash % SYSTEM_COLOR_VARIANTS.length];
+};
 
 const resolveLabel = (nodeData) => {
   if (!nodeData) return DEFAULT_LABEL;
@@ -149,6 +188,16 @@ export default function SetParameter({ data, id }) {
     };
   }, [label, parameterId, value]);
 
+  const colorVariant = useMemo(
+    () => {
+      const preset = pickSystemVariantByLabel(label);
+      return preset || getSystemColorVariant(parameterId || label);
+    },
+    [label, parameterId]
+  );
+
+  const displayValue = value && value.trim() ? value.trim() : "[Auto-generated]";
+
   return (
     <NodeDefault
       id={id}
@@ -156,7 +205,14 @@ export default function SetParameter({ data, id }) {
       left={{ active: true, type: "target" }}
     >
       <div className="set-parameter-node">
-        <span className="set-parameter-chip">{label}</span>
+        <div
+          className={`set-parameter-card parameter-item ${colorVariant}`}
+        >
+          <span className="parameter-label">
+            <span className={`parameter-icon ${colorVariant}`}>⬤</span>
+            <span className="parameter-label-content">{label}</span>
+          </span>
+        </div>
       </div>
     </NodeDefault>
   );

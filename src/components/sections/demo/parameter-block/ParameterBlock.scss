@@ -556,6 +556,33 @@
           );
         }
 
+        &.system-variant-1 {
+          border-left: 4px solid #ff49c6;
+          background: linear-gradient(
+            90deg,
+            rgba(236, 72, 153, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
+        &.system-variant-2 {
+          border-left: 4px solid #4338ca;
+          background: linear-gradient(
+            90deg,
+            rgba(67, 56, 202, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
+        &.system-variant-3 {
+          border-left: 4px solid #0f766e;
+          background: linear-gradient(
+            90deg,
+            rgba(15, 118, 110, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
         &.data-parameter {
           opacity: 0.95;
         }
@@ -625,6 +652,21 @@
             &.purple {
               color: #7c3aed;
               background: rgba(124, 58, 237, 0.1);
+            }
+
+            &.system-variant-1 {
+              color: #ec4899;
+              background: rgba(236, 72, 153, 0.12);
+            }
+
+            &.system-variant-2 {
+              color: #4338ca;
+              background: rgba(67, 56, 202, 0.12);
+            }
+
+            &.system-variant-3 {
+              color: #0f766e;
+              background: rgba(15, 118, 110, 0.12);
             }
           }
         }
