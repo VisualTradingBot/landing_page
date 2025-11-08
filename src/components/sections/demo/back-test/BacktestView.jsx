@@ -268,17 +268,43 @@ export default function BacktestView({
     [fetchCoinGeckoPrices]
   );
 
+  const resolveWindowSpec = useCallback(
+    (opts) => {
+      if (!opts) {
+        return null;
+      }
+      const baseKey = buildPriceKey(opts);
+      const resolution = opts.dataResolution ?? "1d";
+      const rawWindow = Number(opts.historyWindow);
+      const { windowSize } = resolveFetchConfig(resolution, rawWindow);
+      const normalizedWindow = Math.max(1, Math.round(windowSize));
+
+      return {
+        baseKey,
+        windowKey: `${baseKey}|${normalizedWindow}`,
+        windowSize,
+        normalizedWindow,
+        asset: opts.asset ?? "bitcoin",
+        resolution,
+      };
+    },
+    [resolveFetchConfig]
+  );
+
   // === Fetch price data (CoinGecko with caching) ===
   useEffect(() => {
     if (!activeOptions) return;
 
-    const fetchKey = buildPriceKey(activeOptions);
-    const targetAsset = activeOptions.asset ?? "bitcoin";
-    const resolution = activeOptions.dataResolution ?? "1d";
-    const rawWindow = Number(activeOptions.historyWindow);
-    const { windowSize } = resolveFetchConfig(resolution, rawWindow);
+    const spec = resolveWindowSpec(activeOptions);
+    if (!spec) return;
 
-    if (priceKeyRef.current === fetchKey && storedPrices?.length) {
+    const { windowKey, windowSize, normalizedWindow, asset: targetAsset, resolution } =
+      spec;
+
+    if (
+      priceKeyRef.current === windowKey &&
+      storedPrices?.length === normalizedWindow
+    ) {
       return;
     }
 
@@ -286,16 +312,10 @@ export default function BacktestView({
 
     async function ensurePrices() {
       try {
-        const series = await getCachedPrices(
-          targetAsset,
-          resolution,
-          windowSize
-        );
+        const series = await getCachedPrices(targetAsset, resolution, windowSize);
         if (cancelled) return;
-        priceKeyRef.current = fetchKey;
-        const limited = series.slice(
-          -Math.min(series.length, Math.max(1, Math.round(windowSize)))
-        );
+        priceKeyRef.current = windowKey;
+        const limited = series.slice(-Math.min(series.length, normalizedWindow));
         setStoredPrices(limited);
       } catch (error) {
         if (!cancelled) {
@@ -310,21 +330,24 @@ export default function BacktestView({
     return () => {
       cancelled = true;
     };
-  }, [activeOptions, storedPrices, resolveFetchConfig, getCachedPrices]);
+  }, [activeOptions, storedPrices, resolveWindowSpec, getCachedPrices]);
 
   useEffect(() => {
     if (!storedPrices || !storedPrices.length) return;
     if (!pendingRunRef.current) return;
 
     const runOptions = pendingRunRef.current;
-    const expectedKey = buildPriceKey(runOptions);
-    if (priceKeyRef.current !== expectedKey) {
+    const runSpec = resolveWindowSpec(runOptions);
+    if (!runSpec) {
+      return;
+    }
+    if (priceKeyRef.current !== runSpec.windowKey) {
       return;
     }
 
     pendingRunRef.current = null;
     runSimulationWithOptions(runOptions, storedPrices);
-  }, [storedPrices, runSimulationWithOptions]);
+  }, [storedPrices, runSimulationWithOptions, resolveWindowSpec]);
 
   // Ensure we display the price/indicator plot once prices load even before a backtest run
   useEffect(() => {
@@ -401,11 +424,13 @@ export default function BacktestView({
     const nextOptions = options;
     if (!nextOptions) return;
 
-    const nextKey = buildPriceKey(nextOptions);
+    const nextSpec = resolveWindowSpec(nextOptions);
+    const nextKey = nextSpec?.windowKey;
     const hasPricesForRun =
       storedPrices &&
       storedPrices.length > 0 &&
-      priceKeyRef.current === nextKey;
+      priceKeyRef.current === nextKey &&
+      storedPrices.length === (nextSpec?.normalizedWindow ?? storedPrices.length);
 
     pendingRunRef.current = nextOptions;
     setActiveOptions(nextOptions);
@@ -420,7 +445,7 @@ export default function BacktestView({
       setVisibleEquityPoints(0);
       setWorkerNotice(null);
     }
-  }, [options, storedPrices, runSimulationWithOptions]);
+  }, [options, storedPrices, runSimulationWithOptions, resolveWindowSpec]);
 
   useEffect(() => {
     if (typeof onRegisterRunHandler === "function") {
