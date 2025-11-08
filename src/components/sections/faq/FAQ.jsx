@@ -49,6 +49,7 @@ export default function FAQ() {
 
   return (
     <section id="faq" className="faq">
+      <div className="divider"></div>
       <div className="container">
         <h2>FAQ</h2>
         <p className="sub">

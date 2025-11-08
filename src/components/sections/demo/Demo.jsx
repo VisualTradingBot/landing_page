@@ -47,6 +47,29 @@ const AUTO_PARAM_SOURCE = "system";
 const DEFAULT_NODE_WIDTH = 300;
 const DEFAULT_NODE_HEIGHT = 220;
 
+const SIGNATURE_IGNORED_KEYS = new Set([
+  "isInTradeHidden",
+  "position",
+  "positionAbsolute",
+  "__rf",
+]);
+
+const sanitizeForSignature = (value) => {
+  if (value == null) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeForSignature(item));
+  }
+  if (typeof value === "object") {
+    const result = {};
+    Object.entries(value).forEach(([key, val]) => {
+      if (SIGNATURE_IGNORED_KEYS.has(key)) return;
+      result[key] = sanitizeForSignature(val);
+    });
+    return result;
+  }
+  return value;
+};
+
 const escapeNodeSelector = (value) => {
   const stringValue = String(value ?? "");
   if (typeof window !== "undefined" && window.CSS?.escape) {
@@ -243,8 +266,21 @@ const reconcileParametersWithAuto = (previous, nodes) => {
 export default function Demo() {
   // === State for parameters and graph ===
   const [parameters, setParameters] = useState(initialParameters); // List of user-defined parameters
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes); // Graph nodes
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges); // Graph edges
+  const [nodes, setNodes, rawOnNodesChange] = useNodesState(initialNodes); // Graph nodes
+  const [edges, setEdges, rawOnEdgesChange] = useEdgesState(initialEdges); // Graph edges
+  const onNodesChange = useCallback(
+    (changes) => {
+      rawOnNodesChange(changes);
+    },
+    [rawOnNodesChange]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes) => {
+      rawOnEdgesChange(changes);
+    },
+    [rawOnEdgesChange]
+  );
   const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
   const [dataResolution, setDataResolution] = useState(DEFAULT_DATA_RESOLUTION);
   const [feePercent, setFeePercent] = useState(DEFAULT_FEE_PERCENT);
@@ -263,6 +299,53 @@ export default function Demo() {
   const [parameterFormError, setParameterFormError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false); // Show delete confirmation modal
   const [parameterIndexToDelete, setParameterIndexToDelete] = useState(null); // Index of parameter to delete
+  const runBacktestHandlerRef = useRef(null);
+  const [isRunHandlerReady, setRunHandlerReady] = useState(false);
+  const [backtestStatus, setBacktestStatus] = useState({
+    isLoading: false,
+    progress: 0,
+    hasStats: false,
+    hasPrices: false,
+    completed: false,
+  });
+  const [hasPendingChanges, setHasPendingChanges] = useState(true);
+  const lastRunOptionsSignatureRef = useRef(null);
+
+  const handleRegisterRunHandler = useCallback((handler) => {
+    runBacktestHandlerRef.current =
+      typeof handler === "function" ? handler : null;
+    setRunHandlerReady(typeof handler === "function");
+  }, []);
+
+  const handleRunBacktestClick = useCallback(() => {
+    if (runBacktestHandlerRef.current) {
+      runBacktestHandlerRef.current();
+    }
+  }, []);
+
+  const runProgressPercent = Math.round((backtestStatus.progress || 0) * 100);
+  const isRunActionable =
+    hasPendingChanges &&
+    isRunHandlerReady &&
+    backtestStatus.hasPrices &&
+    !backtestStatus.isLoading;
+  const runButtonDisabled = !isRunActionable;
+  const runButtonLabel = !backtestStatus.hasPrices
+    ? "Preparing Data…"
+    : backtestStatus.isLoading
+    ? "Running…"
+    : !isRunHandlerReady
+    ? "Preparing Runner…"
+    : isRunActionable
+    ? "Run Backtest"
+    : "Up to Date";
+  const runButtonClassName = [
+    "run-backtest-button",
+    isRunActionable ? "active" : "inactive",
+    backtestStatus.isLoading ? "loading" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const groupLookup = useMemo(() => {
     const map = new Map();
@@ -348,6 +431,12 @@ export default function Demo() {
         typeof nextValue === "string" ? nextValue : String(nextValue ?? ""),
     }));
     setParameterFormError("");
+  }, []);
+
+  const updateParameters = useCallback((updater) => {
+    setParameters((prev) =>
+      typeof updater === "function" ? updater(prev) : updater
+    );
   }, []);
 
   const addParameter = useCallback((newParam) => {
@@ -606,7 +695,11 @@ export default function Demo() {
   const nodesSignature = useMemo(() => {
     try {
       return JSON.stringify(
-        nodes.map((n) => ({ id: n.id, type: n.type, data: n.data }))
+        nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          data: sanitizeForSignature(n.data),
+        }))
       );
     } catch {
       return String(nodes.length);
@@ -1070,6 +1163,64 @@ export default function Demo() {
     feePercent,
   ]);
 
+  const parametersSignature = useMemo(() => {
+    try {
+      return JSON.stringify(parameters);
+    } catch {
+      return String(parameters.length);
+    }
+  }, [parameters]);
+
+  const scalarOptionsSignature = useMemo(
+    () => JSON.stringify({ dataResolution, historyWindow, feePercent }),
+    [dataResolution, historyWindow, feePercent]
+  );
+
+  const optionsSignature = useMemo(() => {
+    if (!nodesSignature || !edgesSignature || !parametersSignature) {
+      return null;
+    }
+    return [
+      nodesSignature,
+      edgesSignature,
+      parametersSignature,
+      scalarOptionsSignature,
+    ].join("::");
+  }, [
+    nodesSignature,
+    edgesSignature,
+    parametersSignature,
+    scalarOptionsSignature,
+  ]);
+
+  useEffect(() => {
+    if (!optionsSignature) return;
+    if (!lastRunOptionsSignatureRef.current) {
+      setHasPendingChanges(true);
+      return;
+    }
+    setHasPendingChanges(
+      lastRunOptionsSignatureRef.current !== optionsSignature
+    );
+  }, [optionsSignature]);
+
+  const handleRunBacktestStatusChange = useCallback(
+    (status) => {
+      if (!status) return;
+      const { completed, ...rest } = status;
+      setBacktestStatus((prev) => ({
+        ...prev,
+        ...rest,
+        completed: Boolean(completed),
+      }));
+      if (completed && optionsSignature) {
+        lastRunOptionsSignatureRef.current = optionsSignature;
+        setHasPendingChanges(false);
+      }
+    },
+    [optionsSignature]
+  );
+
   return (
     <AssetContext.Provider
       value={{
@@ -1127,18 +1278,32 @@ export default function Demo() {
               handleRemoveParameter={removeParameter}
               handleAddParameter={addParameter}
               parameters={parameters}
-              setParameters={setParameters}
               onShowModal={openParameterModal}
               onShowDeleteModal={openDeleteModal}
             />
           </ReactFlow>
+          <div className="run-backtest-overlay">
+            <button
+              type="button"
+              className={runButtonClassName}
+              onClick={handleRunBacktestClick}
+              disabled={runButtonDisabled}
+            >
+              {runButtonLabel}
+            </button>
+            {backtestStatus.isLoading}
+          </div>
         </div>
 
         <div className="divider"></div>
 
         {/* === Backtest results section === */}
         <div className="backtest">
-          <BacktestView options={backtestOptions} externalControl />
+          <BacktestView
+            options={backtestOptions}
+            onRegisterRunHandler={handleRegisterRunHandler}
+            onRunStateChange={handleRunBacktestStatusChange}
+          />
         </div>
 
         {/* === Add Parameter / Custom Parameter Modal === */}

@@ -426,3 +426,16 @@ label {
     }
   }
 }
+
+.react-flow__node.in-trade-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.94) translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+
+  .node-default-header,
+  .node-default-body,
+  .node-default {
+    opacity: 0;
+  }
+}

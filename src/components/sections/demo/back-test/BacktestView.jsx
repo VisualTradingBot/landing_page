@@ -53,7 +53,8 @@ function buildPriceKey(opts) {
 
 export default function BacktestView({
   options,
-  externalControl: _externalControl = false,
+  onRegisterRunHandler,
+  onRunStateChange,
 }) {
   // === State for backtest and chart animation ===
   const [stats, setStats] = useState(null); // Backtest statistics and equity series
@@ -189,13 +190,13 @@ export default function BacktestView({
     setWorkerNotice(null);
     runInProgressRef.current = true;
 
-    workerRef.current.postMessage({
-      nodes: runOptions.nodes,
-      edges: runOptions.edges,
-      parameters: runOptions.parameters,
-      prices: priceSeries,
-      feePercent: feeForRun,
-    });
+      workerRef.current.postMessage({
+        nodes: runOptions.nodes,
+        edges: runOptions.edges,
+        parameters: runOptions.parameters,
+        prices: priceSeries,
+        feePercent: feeForRun,
+      });
   }, []);
 
   const resolveFetchConfig = useCallback((resolution, requestedWindow) => {
@@ -362,6 +363,15 @@ export default function BacktestView({
         startTransition(() => {
           setStats(data);
           setIsLoading(false);
+          if (typeof onRunStateChange === "function") {
+            onRunStateChange({
+              isLoading: false,
+              progress: 1,
+              hasStats: true,
+              hasPrices: Boolean(storedPrices && storedPrices.length > 0),
+              completed: true,
+            });
+          }
         });
       } else if (status === "error") {
         runInProgressRef.current = false;
@@ -411,6 +421,25 @@ export default function BacktestView({
       setWorkerNotice(null);
     }
   }, [options, storedPrices, runSimulationWithOptions]);
+
+  useEffect(() => {
+    if (typeof onRegisterRunHandler === "function") {
+      onRegisterRunHandler(handleRunBacktest);
+      return () => onRegisterRunHandler(null);
+    }
+    return undefined;
+  }, [handleRunBacktest, onRegisterRunHandler]);
+
+  useEffect(() => {
+    if (typeof onRunStateChange === "function") {
+      onRunStateChange({
+        isLoading,
+        progress,
+        hasStats: Boolean(stats),
+        hasPrices: Boolean(storedPrices && storedPrices.length > 0),
+      });
+    }
+  }, [isLoading, progress, stats, storedPrices, onRunStateChange]);
 
   // === Animate chart reveal for price and equity ===
   useEffect(() => {
@@ -754,13 +783,8 @@ export default function BacktestView({
   // If we have prices but no stats yet and we're not loading, allow manual run
   if (!stats && !isLoading) {
     return (
-      <div className="backtest-unavailable">
-        <button
-          className="backtest-run-button initial-run"
-          onClick={handleRunBacktest}
-        >
-          ▶️ Run Backtest
-        </button>
+      <div className="backtest-unavailable backtest-waiting">
+        <p>Backtest results will appear here after you run the simulation.</p>
       </div>
     );
   }
@@ -775,25 +799,19 @@ export default function BacktestView({
           style={{ alignItems: "center", gap: 12 }}
         >
           <h3>Demo Strategy — {assetLabel} (1y)</h3>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button className="backtest-run-button" onClick={handleRunBacktest}>
-              Run Backtest
-            </button>
-            {/* Small inline progress indicator when a run is in progress */}
-            {(isLoading || (progress > 0 && progress < 1)) && (
-              <div className="progress-wrap">
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.round(progress * 100)}%` }}
-                  />
-                </div>
-                <div style={{ color: "#94a3b8", fontSize: 12 }}>
-                  {Math.round(progress * 100)}%
-                </div>
+          {/* {(isLoading || (progress > 0 && progress < 1)) && (
+            <div className="progress-wrap" style={{ marginLeft: "auto" }}>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
               </div>
-            )}
-          </div>
+              <div style={{ color: "#94a3b8", fontSize: 12 }}>
+                {Math.round(progress * 100)}%
+              </div>
+            </div>
+          )} */}
         </div>
         <div className="backtest-params-grid">
           <div className="param-block">
@@ -1116,6 +1134,12 @@ export default function BacktestView({
     </div>
   );
 }
+
+BacktestView.propTypes = {
+  options: PropTypes.object,
+  onRegisterRunHandler: PropTypes.func,
+  onRunStateChange: PropTypes.func,
+};
 
 BacktestView.propTypes = {
   options: PropTypes.shape({
