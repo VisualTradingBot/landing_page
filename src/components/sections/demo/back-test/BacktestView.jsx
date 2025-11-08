@@ -74,6 +74,7 @@ export default function BacktestView({
   const [activeOptions, setActiveOptions] = useState(options);
   const optionsInitializedRef = useRef(false);
   const pendingRunRef = useRef(null);
+  const animationRequestedRef = useRef(false);
 
   const cryptoFormatter = useMemo(
     () =>
@@ -188,6 +189,7 @@ export default function BacktestView({
     setVisiblePricePoints(0);
     setVisibleEquityPoints(0);
     setWorkerNotice(null);
+    animationRequestedRef.current = true;
     runInProgressRef.current = true;
 
       workerRef.current.postMessage({
@@ -351,10 +353,16 @@ export default function BacktestView({
 
   // Ensure we display the price/indicator plot once prices load even before a backtest run
   useEffect(() => {
-    if (storedPrices && storedPrices.length > 0 && visiblePricePoints === 0) {
-      // show full series by default so indicator curves are visible
-      setVisiblePricePoints(storedPrices.length);
+    if (
+      animationRequestedRef.current ||
+      !storedPrices ||
+      !storedPrices.length ||
+      visiblePricePoints !== 0
+    ) {
+      return;
     }
+    // show full series by default so indicator curves are visible when no animation is pending
+    setVisiblePricePoints(storedPrices.length);
   }, [storedPrices, visiblePricePoints]);
 
   // === Setup Web Worker ===
@@ -398,6 +406,7 @@ export default function BacktestView({
         });
       } else if (status === "error") {
         runInProgressRef.current = false;
+        animationRequestedRef.current = false;
         // Non-fatal: show notice but don't unmount the UI
         setWorkerNotice({ type: "error", messages: [data] });
         setIsLoading(false); // Stop loading
@@ -444,6 +453,7 @@ export default function BacktestView({
       setVisiblePricePoints(0);
       setVisibleEquityPoints(0);
       setWorkerNotice(null);
+      animationRequestedRef.current = true;
     }
   }, [options, storedPrices, runSimulationWithOptions, resolveWindowSpec]);
 
@@ -468,11 +478,31 @@ export default function BacktestView({
 
   // === Animate chart reveal for price and equity ===
   useEffect(() => {
-    if (!stats || !storedPrices) return;
+    if (
+      !animationRequestedRef.current ||
+      !stats ||
+      !storedPrices ||
+      !stats.equitySeries
+    ) {
+      return;
+    }
 
+    const totalPricePoints = storedPrices.length;
+    const totalEquityPoints = stats.equitySeries.length;
     const ANIMATION_DURATION = 1200;
 
-    // Animate price chart
+    let priceFrameId = null;
+    let equityFrameId = null;
+    let equityTimeoutId = null;
+    let priceComplete = false;
+    let equityComplete = false;
+
+    const finishIfDone = () => {
+      if (priceComplete && equityComplete) {
+        animationRequestedRef.current = false;
+      }
+    };
+
     const animatePrice = (timestamp) => {
       if (!priceAnimationRef.current) {
         priceAnimationRef.current = timestamp;
@@ -480,16 +510,19 @@ export default function BacktestView({
 
       const elapsed = timestamp - priceAnimationRef.current;
       const progress = Math.min(1, elapsed / ANIMATION_DURATION);
-      const nextCount = Math.round(progress * storedPrices.length);
+      const nextCount = Math.round(progress * totalPricePoints);
 
       setVisiblePricePoints(nextCount);
 
       if (progress < 1) {
-        requestAnimationFrame(animatePrice);
+        priceFrameId = requestAnimationFrame(animatePrice);
+      } else {
+        priceComplete = true;
+        setVisiblePricePoints(totalPricePoints);
+        finishIfDone();
       }
     };
 
-    // Animate equity chart with slight delay
     const animateEquity = (timestamp) => {
       if (!equityAnimationRef.current) {
         equityAnimationRef.current = timestamp;
@@ -497,12 +530,16 @@ export default function BacktestView({
 
       const elapsed = timestamp - equityAnimationRef.current;
       const progress = Math.min(1, elapsed / ANIMATION_DURATION);
-      const nextCount = Math.round(progress * stats.equitySeries.length);
+      const nextCount = Math.round(progress * totalEquityPoints);
 
       setVisibleEquityPoints(nextCount);
 
       if (progress < 1) {
-        requestAnimationFrame(animateEquity);
+        equityFrameId = requestAnimationFrame(animateEquity);
+      } else {
+        equityComplete = true;
+        setVisibleEquityPoints(totalEquityPoints);
+        finishIfDone();
       }
     };
 
@@ -510,9 +547,19 @@ export default function BacktestView({
     priceAnimationRef.current = null;
     equityAnimationRef.current = null;
 
-    // Start animations
-    requestAnimationFrame(animatePrice);
-    setTimeout(() => requestAnimationFrame(animateEquity), 200);
+    priceFrameId = requestAnimationFrame(animatePrice);
+    equityTimeoutId = setTimeout(
+      () => {
+        equityFrameId = requestAnimationFrame(animateEquity);
+      },
+      200
+    );
+
+    return () => {
+      if (priceFrameId) cancelAnimationFrame(priceFrameId);
+      if (equityFrameId) cancelAnimationFrame(equityFrameId);
+      if (equityTimeoutId) clearTimeout(equityTimeoutId);
+    };
   }, [stats, storedPrices]);
 
   // Memoize trades array to prevent unnecessary re-renders
