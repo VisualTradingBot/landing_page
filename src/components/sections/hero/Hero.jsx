@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import TileWall from "./TileWall";
 import "./hero.scss";
+import PropTypes from "prop-types";
 
 export default function Hero({ onOpenModal }) {
   const [heroText, setHeroText] = useState("");
@@ -103,3 +104,7 @@ export default function Hero({ onOpenModal }) {
     </section>
   );
 }
+
+Hero.propTypes = {
+  onOpenModal: PropTypes.func.isRequired,
+};

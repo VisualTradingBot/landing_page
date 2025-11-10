@@ -1,5 +1,6 @@
 import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import "./cta.scss";
+import PropTypes from "prop-types";
 
 export default function CTA({ onOpenModal }) {
   const { trackClick } = useTrackInteraction();
@@ -26,3 +27,7 @@ export default function CTA({ onOpenModal }) {
     </section>
   );
 }
+
+CTA.propTypes = {
+  onOpenModal: PropTypes.func.isRequired,
+};
