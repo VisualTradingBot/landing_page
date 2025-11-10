@@ -53,6 +53,7 @@ export default function ParameterBlock({
   parameters,
   onShowModal,
   onShowDeleteModal,
+  onEditParameter,
 }) {
   // State to track which parameter and field is being edited
   const [editingIndex, setEditingIndex] = useState(null);
@@ -297,10 +298,15 @@ export default function ParameterBlock({
     //   })
     // );
 
+    if (typeof onEditParameter === "function") {
+      const valueToPersist = trimmedValue;
+      onEditParameter(target.id, editingField, valueToPersist);
+    }
+
     setEditingIndex(null);
     setEditingField(null);
     setTempValue("");
-  }, [editingIndex, editingField, tempValue, parameters]);
+  }, [editingIndex, editingField, tempValue, parameters, onEditParameter]);
 
   const cancelEdit = useCallback(() => {
     setEditingIndex(null);
@@ -703,6 +709,7 @@ ParameterBlock.propTypes = {
   ).isRequired,
   onShowModal: PropTypes.func.isRequired,
   onShowDeleteModal: PropTypes.func.isRequired,
+  onEditParameter: PropTypes.func,
 };
 
 function BacktestDatasetTab() {

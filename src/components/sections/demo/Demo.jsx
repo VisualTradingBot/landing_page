@@ -362,7 +362,6 @@ export default function Demo() {
     }
   }, []);
 
-  const runProgressPercent = Math.round((backtestStatus.progress || 0) * 100);
   const isRunActionable =
     hasPendingChanges &&
     isRunHandlerReady &&
@@ -472,14 +471,32 @@ export default function Demo() {
     setParameterFormError("");
   }, []);
 
-  const updateParameters = useCallback((updater) => {
-    setParameters((prev) =>
-      typeof updater === "function" ? updater(prev) : updater
-    );
-  }, []);
-
   const addParameter = useCallback((newParam) => {
     setParameters((prev) => [...prev, newParam]);
+  }, []);
+
+  const editParameter = useCallback((id, field, value) => {
+    if (!id || !field) {
+      return;
+    }
+
+    setParameters((prev) =>
+      prev.map((param) => {
+        if (!param || param.id !== id) {
+          return param;
+        }
+
+        if (field === "group") {
+          if (value && value.trim()) {
+            return { ...param, group: value.trim() };
+          }
+          const { group, ...rest } = param;
+          return rest;
+        }
+
+        return { ...param, [field]: value };
+      })
+    );
   }, []);
 
   const handleParameterFormSubmit = useCallback(
@@ -1329,6 +1346,7 @@ export default function Demo() {
               parameters={parameters}
               onShowModal={openParameterModal}
               onShowDeleteModal={openDeleteModal}
+              onEditParameter={editParameter}
             />
           </ReactFlow>
           <div className="run-backtest-overlay">

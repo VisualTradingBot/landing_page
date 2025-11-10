@@ -47,7 +47,8 @@ class Analytics {
         }
       } catch (error) {
         console.warn(
-          "[Analytics] Supabase not available. Install with: npm install @supabase/supabase-js"
+          "[Analytics] Supabase not available. Install with: npm install @supabase/supabase-js. Error:",
+          error
         );
         console.warn("[Analytics] Falling back to localStorage only");
       }
@@ -155,7 +156,7 @@ class Analytics {
       // Return just the domain, not full URL (for privacy)
       return hostname;
     } catch (e) {
-      return "unknown";
+      return "unknown:" + e.message;
     }
   }
 
@@ -482,7 +483,7 @@ class Analytics {
     try {
       return JSON.parse(localStorage.getItem("analytics_events") || "[]");
     } catch (e) {
-      return [];
+      return ["error:" + e.message];
     }
   }
 
