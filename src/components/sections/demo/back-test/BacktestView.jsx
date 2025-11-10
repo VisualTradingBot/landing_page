@@ -28,6 +28,11 @@ import "./backtest.scss";
 
 import BacktestWorker from "../../../../workers/backtest.worker.js?worker";
 
+// Cache CoinGecko price series per (asset, resolution) so we can reuse the
+// broadest dataset we've already fetched when the user tweaks the history
+// window. Each entry keeps the longest series retrieved so far to avoid
+// redundant network calls when the requested window shrinks or expands
+// within the cached coverage.
 const priceCache = new Map();
 
 const MAX_FETCH_CONFIG = {
@@ -75,6 +80,15 @@ export default function BacktestView({
   const optionsInitializedRef = useRef(false);
   const pendingRunRef = useRef(null);
   const animationRequestedRef = useRef(false);
+  const storedPricesRef = useRef(null);
+  const onRunStateChangeRef = useRef(onRunStateChange);
+  useEffect(() => {
+    storedPricesRef.current = storedPrices;
+  }, [storedPrices]);
+
+  useEffect(() => {
+    onRunStateChangeRef.current = onRunStateChange;
+  }, [onRunStateChange]);
 
   const cryptoFormatter = useMemo(
     () =>
@@ -192,13 +206,13 @@ export default function BacktestView({
     animationRequestedRef.current = true;
     runInProgressRef.current = true;
 
-      workerRef.current.postMessage({
-        nodes: runOptions.nodes,
-        edges: runOptions.edges,
-        parameters: runOptions.parameters,
-        prices: priceSeries,
-        feePercent: feeForRun,
-      });
+    workerRef.current.postMessage({
+      nodes: runOptions.nodes,
+      edges: runOptions.edges,
+      parameters: runOptions.parameters,
+      prices: priceSeries,
+      feePercent: feeForRun,
+    });
   }, []);
 
   const resolveFetchConfig = useCallback((resolution, requestedWindow) => {
@@ -258,14 +272,33 @@ export default function BacktestView({
   const getCachedPrices = useCallback(
     async (assetId, resolution, windowSize) => {
       const cacheKey = `${assetId}|${resolution}`;
-      const cached = priceCache.get(cacheKey);
-      if (cached && cached.length) {
-        return cached;
+      const targetWindow = Math.max(1, Math.round(Number(windowSize) || 0));
+      const cachedEntry = priceCache.get(cacheKey);
+
+      if (cachedEntry?.series?.length >= targetWindow) {
+        return cachedEntry.series;
       }
 
-      const fresh = await fetchCoinGeckoPrices(assetId, resolution, windowSize);
-      priceCache.set(cacheKey, fresh);
-      return fresh;
+      const freshSeries = await fetchCoinGeckoPrices(
+        assetId,
+        resolution,
+        windowSize
+      );
+
+      const nextEntry = {
+        series: freshSeries,
+      };
+
+      if (
+        cachedEntry?.series &&
+        cachedEntry.series.length > freshSeries.length
+      ) {
+        // Keep the longer cached payload so later requests can still reuse it.
+        nextEntry.series = cachedEntry.series;
+      }
+
+      priceCache.set(cacheKey, nextEntry);
+      return nextEntry.series;
     },
     [fetchCoinGeckoPrices]
   );
@@ -300,8 +333,13 @@ export default function BacktestView({
     const spec = resolveWindowSpec(activeOptions);
     if (!spec) return;
 
-    const { windowKey, windowSize, normalizedWindow, asset: targetAsset, resolution } =
-      spec;
+    const {
+      windowKey,
+      windowSize,
+      normalizedWindow,
+      asset: targetAsset,
+      resolution,
+    } = spec;
 
     if (
       priceKeyRef.current === windowKey &&
@@ -314,11 +352,42 @@ export default function BacktestView({
 
     async function ensurePrices() {
       try {
-        const series = await getCachedPrices(targetAsset, resolution, windowSize);
+        const series = await getCachedPrices(
+          targetAsset,
+          resolution,
+          windowSize
+        );
         if (cancelled) return;
         priceKeyRef.current = windowKey;
-        const limited = series.slice(-Math.min(series.length, normalizedWindow));
-        setStoredPrices(limited);
+        const limited = series.slice(
+          -Math.min(series.length, normalizedWindow)
+        );
+        // Skip state updates when the derived series hasn't actually changed;
+        // this prevents an infinite fetch/set loop when cached data already
+        // satisfies the requested window.
+        const shouldUpdate = (() => {
+          if (!storedPrices || storedPrices.length !== limited.length) {
+            return true;
+          }
+          if (!storedPrices.length) {
+            return false;
+          }
+          const lastExisting = storedPrices[storedPrices.length - 1];
+          const lastNext = limited[limited.length - 1];
+
+          const existingTs =
+            lastExisting?.time instanceof Date
+              ? lastExisting.time.getTime()
+              : null;
+          const nextTs =
+            lastNext?.time instanceof Date ? lastNext.time.getTime() : null;
+
+          return existingTs !== nextTs;
+        })();
+
+        if (shouldUpdate) {
+          setStoredPrices(limited);
+        }
       } catch (error) {
         if (!cancelled) {
           console.error("Error fetching prices:", error);
@@ -394,12 +463,14 @@ export default function BacktestView({
         startTransition(() => {
           setStats(data);
           setIsLoading(false);
-          if (typeof onRunStateChange === "function") {
-            onRunStateChange({
+          const runStateCb = onRunStateChangeRef.current;
+          const cachedPrices = storedPricesRef.current;
+          if (typeof runStateCb === "function") {
+            runStateCb({
               isLoading: false,
               progress: 1,
               hasStats: true,
-              hasPrices: Boolean(storedPrices && storedPrices.length > 0),
+              hasPrices: Boolean(cachedPrices && cachedPrices.length > 0),
               completed: true,
             });
           }
@@ -439,7 +510,8 @@ export default function BacktestView({
       storedPrices &&
       storedPrices.length > 0 &&
       priceKeyRef.current === nextKey &&
-      storedPrices.length === (nextSpec?.normalizedWindow ?? storedPrices.length);
+      storedPrices.length ===
+        (nextSpec?.normalizedWindow ?? storedPrices.length);
 
     pendingRunRef.current = nextOptions;
     setActiveOptions(nextOptions);
@@ -548,12 +620,9 @@ export default function BacktestView({
     equityAnimationRef.current = null;
 
     priceFrameId = requestAnimationFrame(animatePrice);
-    equityTimeoutId = setTimeout(
-      () => {
-        equityFrameId = requestAnimationFrame(animateEquity);
-      },
-      200
-    );
+    equityTimeoutId = setTimeout(() => {
+      equityFrameId = requestAnimationFrame(animateEquity);
+    }, 200);
 
     return () => {
       if (priceFrameId) cancelAnimationFrame(priceFrameId);

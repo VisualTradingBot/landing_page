@@ -7,7 +7,6 @@ import {
   DEFAULT_ASSET,
   DEFAULT_DATA_RESOLUTION,
   DEFAULT_FEE_PERCENT,
-  DEFAULT_HISTORY_WINDOW,
   DEFAULT_INTERVAL_BY_RESOLUTION,
 } from "../defaults";
 
@@ -616,70 +615,70 @@ export default function ParameterBlock({
 
         {activeTab === "parameters" ? (
           <>
-        <div className="parameter-controls">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search parameters..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="parameter-search"
-            />
-          </div>
+            <div className="parameter-controls">
+              <div className="search-container">
+                <input
+                  type="text"
+                  placeholder="Search parameters..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="parameter-search"
+                />
+              </div>
 
-          <div className="buttons">
-            <button className="add-parameter-btn" onClick={() => onShowModal()}>
-              Add Parameter
-            </button>
-          </div>
-        </div>
+              <div className="buttons">
+                <button
+                  className="add-parameter-btn"
+                  onClick={() => onShowModal()}
+                >
+                  Add Parameter
+                </button>
+              </div>
+            </div>
 
-        <div className="parameters-list">
-          {!hasMatchingParameters ? (
-            <div className="empty-state">
-              <p>
-                {searchTerm
-                  ? "No parameters match your search"
-                  : "No parameters found"}
-              </p>
-              <p>
-                {searchTerm
-                  ? "Try a different search term"
-                  : "Use the buttons above to add parameters"}
-              </p>
+            <div className="parameters-list">
+              {!hasMatchingParameters ? (
+                <div className="empty-state">
+                  <p>
+                    {searchTerm
+                      ? "No parameters match your search"
+                      : "No parameters found"}
+                  </p>
+                  <p>
+                    {searchTerm
+                      ? "Try a different search term"
+                      : "Use the buttons above to add parameters"}
+                  </p>
+                </div>
+              ) : (
+                <div className="parameter-groups">
+                  {filteredGroupedParameters.map((group) => {
+                    const collapsed = Boolean(collapsedGroups[group.key]);
+                    return (
+                      <div className="parameter-group" key={group.key}>
+                        <div
+                          className={`group-header ${group.className}`}
+                          onClick={() => toggleGroup(group.key)}
+                        >
+                          <span className="group-title">{group.title}</span>
+                          <span className="group-count">
+                            ({group.params.length})
+                          </span>
+                          <span className="group-toggle">
+                            {collapsed ? "▼" : "▲"}
+                          </span>
+                        </div>
+                        {!collapsed && (
+                          <ul className="group-parameters">
+                            {group.params.map(renderParameterItem)}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="parameter-groups">
-              {filteredGroupedParameters.map((group) => {
-                const collapsed = Boolean(collapsedGroups[group.key]);
-                return (
-                  <div className="parameter-group" key={group.key}>
-                    <div
-                      className={`group-header ${group.className}`}
-                      onClick={() => toggleGroup(group.key)}
-                    >
-                      <span className="group-title">
-                        {group.title}
-                        
-                      </span>
-                      <span className="group-count">
-                        ({group.params.length})
-                      </span>
-                      <span className="group-toggle">
-                        {collapsed ? "▼" : "▲"}
-                      </span>
-                    </div>
-                    {!collapsed && (
-                      <ul className="group-parameters">
-                        {group.params.map(renderParameterItem)}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
           </>
         ) : (
           <BacktestDatasetTab />
@@ -711,10 +710,13 @@ function BacktestDatasetTab() {
   const assetContext = useAsset();
   const inputNode = reactFlow?.getNode?.("inputNode") || null;
   const data = inputNode?.data || {};
-  const RESOLUTION_LIMITS = {
-    "1d": { min: 7, max: 365, unit: "days" },
-    "1h": { min: 24, max: 4320, unit: "hours" },
-  };
+  const RESOLUTION_LIMITS = useMemo(
+    () => ({
+      "1d": { min: 1, max: 365, unit: "days" },
+      "1h": { min: 1, max: 8760, unit: "hours" },
+    }),
+    []
+  );
   const resolution = data.resolution || DEFAULT_DATA_RESOLUTION;
   const intervalBounds =
     RESOLUTION_LIMITS[resolution] || RESOLUTION_LIMITS["1d"];
@@ -746,8 +748,7 @@ function BacktestDatasetTab() {
     if (!inputNode) return;
     const nodeData = inputNode.data || {};
     const nodeResolution = nodeData.resolution || DEFAULT_DATA_RESOLUTION;
-    const bounds =
-      RESOLUTION_LIMITS[nodeResolution] || RESOLUTION_LIMITS["1d"];
+    const bounds = RESOLUTION_LIMITS[nodeResolution] || RESOLUTION_LIMITS["1d"];
     const syncedInterval = String(
       nodeData.interval ??
         DEFAULT_INTERVAL_BY_RESOLUTION[nodeResolution] ??
@@ -776,14 +777,12 @@ function BacktestDatasetTab() {
     dirty.asset,
     dirty.interval,
     dirty.fee,
+    RESOLUTION_LIMITS,
   ]);
 
   const flashField = useCallback((field) => {
     setFlashing((prev) => ({ ...prev, [field]: true }));
-    setTimeout(
-      () => setFlashing((prev) => ({ ...prev, [field]: false })),
-      600
-    );
+    setTimeout(() => setFlashing((prev) => ({ ...prev, [field]: false })), 600);
   }, []);
 
   const commitChanges = useCallback(
@@ -837,9 +836,7 @@ function BacktestDatasetTab() {
 
   const handleFeeBlur = () => {
     const numeric = Number(formState.fee);
-    const feeValue = Number.isFinite(numeric)
-      ? numeric
-      : DEFAULT_FEE_PERCENT;
+    const feeValue = Number.isFinite(numeric) ? numeric : DEFAULT_FEE_PERCENT;
     const feeStr = String(feeValue);
     if (feeStr !== formState.fee) {
       setFormState((prev) => ({ ...prev, fee: feeStr }));
@@ -906,7 +903,11 @@ function BacktestDatasetTab() {
           <div className="dataset-field locked">
             <label htmlFor="dataset-type">Type</label>
             <div className="field-control field-control--locked">
-              <select id="dataset-type" value={data.type || "realtime"} disabled>
+              <select
+                id="dataset-type"
+                value={data.type || "realtime"}
+                disabled
+              >
                 <option value="realtime">Real-Time</option>
                 <option value="batch">Batch</option>
                 <option value="stream">Stream</option>
