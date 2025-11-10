@@ -8,6 +8,7 @@ import {
   Tooltip,
 } from "recharts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
 
 const palette = {
   portfolio: "#111111",
@@ -57,7 +58,7 @@ function formatWithSign(formatter, value) {
   const formattedAbsolute = formatter(Math.abs(value));
   const cleaned =
     typeof formattedAbsolute === "string"
-      ? formattedAbsolute.replace(/^[+\-]/, "")
+      ? formattedAbsolute.replace(/^[+-]/, "")
       : formattedAbsolute;
   if (value === 0) {
     return formattedAbsolute;
@@ -100,7 +101,6 @@ function CustomTooltip({
 export default function PerformanceChart({
   customData,
   lineColor = palette.portfolio,
-  mode = "backtest",
   description = "",
   title = "Performance Dashboard",
   baselineValue,
@@ -159,7 +159,7 @@ export default function PerformanceChart({
         setVisiblePoints(dataToUse.length);
       }
     },
-    [cancelAnimation]
+    [cancelAnimation, dataToUse.length]
   );
 
   const startAnimation = useCallback(() => {
@@ -441,3 +441,43 @@ export default function PerformanceChart({
     </div>
   );
 }
+
+PerformanceChart.propTypes = {
+  customData: PropTypes.arrayOf(
+    PropTypes.shape({
+      time: PropTypes.string.isRequired,
+      portfolio: PropTypes.number.isRequired,
+    })
+  ),
+  lineColor: PropTypes.string,
+  mode: PropTypes.string,
+  description: PropTypes.string,
+  title: PropTypes.string,
+  baselineValue: PropTypes.number,
+  valueFormatter: PropTypes.func,
+  metricsConfig: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string,
+      label: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+      tone: PropTypes.string,
+    })
+  ),
+  summaryConfig: PropTypes.shape({
+    label: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+    tone: PropTypes.string,
+  }),
+  metricsTitle: PropTypes.string,
+  usePercentageScale: PropTypes.bool,
+  showMetrics: PropTypes.bool,
+  className: PropTypes.string,
+};
+
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.array,
+  label: PropTypes.string,
+  baseline: PropTypes.number,
+  valueFormatter: PropTypes.func,
+};

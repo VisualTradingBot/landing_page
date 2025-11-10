@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useTrackInteraction } from "../../hooks/useAnalytics";
 import { getSupabaseClient } from "../../utils/supabase";
 import "./contactModal.scss";
+import PropTypes from "prop-types";
 
 const STATIC_RECIPIENT_EMAIL = "giancarlofranceschetti1202@gmail.com";
 const ADDITIONAL_RECIPIENT_EMAIL = "valerii.f@cryptiq.trade";
@@ -19,7 +20,7 @@ export default function ContactModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // "success" | "error"
   const [submitMessage, setSubmitMessage] = useState("");
-  
+
   // Analytics tracking
   const { trackClick, trackFormSubmit } = useTrackInteraction();
 
@@ -46,39 +47,45 @@ export default function ContactModal({ isOpen, onClose }) {
 
     try {
       // Get analytics context for enriched data
-      const sessionContext = window.__analytics ? window.__analytics.getSessionSummary() : {};
-      
+      const sessionContext = window.__analytics
+        ? window.__analytics.getSessionSummary()
+        : {};
+
       // 1. Save to Supabase database (only in production)
       if (!import.meta.env.DEV) {
         const supabase = await getSupabaseClient();
         if (supabase) {
           try {
             const { error: supabaseError } = await supabase
-              .from('contact_submissions')
-              .insert([{
-                name: formData.name || null,
-                email: formData.email,
-                trading_experience: formData.tradingExperience,
-                bot_experience: formData.botExperience,
-                session_id: sessionContext.sessionId || null,
-                referrer: sessionContext.referrer || null,
-                device_type: sessionContext.device?.deviceType || null,
-                browser: sessionContext.device?.browser || null,
-              }]);
+              .from("contact_submissions")
+              .insert([
+                {
+                  name: formData.name || null,
+                  email: formData.email,
+                  trading_experience: formData.tradingExperience,
+                  bot_experience: formData.botExperience,
+                  session_id: sessionContext.sessionId || null,
+                  referrer: sessionContext.referrer || null,
+                  device_type: sessionContext.device?.deviceType || null,
+                  browser: sessionContext.device?.browser || null,
+                },
+              ]);
 
             if (supabaseError) {
-              console.error('Supabase save error:', supabaseError);
+              console.error("Supabase save error:", supabaseError);
               // Continue to email anyway - don't fail the whole submission
             } else {
-              console.log('✅ Submission saved to Supabase database');
+              console.log("✅ Submission saved to Supabase database");
             }
           } catch (supabaseException) {
-            console.error('Supabase exception:', supabaseException);
+            console.error("Supabase exception:", supabaseException);
             // Continue to email anyway
           }
         }
       } else {
-        console.log('[DEV MODE] Contact form submission - not saving to Supabase');
+        console.log(
+          "[DEV MODE] Contact form submission - not saving to Supabase"
+        );
       }
 
       // 2. Send email notification via FormSubmit (existing functionality)
@@ -115,9 +122,9 @@ export default function ContactModal({ isOpen, onClose }) {
           "Thanks! We received your message and will reply soon."
         );
         setFormData(INITIAL_FORM_STATE);
-        
+
         // Track successful form submission
-        trackFormSubmit('contact-form', true);
+        trackFormSubmit("contact-form", true);
       } else {
         throw new Error(data.message || "Unable to send message.");
       }
@@ -127,9 +134,9 @@ export default function ContactModal({ isOpen, onClose }) {
       setSubmitMessage(
         "We couldn't send your message right now. Please try again in a moment."
       );
-      
+
       // Track failed form submission
-      trackFormSubmit('contact-form', false);
+      trackFormSubmit("contact-form", false);
     } finally {
       setIsSubmitting(false);
     }
@@ -149,7 +156,7 @@ export default function ContactModal({ isOpen, onClose }) {
       setIsSubmitting(false);
     } else {
       // Track modal open
-      trackClick('contact-modal-open');
+      trackClick("contact-modal-open");
     }
   }, [isOpen, trackClick]);
 
@@ -271,3 +278,8 @@ export default function ContactModal({ isOpen, onClose }) {
     </motion.div>
   );
 }
+
+ContactModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

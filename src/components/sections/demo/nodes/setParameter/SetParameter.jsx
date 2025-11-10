@@ -188,15 +188,10 @@ export default function SetParameter({ data, id }) {
     };
   }, [label, parameterId, value]);
 
-  const colorVariant = useMemo(
-    () => {
-      const preset = pickSystemVariantByLabel(label);
-      return preset || getSystemColorVariant(parameterId || label);
-    },
-    [label, parameterId]
-  );
-
-  const displayValue = value && value.trim() ? value.trim() : "[Auto-generated]";
+  const colorVariant = useMemo(() => {
+    const preset = pickSystemVariantByLabel(label);
+    return preset || getSystemColorVariant(parameterId || label);
+  }, [label, parameterId]);
 
   return (
     <NodeDefault
@@ -205,9 +200,7 @@ export default function SetParameter({ data, id }) {
       left={{ active: true, type: "target" }}
     >
       <div className="set-parameter-node">
-        <div
-          className={`set-parameter-card parameter-item ${colorVariant}`}
-        >
+        <div className={`set-parameter-card parameter-item ${colorVariant}`}>
           <span className="parameter-label">
             <span className={`parameter-icon ${colorVariant}`}>⬤</span>
             <span className="parameter-label-content">{label}</span>
