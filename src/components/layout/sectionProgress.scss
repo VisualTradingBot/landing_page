@@ -1,0 +1,52 @@
+.sections-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.section-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 90px;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+
+  @media (max-width: 1023px) {
+    display: none; // Hide on smaller screens
+  }
+
+  .progress-line {
+    position: absolute;
+    left: 45px;
+    width: 2px;
+    background: #000000;
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+
+  .progress-circle {
+    position: absolute;
+    left: 45px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    span {
+      font-size: 27px;
+      font-weight: 700;
+      color: var(--fg);
+      font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1;
+    }
+  }
+}
+

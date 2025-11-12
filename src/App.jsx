@@ -9,6 +9,7 @@ import FAQ from "./components/sections/faq/FAQ";
 import CTA from "./components/sections/cta/CTA";
 import Footer from "./components/layout/Footer";
 import ContactModal from "./components/layout/ContactModal";
+import SectionProgress from "./components/layout/SectionProgress";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import { initScrollbarAutoHide } from "./utils/scrollbarAutoHide";
 import "./styles/App.css";
@@ -29,10 +30,13 @@ function App() {
       <Navbar onOpenModal={openModal} />
       <main>
         <Hero onOpenModal={openModal} />
-        <Build />
-        <Test />
-        <Trade />
-        <Demo />
+        <div className="sections-container">
+          <SectionProgress />
+          <Build />
+          <Test />
+          <Trade />
+          <Demo />
+        </div>
         <FAQ />
         <CTA onOpenModal={openModal} />
       </main>

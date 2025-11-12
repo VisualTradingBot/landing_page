@@ -1302,7 +1302,7 @@ export default function Demo() {
       <section id="demo" className="demo">
         {/* === Demo Header === */}
         <div className="demo-header">
-          <h2 className="demo-title">DEMO</h2>
+          <h2 className="demo-title">try it out</h2>
         </div>
 
         {/* === Drag-and-drop algorithm builder === */}
