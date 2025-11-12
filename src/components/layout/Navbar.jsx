@@ -180,17 +180,6 @@ export default function Navbar({ onOpenModal }) {
               BUILD
             </a>
             <a
-              href="#demo"
-              onClick={(e) => {
-                e.preventDefault();
-                trackClick("mobile-nav-demo");
-                scrollToSection("demo");
-                closeMobileMenu();
-              }}
-            >
-              DEMO
-            </a>
-            <a
               href="#test"
               onClick={(e) => {
                 e.preventDefault();
@@ -211,6 +200,17 @@ export default function Navbar({ onOpenModal }) {
               }}
             >
               TRADE
+            </a>
+            <a
+              href="#demo"
+              onClick={(e) => {
+                e.preventDefault();
+                trackClick("mobile-nav-demo");
+                scrollToSection("demo");
+                closeMobileMenu();
+              }}
+            >
+              DEMO
             </a>
             <a
               href="#faq"

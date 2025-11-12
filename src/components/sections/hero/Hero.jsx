@@ -9,12 +9,26 @@ export default function Hero({ onOpenModal }) {
   const [taglineText, setTaglineText] = useState("");
   const [showTagline, setShowTagline] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [showDemoCta, setShowDemoCta] = useState(false);
   const { trackClick } = useTrackInteraction();
 
   const scrollToBuild = () => {
     const buildSection = document.getElementById("build");
     if (buildSection) {
       const elementPosition = buildSection.offsetTop;
+      const offsetPosition = elementPosition - 80;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const scrollToDemo = () => {
+    const demoSection = document.getElementById("demo");
+    if (demoSection) {
+      const elementPosition = demoSection.offsetTop;
       const offsetPosition = elementPosition - 80;
 
       window.scrollTo({
@@ -52,6 +66,10 @@ export default function Hero({ onOpenModal }) {
               // Show buttons after tagline is complete
               setTimeout(() => {
                 setShowButtons(true);
+                // Show demo CTA after a delay with cooler animation
+                setTimeout(() => {
+                  setShowDemoCta(true);
+                }, 800);
               }, 500);
             }
           }, 30); // Faster typing for tagline
@@ -81,20 +99,33 @@ export default function Hero({ onOpenModal }) {
           <button
             className="cta-button"
             onClick={() => {
-              trackClick("hero-get-started");
+              trackClick("hero-get-in-touch");
               onOpenModal();
             }}
           >
-            Get Started
+            Get in touch
           </button>
           <button
             className="secondary-button"
             onClick={() => {
-              trackClick("hero-learn-more");
+              trackClick("hero-explore");
               scrollToBuild();
             }}
           >
-            Learn More
+            Explore
+          </button>
+        </div>
+
+        <div className={`hero-demo-cta ${showDemoCta ? "visible" : "hidden"}`}>
+          <p className="demo-text">demo is out!</p>
+          <button
+            className="demo-button"
+            onClick={() => {
+              trackClick("hero-try-demo");
+              scrollToDemo();
+            }}
+          >
+            TRY DEMO
           </button>
         </div>
       </div>
