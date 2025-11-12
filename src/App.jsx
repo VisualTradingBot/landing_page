@@ -10,6 +10,7 @@ import CTA from "./components/sections/cta/CTA";
 import Footer from "./components/layout/Footer";
 import ContactModal from "./components/layout/ContactModal";
 import SectionProgress from "./components/layout/SectionProgress";
+import StructuredData from "./components/SEO/StructuredData";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import { initScrollbarAutoHide } from "./utils/scrollbarAutoHide";
 import "./styles/App.css";
@@ -27,6 +28,7 @@ function App() {
 
   return (
     <div className="app-root">
+      <StructuredData />
       <Navbar onOpenModal={openModal} />
       <main>
         <Hero onOpenModal={openModal} />
