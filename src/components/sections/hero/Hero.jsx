@@ -15,20 +15,24 @@ export default function Hero({ onOpenModal }) {
   const scrollToBuild = () => {
     const buildSection = document.getElementById("build");
     if (buildSection) {
-      const elementPosition = buildSection.offsetTop;
+      const rect = buildSection.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const elementPosition = rect.top + scrollTop;
       const offsetPosition = elementPosition - 80;
 
       window.scrollTo({
-        top: offsetPosition,
+        top: Math.max(0, offsetPosition),
         behavior: "smooth",
       });
+    } else {
+      console.warn("[Hero] Build section not found");
     }
   };
 
   const scrollToDemo = () => {
     const demoSection = document.getElementById("demo");
     if (demoSection) {
-      const elementPosition = demoSection.offsetTop;
+      const elementPosition = demoSection.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - 80;
 
       window.scrollTo({
