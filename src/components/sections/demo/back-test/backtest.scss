@@ -15,37 +15,6 @@
   position: relative;
   overflow: hidden;
 
-  // Inner border accent with black/white theme
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    background: linear-gradient(
-      45deg,
-      transparent 0%,
-      rgba(0, 0, 0, 0.1) 25%,
-      transparent 50%,
-      rgba(0, 0, 0, 0.1) 75%,
-      transparent 100%
-    );
-    opacity: 0.3;
-    animation: backgroundShift 20s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  @keyframes backgroundShift {
-    0%,
-    100% {
-      transform: translateX(-100%);
-    }
-    50% {
-      transform: translateX(100%);
-    }
-  }
 
   .backtest-header {
     margin-bottom: 32px;
