@@ -202,10 +202,12 @@ export default function Demo() {
     DEFAULT_SYNTHETIC_INTERVAL
   );
   const [inTradeCollapsed, setInTradeCollapsed] = useState(false); // Collapse state for in-trade block
-  
+
   // === Tutorial state ===
   const [showIntroductionMask, setShowIntroductionMask] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [parameterDashboardExpanded, setParameterDashboardExpanded] =
+    useState(false); // Tutorial control for parameter dashboard
 
   // === Modal state ===
   const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
@@ -844,7 +846,8 @@ export default function Demo() {
   const handleIntroductionMaskComplete = useCallback(() => {
     setShowIntroductionMask(false);
     // Start tutorial after introduction mask
-    const hasCompletedTutorial = localStorage.getItem("demo-tutorial-completed") === "true";
+    const hasCompletedTutorial =
+      localStorage.getItem("demo-tutorial-completed") === "true";
     if (!hasCompletedTutorial) {
       setShowTutorial(true);
     }
@@ -866,9 +869,11 @@ export default function Demo() {
 
   // Check if introduction mask should be shown
   useEffect(() => {
-    const hasShownMask = localStorage.getItem("demo-introduction-mask-shown") === "true";
-    const hasCompletedTutorial = localStorage.getItem("demo-tutorial-completed") === "true";
-    
+    const hasShownMask =
+      localStorage.getItem("demo-introduction-mask-shown") === "true";
+    const hasCompletedTutorial =
+      localStorage.getItem("demo-tutorial-completed") === "true";
+
     // Only show mask if it hasn't been shown and tutorial hasn't been completed
     if (!hasShownMask && !hasCompletedTutorial) {
       setShowIntroductionMask(true);
@@ -896,37 +901,38 @@ export default function Demo() {
 
       <section id="demo" className="demo">
         {/* Test Tutorial Button - Only visible in development or always visible for testing */}
-        <div style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "20px",
-          zIndex: 9999,
-          background: "#000000",
-          color: "#ffffff",
-          padding: "12px 20px",
-          border: "2px solid #000000",
-          cursor: "pointer",
-          fontFamily: "ShareTechMono, monospace",
-          fontSize: "12px",
-          fontWeight: "600",
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          boxShadow: "4px 4px 0 rgba(0, 0, 0, 0.2)",
-          transition: "all 0.2s ease"
-        }}
-        onClick={handleStartTutorial}
-        onMouseEnter={(e) => {
-          e.target.style.background = "#ffffff";
-          e.target.style.color = "#000000";
-          e.target.style.transform = "translateY(-2px)";
-          e.target.style.boxShadow = "6px 6px 0 rgba(0, 0, 0, 0.3)";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = "#000000";
-          e.target.style.color = "#ffffff";
-          e.target.style.transform = "translateY(0)";
-          e.target.style.boxShadow = "4px 4px 0 rgba(0, 0, 0, 0.2)";
-        }}
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            zIndex: 9999,
+            background: "#000000",
+            color: "#ffffff",
+            padding: "12px 20px",
+            border: "2px solid #000000",
+            cursor: "pointer",
+            fontFamily: "ShareTechMono, monospace",
+            fontSize: "12px",
+            fontWeight: "600",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+            boxShadow: "4px 4px 0 rgba(0, 0, 0, 0.2)",
+            transition: "all 0.2s ease",
+          }}
+          onClick={handleStartTutorial}
+          onMouseEnter={(e) => {
+            e.target.style.background = "#ffffff";
+            e.target.style.color = "#000000";
+            e.target.style.transform = "translateY(-2px)";
+            e.target.style.boxShadow = "6px 6px 0 rgba(0, 0, 0, 0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = "#000000";
+            e.target.style.color = "#ffffff";
+            e.target.style.transform = "translateY(0)";
+            e.target.style.boxShadow = "4px 4px 0 rgba(0, 0, 0, 0.2)";
+          }}
         >
           🎓 Test Tutorial
         </div>
@@ -977,6 +983,9 @@ export default function Demo() {
               setParameters={setParameters}
               onShowModal={openParameterModal}
               onShowDeleteModal={openDeleteModal}
+              isExpandedByTutorial={
+                showTutorial ? parameterDashboardExpanded : null
+              }
             />
           </ReactFlow>
 
@@ -986,6 +995,7 @@ export default function Demo() {
               nodes={nodes}
               onTutorialComplete={handleTutorialComplete}
               onExpandInTrade={setInTradeCollapsed}
+              onParameterDashboardToggle={setParameterDashboardExpanded}
             />
           )}
         </div>
