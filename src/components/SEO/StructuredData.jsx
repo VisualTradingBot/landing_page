@@ -59,12 +59,19 @@ export default function StructuredData() {
     };
 
     // Organization schema
+    // Note: Google prefers square logos (multiples of 48px: 112x112, 512x512, etc.)
+    // Currently using og-image.png as fallback. Consider creating a square logo.png for best results.
     const organizationSchema = {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "CRYPTIQ",
       "url": baseUrl,
-      "logo": `${baseUrl}/logo.png`,
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${baseUrl}/og-image.png`,
+        
+      },
+      "image": `${baseUrl}/og-image.png`,
       "description": "New generation platform for visual trading automation",
       "sameAs": [
         // Add social media URLs here when available
