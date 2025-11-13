@@ -1286,6 +1286,19 @@ export default function Demo() {
     [optionsSignature]
   );
 
+  // === Screen size detection for mobile ===
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   return (
     <AssetContext.Provider
       value={{
@@ -1305,78 +1318,101 @@ export default function Demo() {
           <h2 className="demo-title">try it out</h2>
         </div>
 
-        {/* === Drag-and-drop algorithm builder === */}
-        <div
-          ref={containerRef}
-          className="demo-flow-canvas"
-          style={{
-            width: "100%",
-            height: "75vh",
-            minHeight: "650px",
-            position: "relative",
-            background: "transparent",
-          }}
-        >
-          <ReactFlow
-            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-            nodes={nodes}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={handleConnect}
-            onEdgeDoubleClick={handleEdgeDoubleClick}
-            defaultEdgeOptions={{ type: "shortStep" }}
-            connectionLineType="step"
-            connectionLineStyle={{
-              strokeWidth: 3,
-              stroke: "#000000",
-              strokeDasharray: "5,5",
-            }}
-            preventScrolling={false}
-            autoPanOnNodeDrag={true}
-            maxZoom={1.2}
-            minZoom={0.6}
-            panOnDrag={true}
-            panOnScroll={false}
-            zoomOnScroll={true}
-            zoomOnPinch={true}
-            fitView={false}
-            translateExtent={translateExtent}
-          >
-            <ParameterBlock
-              handleRemoveParameter={removeParameter}
-              handleAddParameter={addParameter}
-              parameters={parameters}
-              onShowModal={openParameterModal}
-              onShowDeleteModal={openDeleteModal}
-              onEditParameter={editParameter}
-            />
-          </ReactFlow>
-          <div className="run-backtest-overlay">
-            <button
-              type="button"
-              className={runButtonClassName}
-              onClick={handleRunBacktestClick}
-              disabled={runButtonDisabled}
-            >
-              {runButtonLabel}
-            </button>
-            {backtestStatus.isLoading}
+        {/* === Mobile Message === */}
+        {isMobile && (
+          <div className="demo-mobile-message">
+            <div className="demo-mobile-content">
+              <h3 className="demo-mobile-title">Demo Available on Desktop</h3>
+              <p className="demo-mobile-text">
+                The interactive demo requires a larger screen to provide the best
+                experience. Please visit this page on a laptop or desktop computer
+                to try out our visual trading strategy builder.
+              </p>
+              <p className="demo-mobile-text">
+                On desktop, you'll be able to drag and drop trading nodes, build
+                custom strategies, and run backtests to see how your algorithms
+                perform.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* <div className="divider-demo"></div> */}
+        {/* === Drag-and-drop algorithm builder === */}
+        {!isMobile && (
+          <>
+            <div
+              ref={containerRef}
+              className="demo-flow-canvas"
+              style={{
+                width: "100%",
+                height: "75vh",
+                minHeight: "650px",
+                position: "relative",
+                background: "transparent",
+              }}
+            >
+              <ReactFlow
+                defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+                nodes={nodes}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                edges={edges}
+                onNodesChange={handleNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={handleConnect}
+                onEdgeDoubleClick={handleEdgeDoubleClick}
+                defaultEdgeOptions={{ type: "shortStep" }}
+                connectionLineType="step"
+                connectionLineStyle={{
+                  strokeWidth: 3,
+                  stroke: "#000000",
+                  strokeDasharray: "5,5",
+                }}
+                preventScrolling={false}
+                autoPanOnNodeDrag={true}
+                maxZoom={1.2}
+                minZoom={0.6}
+                panOnDrag={true}
+                panOnScroll={false}
+                zoomOnScroll={true}
+                zoomOnPinch={true}
+                fitView={false}
+                translateExtent={translateExtent}
+              >
+                <ParameterBlock
+                  handleRemoveParameter={removeParameter}
+                  handleAddParameter={addParameter}
+                  parameters={parameters}
+                  onShowModal={openParameterModal}
+                  onShowDeleteModal={openDeleteModal}
+                  onEditParameter={editParameter}
+                />
+              </ReactFlow>
+              <div className="run-backtest-overlay">
+                <button
+                  type="button"
+                  className={runButtonClassName}
+                  onClick={handleRunBacktestClick}
+                  disabled={runButtonDisabled}
+                >
+                  {runButtonLabel}
+                </button>
+                {backtestStatus.isLoading}
+              </div>
+            </div>
 
-        {/* === Backtest results section === */}
-        <div className="backtest" ref={backtestSectionRef}>
-          <BacktestView
-            options={backtestOptions}
-            onRegisterRunHandler={handleRegisterRunHandler}
-            onRunStateChange={handleRunBacktestStatusChange}
-          />
-        </div>
+            {/* <div className="divider-demo"></div> */}
+
+            {/* === Backtest results section === */}
+            <div className="backtest" ref={backtestSectionRef}>
+              <BacktestView
+                options={backtestOptions}
+                onRegisterRunHandler={handleRegisterRunHandler}
+                onRunStateChange={handleRunBacktestStatusChange}
+              />
+            </div>
+          </>
+        )}
 
         {/* === Add Parameter / Custom Parameter Modal === */}
         {showParameterModal && (
