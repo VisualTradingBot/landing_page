@@ -1,6 +1,20 @@
-// Default configuration values for the demo
-
+// Centralized defaults for the demo modules
 export const DEFAULT_ASSET = "bitcoin";
-export const DEFAULT_FEE_PERCENT = 0.1; // 0.1% trading fee
-export const DEFAULT_DATA_RESOLUTION = "1h"; // 1 hour candles
-export const DEFAULT_SYNTHETIC_INTERVAL = 200; // Number of data points for synthetic data
+export const DEFAULT_LOOKBACK = 30;
+export const DEFAULT_FEE_PERCENT = 0.05;
+export const DEFAULT_DATA_RESOLUTION = "1d"; // daily candles by default
+export const DEFAULT_INTERVAL_BY_RESOLUTION = {
+  "1d": 180, // days
+  "1h": 48, // hours
+};
+export const DEFAULT_HISTORY_WINDOW =
+  DEFAULT_INTERVAL_BY_RESOLUTION[DEFAULT_DATA_RESOLUTION];
+
+export default {
+  DEFAULT_ASSET,
+  DEFAULT_LOOKBACK,
+  DEFAULT_FEE_PERCENT,
+  DEFAULT_DATA_RESOLUTION,
+  DEFAULT_INTERVAL_BY_RESOLUTION,
+  DEFAULT_HISTORY_WINDOW,
+};

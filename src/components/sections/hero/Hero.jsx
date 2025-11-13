@@ -2,18 +2,37 @@ import { useState, useEffect } from "react";
 import { useTrackInteraction } from "../../../hooks/useAnalytics";
 import TileWall from "./TileWall";
 import "./hero.scss";
+import PropTypes from "prop-types";
 
 export default function Hero({ onOpenModal }) {
   const [heroText, setHeroText] = useState("");
   const [taglineText, setTaglineText] = useState("");
   const [showTagline, setShowTagline] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [showDemoCta, setShowDemoCta] = useState(false);
   const { trackClick } = useTrackInteraction();
 
   const scrollToBuild = () => {
     const buildSection = document.getElementById("build");
     if (buildSection) {
-      const elementPosition = buildSection.offsetTop;
+      const rect = buildSection.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const elementPosition = rect.top + scrollTop;
+      const offsetPosition = elementPosition - 80;
+
+      window.scrollTo({
+        top: Math.max(0, offsetPosition),
+        behavior: "smooth",
+      });
+    } else {
+      console.warn("[Hero] Build section not found");
+    }
+  };
+
+  const scrollToDemo = () => {
+    const demoSection = document.getElementById("demo");
+    if (demoSection) {
+      const elementPosition = demoSection.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - 80;
 
       window.scrollTo({
@@ -51,6 +70,10 @@ export default function Hero({ onOpenModal }) {
               // Show buttons after tagline is complete
               setTimeout(() => {
                 setShowButtons(true);
+                // Show demo CTA after a delay with cooler animation
+                setTimeout(() => {
+                  setShowDemoCta(true);
+                }, 800);
               }, 500);
             }
           }, 30); // Faster typing for tagline
@@ -80,20 +103,33 @@ export default function Hero({ onOpenModal }) {
           <button
             className="cta-button"
             onClick={() => {
-              trackClick("hero-get-started");
+              trackClick("hero-get-in-touch");
               onOpenModal();
             }}
           >
-            Get Started
+            Get in touch
           </button>
           <button
             className="secondary-button"
             onClick={() => {
-              trackClick("hero-learn-more");
+              trackClick("hero-explore");
               scrollToBuild();
             }}
           >
-            Learn More
+            Explore
+          </button>
+        </div>
+
+        <div className={`hero-demo-cta ${showDemoCta ? "visible" : "hidden"}`}>
+          <p className="demo-text">demo is out!</p>
+          <button
+            className="demo-button"
+            onClick={() => {
+              trackClick("hero-try-demo");
+              scrollToDemo();
+            }}
+          >
+            TRY DEMO
           </button>
         </div>
       </div>
@@ -103,3 +139,7 @@ export default function Hero({ onOpenModal }) {
     </section>
   );
 }
+
+Hero.propTypes = {
+  onOpenModal: PropTypes.func.isRequired,
+};

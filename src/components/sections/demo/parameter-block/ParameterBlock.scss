@@ -9,10 +9,11 @@
   flex-direction: column;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease-out;
   width: 500px;
-  max-width: 90vw;
+  max-width: 95vw;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden !important; // Contain content properly
   z-index: 1000 !important; // Ensure it's above other elements
+  margin-top: 10px;
   
   // Draggable state styling
   &.dragging {
@@ -247,12 +248,45 @@
       animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    .parameter-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 8px;
+
+      button {
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background 0.2s ease, color 0.2s ease;
+        color: #000;
+
+        &.active {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        &:hover:not(.active) {
+          color: #111827;
+          background: rgba(0, 0, 0, 0.08);
+        }
+      }
+    }
+ 
     // Clean Parameter Controls
     .parameter-controls {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 0px;
       height: auto !important;
       max-height: none !important;
       min-height: none !important;
@@ -317,6 +351,103 @@
             color: #000000;
           }
         }
+      }
+    }
+
+    .dataset-tab {
+      animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .dataset-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .dataset-field {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          position: relative;
+
+          label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #111827;
+            min-width: 140px;
+            margin: 0;
+          }
+
+          select,
+          input {
+            border: 2px solid #000000;
+            border-radius: 2px;
+            background: #ffffff;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: inherit;
+            color: #0f172a;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            flex: 1;
+
+            &:focus {
+              outline: none;
+              border-color: #000000;
+              background: #f8f8f8;
+            }
+          }
+
+          .dataset-history-input,
+          .dataset-fee-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+
+            span {
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              color: #4b5563;
+              min-width: 40px;
+            }
+          }
+
+          &.flash::after {
+            content: "";
+            position: absolute;
+            left: -6px;
+            right: -6px;
+            top: -4px;
+            bottom: -4px;
+            border-radius: 8px;
+            border: 2px solid rgba(15, 23, 42, 0.4);
+            animation: datasetFieldFlash 0.6s ease;
+          }
+
+          &.locked .field-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+          }
+
+          &.locked select {
+            cursor: var(--locked-cursor);
+          }
+
+          &.locked label {
+            color: #4b5563;
+          }
+        }
+      }
+
+      .dataset-empty {
+        font-size: 12px;
+        color: #6b7280;
+        font-style: italic;
       }
     }
 
@@ -420,6 +551,16 @@
             flex: 1;
             font-size: 12px;
             font-weight: 800;
+
+            .group-subtitle {
+              display: block;
+              margin-top: 2px;
+              font-size: 10px;
+              font-weight: 600;
+              text-transform: none;
+              letter-spacing: 0;
+              color: rgba(255, 255, 255, 0.75);
+            }
           }
           
           .group-count {
@@ -527,7 +668,49 @@
           border-left: 4px solid #6b7280;
           background: linear-gradient(90deg, rgba(107, 114, 128, 0.05) 0%, #ffffff 10%);
         }
-        
+
+
+        &.purple {
+          border-left: 4px solid #7c3aed;
+          background: linear-gradient(
+            90deg,
+            rgba(124, 58, 237, 0.08) 0%,
+            #ffffff 12%
+          );
+        }
+
+        &.system-variant-1 {
+          border-left: 4px solid #ff49c6;
+          background: linear-gradient(
+            90deg,
+            rgba(236, 72, 153, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
+        &.system-variant-2 {
+          border-left: 4px solid #4338ca;
+          background: linear-gradient(
+            90deg,
+            rgba(67, 56, 202, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
+        &.system-variant-3 {
+          border-left: 4px solid #0f766e;
+          background: linear-gradient(
+            90deg,
+            rgba(15, 118, 110, 0.12) 0%,
+            #ffffff 14%
+          );
+        }
+
+        &.data-parameter {
+          opacity: 0.95;
+        }
+
+
         &:hover {
           background: #f8f8f8;
           border-color: #000000;
@@ -563,6 +746,8 @@
             width: 16px;
             height: 16px;
             border-radius: 50%;
+            position: relative;
+            overflow: visible;
             
             &.green {
               color: #10b981;
@@ -583,6 +768,50 @@
               color: #6b7280;
               background: rgba(107, 114, 128, 0.1);
             }
+
+            &.purple {
+              color: #7c3aed;
+              background: rgba(124, 58, 237, 0.1);
+            }
+
+            &.system-variant-1 {
+              color: #ec4899;
+              background: rgba(236, 72, 153, 0.12);
+              &::after {
+                background: rgba(236, 72, 153, 0.5);
+              }
+            }
+
+            &.system-variant-2 {
+              color: #4338ca;
+              background: rgba(67, 56, 202, 0.12);
+              &::after {
+                background: rgba(67, 56, 202, 0.5);
+              }
+            }
+
+            &.system-variant-3 {
+              color: #0f766e;
+              background: rgba(15, 118, 110, 0.12);
+              &::after {
+                background: rgba(15, 118, 110, 0.5);
+              }
+            }
+
+            &.system-variant-1,
+            &.system-variant-2,
+            &.system-variant-3 {
+              &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: 50%;
+                opacity: 0;
+                transform: scale(1.4);
+                pointer-events: none;
+                animation: parameterRadarPulse 2.4s ease-in-out infinite;
+              }
+            }
           }
         }
         
@@ -598,7 +827,19 @@
           &:hover {
             color: #666666;
           }
-          
+
+          .parameter-value-editable {
+            display: inline-block;
+            min-width: 140px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+            padding-bottom: 2px;
+            transition: border-color 0.2s ease;
+          }
+
+          .parameter-value-editable:hover {
+            border-color: #000000;
+          }
+
           .parameter-value-readonly {
             color: #666666;
             font-style: italic;
@@ -855,6 +1096,33 @@
   100% {
     opacity: 0;
     transform: translateY(-20px);
+  }
+}
+
+@keyframes parameterRadarPulse {
+  0% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.05);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes datasetFieldFlash {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 

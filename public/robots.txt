@@ -1,0 +1,13 @@
+# robots.txt for CRYPTIQ
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin or private areas (if any)
+# Disallow: /admin/
+# Disallow: /private/
+
+# Sitemap location
+Sitemap: https://cryptiq.trade/sitemap.xml
+

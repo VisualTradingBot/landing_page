@@ -1,6 +1,6 @@
 .hero {
   padding: 20px 10%;
-  padding-top: calc(20px - 100px); // Reduced by 100px from default
+  // padding-top: calc(20px - 100px); // Reduced by 100px from default
   height: 100vh;
   min-height: 600px;
   display: flex;
@@ -266,6 +266,7 @@
       overflow: hidden;
       box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.06);
       transform: translateY(0);
+      min-width: 230px;
       
       &::before {
         content: '';
@@ -303,6 +304,7 @@
       font-size: 21px;
       font-weight: 600;
       border-radius: 0;
+      min-width: 230px;
       cursor: pointer;
       font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-transform: uppercase;
@@ -364,6 +366,44 @@
   }
   51%, 100% {
     opacity: 0;
+  }
+}
+
+@keyframes slideInBounce {
+  0% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.8) rotate(-5deg);
+  }
+  60% {
+    transform: translateX(-10px) scale(1.05) rotate(2deg);
+  }
+  80% {
+    transform: translateX(5px) scale(0.98) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -480,6 +520,158 @@
   }
 }
 
+.hero-demo-cta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-left: 10vw;
+  min-height: 4rem; // Prevent layout shift
+  min-width: 600px; // Prevent width shifts
+  
+  // Reduce min-width for smaller screens
+  @media (max-width: 767px) {
+    min-width: 280px;
+  }
+  
+  // Adjust min-width for 560-768px range
+  @media (min-width: 560px) and (max-width: 767px) {
+    min-width: 350px;
+  }
+  
+  // Even smaller min-width for mobile screens <560px
+  @media (max-width: 559px) {
+    min-width: 200px;
+  }
+  
+  // Center content when pattern is hidden (screens < 1024px)
+  @media (max-width: 1023px) {
+    padding-left: 0;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  // Align to the left at 1024px-1439px
+  @media (min-width: 1024px) and (max-width: 1439px) {
+    padding-left: 5vw;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  // Hidden state - invisible but takes up space
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(50px) scale(0.8) rotate(-5deg);
+  }
+  
+  // Visible state - appears with cool animation
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    animation: slideInBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+  
+  .demo-text {
+    font-size: clamp(1rem, 2vw, 1.4rem);
+    color: #9333ea; // Purple color
+    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    margin: 0;
+    text-transform: lowercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    transform: rotate(-6deg); // Counterclockwise rotation
+    display: inline-block;
+    
+    @media (max-width: 1023px) {
+      text-align: center;
+    }
+  }
+  
+  .demo-button {
+    background: #000000;
+    color: #fff;
+    border: 2px solid transparent;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 0;
+    min-width: 200px;
+    cursor: pointer;
+    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
+    isolation: isolate;
+    
+    // Animated gradient border effect - black by default
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #000000, #1a1a1a, #2d2d2d, #000000);
+      background-size: 300% 300%;
+      z-index: -1;
+      opacity: 1;
+      transition: background 0.4s ease;
+      animation: gradientShift 3s ease infinite;
+    }
+    
+    // Shimmer/shine effect
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+      );
+      transition: left 0.6s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    &:hover {
+      background: #9333ea;
+      color: #fff;
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 12px 12px 0 rgba(147, 51, 234, 0.3), 0 0 30px rgba(147, 51, 234, 0.4);
+      
+      &::before {
+        background: linear-gradient(45deg, #9333ea, #a855f7, #c084fc, #9333ea);
+        background-size: 300% 300%;
+        animation: gradientShift 3s ease infinite;
+      }
+      
+      &::after {
+        left: 100%;
+      }
+    }
+    
+    &:active {
+      transform: translateY(-1px) scale(0.98);
+      box-shadow: 6px 6px 0 rgba(147, 51, 234, 0.2), 0 0 15px rgba(147, 51, 234, 0.3);
+    }
+    
+    // Pulsing glow animation
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+}
+
 @media (max-width: 768px) {
   .hero {
     padding: 20px 5%;
@@ -510,6 +702,42 @@
         text-align: center;
         padding: 18px 36px;
         font-size: 21px;
+      }
+    }
+    
+    .hero-demo-cta {
+      margin-top: 1.5rem;
+      padding-left: 0;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 200px;
+      width: 100%;
+      overflow: visible;
+      
+      .demo-text {
+        position: absolute;
+        left: 50%;
+        top: 120%;
+        text-align: left;
+        font-size: 1.2rem;
+        white-space: nowrap;
+        z-index: 10;
+        color: #9333ea;
+        transform: rotate(-6deg);
+        pointer-events: none;
+      }
+      
+      .demo-button {
+        width: auto;
+        min-width: 300px;
+        text-align: center;
+        padding: 18px 36px;
+        font-size: 21px;
+        height: auto;
+        position: relative;
+        z-index: 1;
       }
     }
   }

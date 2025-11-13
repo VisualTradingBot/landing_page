@@ -64,24 +64,6 @@ h3 {
 }
 
 /* shared button styles */
-.btn {
-  display: inline-block;
-  padding: 10px 14px;
-  border: 3px solid var(--border);
-  background: transparent;
-  color: var(--fg);
-  font-weight: 700;
-  cursor: pointer;
-}
-.btn.primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.btn.ghost {
-  background: transparent;
-}
-
 /* utility container */
 .container {
   max-width: 1100px;

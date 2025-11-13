@@ -1,16 +1,18 @@
 import "./inputIndicator.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
-import { VariableFieldStandalone } from "../components";
+import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputIndicator({ data, id }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
+
+  const payloadRef = useRef(null);
 
   // State for the form fields
   const [resolution, setResolution] = useState(data?.resolution || "1h");
@@ -58,7 +60,12 @@ export default function InputIndicator({ data, id }) {
             parameterId: dragData.id,
             label: dragData.label,
             value: dragData.value,
+            source: dragData.source || "user",
           },
+          paramName:
+            (dragData.source || "user") === "system"
+              ? dragData.label
+              : undefined,
         }));
       }
     } catch (error) {
@@ -70,13 +77,16 @@ export default function InputIndicator({ data, id }) {
     (e) => {
       e.stopPropagation();
       e.dataTransfer.effectAllowed = "move";
+      const payload = lookbackVariable.parameterData;
+      if (!payload || !payload.label) return;
       e.dataTransfer.setData(
         "application/reactflow",
         JSON.stringify({
-          label: lookbackVariable.parameterData.label,
-          value: lookbackVariable.parameterData.value,
+          label: payload.label,
+          value: payload.value,
           family: "variable",
-          id: lookbackVariable.parameterData.parameterId,
+          id: payload.parameterId,
+          source: payload.source || "user",
         })
       );
     },
@@ -88,6 +98,7 @@ export default function InputIndicator({ data, id }) {
     setLookbackVariable((prev) => ({
       ...prev,
       parameterData: {},
+      paramName: undefined,
     }));
   }, []);
 
@@ -96,6 +107,7 @@ export default function InputIndicator({ data, id }) {
     setLookbackVariable((prev) => ({
       ...prev,
       parameterData: {},
+      paramName: undefined,
     }));
   }, []);
 
@@ -107,18 +119,46 @@ export default function InputIndicator({ data, id }) {
     eth: ethereumLogo,
   };
 
-  const currentAsset = selectedAsset || "bitcoin";
+  const currentAsset = selectedAsset || DEFAULT_ASSET;
   const assetImage = assetImages[currentAsset] || bitcoinLogo;
 
   // Update node data when lookback variable changes
   useEffect(() => {
-    if (updateNodeData && id) {
-      updateNodeData(id, {
-        lookbackVariable,
-        resolution,
-        lookbackUnit,
-        indicator,
-      });
+    if (!id || !updateNodeData) return;
+
+    const explicitOutput =
+      typeof data?.outputParamName === "string"
+        ? data.outputParamName.trim()
+        : "";
+    const outputParamName = explicitOutput || "indicator_output";
+
+    // Prepare canonical data structure for parser
+    const paramData = lookbackVariable.parameterData || {};
+    const rawLookback =
+      paramData.value ?? lookbackVariable.paramName ?? paramData.label;
+    const parsedLookback = Number(rawLookback);
+    const lookbackValue = Number.isFinite(parsedLookback)
+      ? parsedLookback
+      : rawLookback;
+
+    const updatedData = {
+      indicator,
+      resolution,
+      lookbackUnit,
+      lookback: lookbackValue ?? 30,
+      outputParamName,
+      // Keep a reference to the parameter mapping for later resolution
+      lookbackParamName:
+        lookbackVariable.paramName || lookbackVariable.parameterData.label,
+      lookbackVariable,
+      parameters: data?.parameters, // Preserve parameter bindings
+    };
+
+    const { parameters: _ignoredParameters, ...rest } = updatedData;
+    const payloadSignature = JSON.stringify(rest);
+    if (payloadRef.current !== payloadSignature) {
+      payloadRef.current = payloadSignature;
+      updateNodeData(id, updatedData);
     }
   }, [
     lookbackVariable,
@@ -127,7 +167,59 @@ export default function InputIndicator({ data, id }) {
     indicator,
     id,
     updateNodeData,
+    data?.outputParamName,
+    data?.parameters,
   ]);
+
+  // Sync with global parameter updates emitted by ParameterBlock
+  useEffect(() => {
+    const handler = (ev) => {
+      const params = ev?.detail || ev;
+      if (!params || !lookbackVariable?.parameterData?.parameterId) return;
+      const pid = lookbackVariable.parameterData.parameterId;
+      const match = Array.isArray(params)
+        ? params.find((p) => p.id === pid)
+        : null;
+      if (match) {
+        // Only update if label/value changed
+        const newLabel = match.label;
+        const newValue = match.value;
+        const newSource = match.source;
+        const cur = lookbackVariable.parameterData || {};
+        if (
+          cur.label !== newLabel ||
+          cur.value !== newValue ||
+          cur.source !== newSource
+        ) {
+          const nextParamData = {
+            ...cur,
+            label: newLabel,
+            value: newValue,
+          };
+
+          if (newSource) {
+            nextParamData.source = newSource;
+          }
+
+          const updated = {
+            ...lookbackVariable,
+            parameterData: nextParamData,
+            paramName:
+              (newSource || "user") === "system" ? newLabel : undefined,
+          };
+          setLookbackVariable(updated);
+          try {
+            updateNodeData(id, { lookbackVariable: updated });
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    };
+
+    window.addEventListener("parametersUpdated", handler);
+    return () => window.removeEventListener("parametersUpdated", handler);
+  }, [lookbackVariable, id, updateNodeData]);
 
   const handleResolutionChange = (event) => {
     const value = event.target.value;
@@ -175,17 +267,33 @@ export default function InputIndicator({ data, id }) {
         </div>
 
         {/* Resolution Field */}
-        <div className="field-row">
+        <div className="field-row locked">
           <label className="field-label">Resolution:</label>
-          <select
-            value={resolution}
-            onChange={handleResolutionChange}
-            className="field-select"
-          >
-            <option value="1m">1 minute</option>
-            <option value="1h">1 hour</option>
-            <option value="1d">1 day</option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              value={resolution}
+              onChange={handleResolutionChange}
+              className="field-select"
+              disabled
+            >
+              <option value="1m">1 minute</option>
+              <option value="1h">1 hour</option>
+              <option value="1d" default>
+                1 day
+              </option>
+            </select>
+            <span className="field-lock" aria-hidden="true" title="Locked">
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
 
         {/* Lookback Window Field */}
@@ -221,9 +329,12 @@ export default function InputIndicator({ data, id }) {
               value={lookbackUnit}
               onChange={handleLookbackUnitChange}
               className="field-select lookback-unit"
+              disabled
             >
               <option value="m">minute</option>
-              <option value="h">hour</option>
+              <option value="h" default>
+                hour
+              </option>
               <option value="d">day</option>
             </select>
           </div>

@@ -1,49 +1,100 @@
 import "./inputPrice.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
+import { DEFAULT_ASSET } from "../../defaults";
 
 export default function InputPrice({ data, id }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset } = useAsset();
-  
+  const payloadRef = useRef(null);
+
   // State for the form fields
-  const [timeFrame, setTimeFrame] = useState(data?.timeFrame || "1h");
+  const [timeFrame, setTimeFrame] = useState(data?.timeFrame || "1d");
   const [type, setType] = useState(data?.type || "instant");
   const [format, setFormat] = useState(data?.format || "close");
+
+  // Parameter system for output price
+  // eslint-disable-next-line no-unused-vars
+  const [priceVariable, setPriceVariable] = useState(() => ({
+    label: "price_output",
+    id: `price-${Date.now()}`,
+    parameterData: data?.priceParamData || {},
+  }));
 
   // Asset image mapping
   const assetImages = {
     bitcoin: bitcoinLogo,
     ethereum: ethereumLogo,
-    btc: bitcoinLogo,
-    eth: ethereumLogo
   };
 
-  const currentAsset = selectedAsset || "bitcoin";
+  const currentAsset = selectedAsset || DEFAULT_ASSET;
   const assetImage = assetImages[currentAsset] || bitcoinLogo;
 
   const handleTimeFrameChange = (event) => {
     const value = event.target.value;
     setTimeFrame(value);
-    updateNodeData(id, { timeFrame: value });
+    if (id) {
+      updateNodeData(id, { timeFrame: value });
+    }
   };
 
   const handleTypeChange = (event) => {
     const value = event.target.value;
     setType(value);
-    updateNodeData(id, { type: value });
+    if (id) {
+      updateNodeData(id, { type: value });
+    }
   };
 
   const handleFormatChange = (event) => {
     const value = event.target.value;
     setFormat(value);
-    updateNodeData(id, { format: value });
+    if (id) {
+      updateNodeData(id, { format: value });
+    }
   };
+
+  // Update node data and keep output parameter name in sync with node configuration
+  useEffect(() => {
+    if (!id || !updateNodeData) return;
+
+    const explicitOutput =
+      typeof data?.outputParamName === "string"
+        ? data.outputParamName.trim()
+        : "";
+    const outputParamName = explicitOutput || "live_price";
+
+    // Prepare canonical data structure for parser
+    const updatedData = {
+      timeFrame,
+      type,
+      format,
+      outputParamName,
+      parameters: data?.parameters, // Preserve parameter bindings
+      priceParamData: priceVariable.parameterData,
+    };
+
+    const { parameters: _ignoredParameters, ...rest } = updatedData;
+    const payloadSignature = JSON.stringify(rest);
+    if (payloadRef.current !== payloadSignature) {
+      payloadRef.current = payloadSignature;
+      updateNodeData(id, updatedData);
+    }
+  }, [
+    id,
+    updateNodeData,
+    timeFrame,
+    type,
+    format,
+    priceVariable,
+    data?.outputParamName,
+    data?.parameters,
+  ]);
 
   return (
     <NodeDefault
@@ -56,18 +107,18 @@ export default function InputPrice({ data, id }) {
         <div className="field-row asset-row">
           <label className="field-label">Asset:</label>
           <div className="asset-display">
-            <img 
-              src={assetImage} 
-              alt={currentAsset} 
+            <img
+              src={assetImage}
+              alt={currentAsset}
               className="asset-image"
               onError={(e) => {
                 // Fallback to emoji if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline';
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "inline";
               }}
             />
-            <span className="asset-fallback" style={{ display: 'none' }}>
-              {currentAsset === 'bitcoin' ? '₿' : '🔷'}
+            <span className="asset-fallback" style={{ display: "none" }}>
+              {currentAsset === "bitcoin" ? "₿" : "🔷"}
             </span>
           </div>
         </div>
@@ -75,48 +126,126 @@ export default function InputPrice({ data, id }) {
         {/* Time Frame Field */}
         <div className="field-row">
           <label className="field-label">Time Frame:</label>
-          <select
-            value={timeFrame}
-            onChange={handleTimeFrameChange}
-            className="field-select"
-          >
-            <option value="1m">1 minute</option>
-            <option value="1h">1 hour</option>
-            <option value="1d">1 day</option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              value={timeFrame}
+              onChange={handleTimeFrameChange}
+              className="field-select"
+              disabled
+            >
+              <option value="1m">1 minute</option>
+              <option value="1h">1 hour</option>
+              <option value="1d" default>
+                1 day
+              </option>
+            </select>
+            <span
+              className="field-lock"
+              aria-hidden="true"
+              title="Locked parameter"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect
+                  x="3.25"
+                  y="7.25"
+                  width="9.5"
+                  height="7.5"
+                  rx="1.5"
+                />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
 
         {/* Type Field */}
         <div className="field-row">
           <label className="field-label">Type:</label>
-          <select
-            value={type}
-            onChange={handleTypeChange}
-            className="field-select"
-          >
-            <option value="instant">Instant</option>
-            <option value="market">Market</option>
-            <option value="limit">Limit</option>
-            <option value="stop">Stop</option>
-            <option value="stop_limit">Stop Limit</option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              value={type}
+              onChange={handleTypeChange}
+              className="field-select"
+              disabled
+            >
+              <option value="instant" default>
+                Instant
+              </option>
+              <option value="market">Market</option>
+              <option value="limit">Limit</option>
+              <option value="stop">Stop</option>
+              <option value="stop_limit">Stop Limit</option>
+            </select>
+            <span
+              className="field-lock"
+              aria-hidden="true"
+              title="Locked parameter"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect
+                  x="3.25"
+                  y="7.25"
+                  width="9.5"
+                  height="7.5"
+                  rx="1.5"
+                />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
 
         {/* Format Field */}
         <div className="field-row">
           <label className="field-label">Format:</label>
-          <select
-            value={format}
-            onChange={handleFormatChange}
-            className="field-select"
-          >
-            <option value="close">Close</option>
-            <option value="open">Open</option>
-            <option value="high">High</option>
-            <option value="low">Low</option>
-            <option value="volume">Volume</option>
-            <option value="ohlc">OHLC</option>
-          </select>
+          <div className="field-control field-control--locked">
+            <select
+              value={format}
+              onChange={handleFormatChange}
+              className="field-select"
+              disabled
+            >
+              <option value="close" default>
+                Close
+              </option>
+              <option value="open">Open</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+              <option value="volume">Volume</option>
+              <option value="ohlc">OHLC</option>
+            </select>
+            <span
+              className="field-lock"
+              aria-hidden="true"
+              title="Locked parameter"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                focusable="false"
+              >
+                <rect
+                  x="3.25"
+                  y="7.25"
+                  width="9.5"
+                  height="7.5"
+                  rx="1.5"
+                />
+                <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                <circle cx="8" cy="10.5" r="0.85" />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
     </NodeDefault>

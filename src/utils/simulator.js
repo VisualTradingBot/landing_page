@@ -1,242 +1,371 @@
 import { calculateIndicator, calcMaxDrawdown } from "./indicators.js";
 
-/**
- * Runs the backtest simulation using a pre-parsed StrategyBlueprint.
- */
+const DEFAULT_INITIAL_CAPITAL = 10000;
+const DEFAULT_FEE_PERCENT = 0.05;
+
 export function runSimulation(blueprint, prices, options = {}) {
-  const { feePercent = 0.05 } = options;
-  const feeFraction = feePercent / 100;
+  const warnings = [];
 
-  const initialCapital = options.initialCapital || 10000;
+  if (!blueprint || typeof blueprint !== "object") {
+    return { error: "Invalid strategy blueprint.", warnings };
+  }
 
-  if (!prices || prices.length === 0) return null;
-
-  // --- 1. Prepare all data series in advance ---
-  const dataSeries = new Map();
-  dataSeries.set(
-    "close_price",
-    prices.map((p) => p.live_price)
+  const feeFraction =
+    coerceNumber(options.feePercent, DEFAULT_FEE_PERCENT) / 100;
+  const initialCapital = coerceNumber(
+    options.initialCapital,
+    DEFAULT_INITIAL_CAPITAL
   );
 
-  blueprint.dataProducers.forEach((producer) => {
-    if (producer.type === "indicator" && producer.outputParamName) {
-      const series = calculateIndicator(
-        prices,
-        producer.indicatorType,
-        Number(producer.lookback)
-      );
-      dataSeries.set(producer.outputParamName, series);
-    }
-  });
+  const normalizedPrices = sanitizePrices(prices);
+  if (normalizedPrices.length === 0) {
+    return { error: "No price data provided", warnings };
+  }
 
-  // --- 2. Initialize Simulation State ---
+  const liveSeries = normalizedPrices.map((point) => point.live_price);
+  const dataSeries = buildDataSeries(
+    blueprint.dataProducers || [],
+    normalizedPrices,
+    liveSeries,
+    warnings
+  );
+
   let cash = initialCapital;
   let position = 0;
-  let inTrade = false;
   let entryPrice = null;
-
-  const equitySeries = [];
+  let entryIndex = null;
   const trades = [];
+  const equitySeries = [];
 
-  // --- 3. Main Simulation Loop ---
-  for (let i = 0; i < prices.length; i++) {
-    const currentContext = { i, dataSeries, entryPrice };
-    const livePrice = dataSeries.get("close_price")[i];
+  for (let i = 0; i < liveSeries.length; i++) {
+    const livePrice = liveSeries[i];
+    if (!Number.isFinite(livePrice)) {
+      warnings.push(`Price series contains invalid value at index ${i}.`);
+      continue;
+    }
 
-    if (!inTrade) {
-      // --- Looking for an entry ---
-      const action = executeSubgraph(blueprint.entryGraph, currentContext);
-      if (action?.type === "buy") {
-        entryPrice = livePrice;
-        const cashUsed = cash * (1 - feeFraction);
-        position = cashUsed / entryPrice;
-        cash = 0;
-        inTrade = true;
-        trades.push({
-          entryIndex: i,
-          entryPrice,
-          exitIndex: null,
-          exitPrice: null,
-        });
+    const context = { i, dataSeries, entryPrice };
+
+    if (!position) {
+      const action = executeSubgraph(blueprint.entryGraph, context);
+      if (action?.type === "buy" && cash > 0) {
+        const requestedNotional = coerceNumber(
+          action.node?.data?.amountNumber ?? action.node?.data?.amount,
+          NaN
+        );
+        const spendableCash =
+          Number.isFinite(requestedNotional) && requestedNotional > 0
+            ? Math.min(requestedNotional, cash)
+            : cash;
+
+        const investable = spendableCash * (1 - feeFraction);
+        if (investable > 0) {
+          const quantity = investable / livePrice;
+          if (quantity > 0) {
+            position = quantity;
+            cash = Math.max(0, cash - spendableCash);
+            entryPrice = livePrice;
+            entryIndex = i;
+            trades.push({
+              entryIndex: i,
+              entryPrice: livePrice,
+              entryNotional: investable,
+              quantity,
+              exitIndex: null,
+              exitPrice: null,
+              exitNotional: null,
+              profit: null,
+            });
+          }
+        }
       }
     } else {
-      // --- Managing an open position ---
-      const action = executeSubgraph(blueprint.inTradeGraph, currentContext);
+      const action = executeSubgraph(blueprint.inTradeGraph, context);
       if (action?.type === "sell") {
-        const proceeds = position * livePrice * (1 - feeFraction);
-        cash = proceeds;
+        const exitNotional = position * livePrice * (1 - feeFraction);
+        cash += exitNotional;
         position = 0;
-        inTrade = false;
-        const lastTrade = trades[trades.length - 1];
-        if (lastTrade && lastTrade.exitIndex == null) {
-          lastTrade.exitIndex = i;
-          lastTrade.exitPrice = livePrice;
+        if (trades.length) {
+          const openTrade = trades[trades.length - 1];
+          if (openTrade && openTrade.exitIndex == null) {
+            openTrade.exitIndex = i;
+            openTrade.exitPrice = livePrice;
+            openTrade.exitNotional = exitNotional;
+            const basis =
+              openTrade.entryNotional ??
+              openTrade.quantity * openTrade.entryPrice;
+            if (basis != null) {
+              openTrade.profit = exitNotional - basis;
+            }
+          }
         }
         entryPrice = null;
+        entryIndex = null;
       }
     }
 
-    // Update equity for the current day
-    const currentEquity = cash + position * livePrice;
-    equitySeries.push(currentEquity);
+    const equity = cash + position * livePrice;
+    equitySeries.push(equity);
   }
 
-  // --- 4. Finalization and Statistics ---
-  if (inTrade) {
-    // Close any open position at the end
-    const lastPrice = prices[prices.length - 1].live_price;
-    cash = position * lastPrice * (1 - feeFraction);
-    const lastTrade = trades[trades.length - 1];
-    if (lastTrade && lastTrade.exitIndex == null) {
-      lastTrade.exitIndex = prices.length - 1;
-      lastTrade.exitPrice = lastPrice;
+  if (position && entryIndex != null) {
+    const lastPrice = liveSeries[liveSeries.length - 1];
+    const exitNotional = position * lastPrice * (1 - feeFraction);
+    cash += exitNotional;
+    const openTrade = trades[trades.length - 1];
+    if (openTrade && openTrade.exitIndex == null) {
+      openTrade.exitIndex = liveSeries.length - 1;
+      openTrade.exitPrice = lastPrice;
+      openTrade.exitNotional = exitNotional;
+      const basis =
+        openTrade.entryNotional ?? openTrade.quantity * openTrade.entryPrice;
+      if (basis != null) {
+        openTrade.profit = exitNotional - basis;
+      }
     }
+    position = 0;
+    entryPrice = null;
   }
-  // Normalize equity series to initial capital so UI can treat 1.0 as baseline
-  const normalizedEquitySeries = equitySeries.map((v) => v / initialCapital);
-  const totalReturn =
-    normalizedEquitySeries[normalizedEquitySeries.length - 1] - 1;
-  const closedTrades = trades.filter((t) => t.exitIndex != null);
-  let wins = 0;
-  let totalDuration = 0;
-  for (const t of closedTrades) {
-    if (t.exitPrice > t.entryPrice) wins++;
-    totalDuration += t.exitIndex - t.entryIndex;
-  }
-  const winRate = closedTrades.length ? wins / closedTrades.length : 0;
-  const avgDuration = closedTrades.length
-    ? totalDuration / closedTrades.length
+
+  const normalizedEquity = equitySeries.map((value) => value / initialCapital);
+  const closedTrades = trades.filter((trade) => trade.exitIndex != null);
+
+  const totalReturn = normalizedEquity.length
+    ? normalizedEquity[normalizedEquity.length - 1] - 1
     : 0;
+  const stats = summarizeTrades(closedTrades);
 
   return {
-    equitySeries: normalizedEquitySeries,
+    equitySeries: normalizedEquity,
     trades: closedTrades,
     totalReturn,
-    winRate,
-    avgDuration,
-    maxDrawdown: calcMaxDrawdown(normalizedEquitySeries),
+    winRate: stats.winRate,
+    avgDuration: stats.avgDuration,
+    maxDrawdown: calcMaxDrawdown(normalizedEquity),
+    warnings: warnings.length ? warnings : null,
+    dataSeries: Object.fromEntries(dataSeries),
   };
 }
 
-// --- Simulator Helper Functions ---
+function buildDataSeries(producers, normalizedPrices, liveSeries, warnings) {
+  const series = new Map();
+  series.set("live_price", liveSeries);
+  series.set("close_price", liveSeries);
+
+  producers.forEach((producer) => {
+    if (!producer || typeof producer !== "object") return;
+
+    if (producer.type === "price") {
+      const key = pickOutputKey(producer, "live_price");
+      if (!series.has(key)) {
+        series.set(key, liveSeries);
+      }
+      return;
+    }
+
+    if (producer.type === "indicator") {
+      const key = pickOutputKey(producer, `indicator_${producer.nodeId}`);
+      const source = producer.indicator || "sma";
+      const lookback = Math.max(
+        1,
+        Math.floor(coerceNumber(producer.lookback, 30))
+      );
+      const indicatorSeries = calculateIndicator(
+        normalizedPrices,
+        source,
+        lookback
+      );
+      if (!indicatorSeries || indicatorSeries.length !== liveSeries.length) {
+        warnings.push(
+          `Indicator '${source}' on node ${producer.nodeId} returned unexpected length.`
+        );
+      }
+      series.set(key, indicatorSeries);
+    }
+  });
+
+  return series;
+}
 
 function executeSubgraph(graph, context) {
-  // Gracefully handle graphs with no entry point (like an empty "In a trade" block)
-  if (!graph || !graph.entryNodeId) {
+  if (!graph) {
     return null;
   }
 
-  const { nodes, edges } = graph;
-  const entryPoints = Array.isArray(graph.entryNodeId)
-    ? graph.entryNodeId
-    : [graph.entryNodeId];
+  const entryRoots =
+    graph.entryNodeId != null ? graph.entryNodeId : graph.entryNodeIds;
 
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  if (entryRoots == null) {
+    return null;
+  }
+
+  const entryPoints = Array.isArray(entryRoots) ? entryRoots : [entryRoots];
+  const nodeMap = new Map((graph.nodes || []).map((node) => [node.id, node]));
   const edgeMap = new Map();
-  edges.forEach((edge) => {
+  (graph.edges || []).forEach((edge) => {
     if (!edgeMap.has(edge.source)) edgeMap.set(edge.source, []);
     edgeMap.get(edge.source).push(edge);
   });
 
-  // Check each possible entry path (important for the multiple 'If' nodes in the trade block)
-  for (const startNodeId of entryPoints) {
-    let currentNodeId = startNodeId;
-    const visited = new Set(); // Prevent infinite loops within a single path traversal
+  for (const startId of entryPoints) {
+    let currentId = startId;
+    const visited = new Set();
 
-    while (currentNodeId && !visited.has(currentNodeId)) {
-      visited.add(currentNodeId);
-      const node = nodeMap.get(currentNodeId);
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      const node = nodeMap.get(currentId);
       if (!node) break;
 
       if (node.type === "ifNode") {
-        const result = evaluateIfCondition(node, context);
-        // THIS IS THE CORRECTED LOGIC
-        const expectedHandleId = result
-          ? `${node.id}-true`
-          : `${node.id}-false`;
-        const nextEdge = (edgeMap.get(node.id) || []).find(
-          (e) => e.sourceHandle === expectedHandleId
+        const isTrue = evaluateIfCondition(node, context);
+        const expectedHandle = isTrue ? `${node.id}-true` : `${node.id}-false`;
+        const edge = (edgeMap.get(node.id) || []).find(
+          (item) => item.sourceHandle === expectedHandle
         );
-        currentNodeId = nextEdge ? nextEdge.target : null;
-      } else if (["buyNode", "sellNode"].includes(node.type)) {
-        // We found a terminal action. Return it immediately.
-        return { type: node.type.replace("Node", "") };
-      } else {
-        // Not a decision or action node, just follow the path. Assumes a single output.
-        const nextEdge = (edgeMap.get(node.id) || [])[0];
-        currentNodeId = nextEdge ? nextEdge.target : null;
+        currentId = edge ? edge.target : null;
+        continue;
       }
-    }
-  }
 
-  return null; // No action was triggered in any of the paths
-}
-
-function resolveValue(paramData, context) {
-  if (!paramData || !paramData.label) return null;
-  const { label, value } = paramData;
-  const { i, dataSeries, entryPrice } = context;
-
-  // If the parameter label directly matches a prepared data series, use it.
-  if (dataSeries.has(label)) {
-    const series = dataSeries.get(label);
-    return series && series[i] != null ? series[i] : null;
-  }
-
-  // If the parameter's value references a known series key, support that too.
-  if (typeof value === "string") {
-    const v = value.trim();
-    // Common aliases
-    if (v === "close" || v === "price") {
-      if (dataSeries.has("close_price")) {
-        const series = dataSeries.get("close_price");
-        return series && series[i] != null ? series[i] : null;
+      if (node.type === "buyNode") {
+        return { type: "buy", node };
       }
-    }
 
-    if (dataSeries.has(v)) {
-      const series = dataSeries.get(v);
-      return series && series[i] != null ? series[i] : null;
-    }
-  }
+      if (node.type === "sellNode") {
+        return { type: "sell", node };
+      }
 
-  if (typeof value === "string" && value.includes("entry")) {
-    if (entryPrice === null) return null;
-    // Super simple expression evaluator for "entry * number"
-    try {
-      // Use Function constructor for safe evaluation
-      const func = new Function("entry", `return ${value}`);
-      return func(entryPrice);
-      // eslint-disable-next-line no-unused-vars
-    } catch (e) {
-      return null;
+      const nextEdge = (edgeMap.get(node.id) || [])[0];
+      currentId = nextEdge ? nextEdge.target : null;
     }
   }
 
-  const num = parseFloat(value);
-  return !isNaN(num) ? num : null;
+  return null;
 }
 
 function evaluateIfCondition(node, context) {
-  const [leftVar, rightVar, opVar] = node.data.variables;
-  const leftVal = resolveValue(leftVar.parameterData, context);
-  const rightVal = resolveValue(rightVar.parameterData, context);
-  const operator = opVar.parameterData;
+  const variables = node?.data?.variables || [];
+  const left = resolveValue(variables[0], context);
+  const right = resolveValue(variables[1], context);
+  const operator = node?.data?.operator || variables[2]?.value;
 
-  if (leftVal === null || rightVal === null) return false;
+  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+    return false;
+  }
 
   switch (operator) {
     case ">":
-      return leftVal > rightVal;
+      return left > right;
     case "<":
-      return leftVal < rightVal;
-    case "==":
-      return leftVal === rightVal;
+      return left < right;
     case ">=":
-      return leftVal >= rightVal;
+      return left >= right;
     case "<=":
-      return leftVal <= rightVal;
+      return left <= right;
+    case "==":
+      return left === right;
     default:
       return false;
   }
+}
+
+function resolveValue(variable, context) {
+  if (!variable) return NaN;
+  const { i, dataSeries, entryPrice } = context;
+
+  const parameterData = variable.parameterData || {};
+
+  const effectiveParamName =
+    variable.paramName ||
+    parameterData.paramName ||
+    (parameterData.source === "system" ? parameterData.label : undefined);
+
+  if (effectiveParamName) {
+    const series = dataSeries.get(effectiveParamName);
+    const value = series ? series[i] : undefined;
+    if (Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  const rawValue =
+    variable.value !== undefined
+      ? variable.value
+      : parameterData.value !== undefined
+      ? parameterData.value
+      : undefined;
+
+  if (typeof rawValue === "number") {
+    return rawValue;
+  }
+
+  if (typeof rawValue === "string") {
+    const trimmed = rawValue.trim();
+    if (trimmed === "entry" || trimmed === "entry_price") {
+      return Number.isFinite(entryPrice) ? entryPrice : NaN;
+    }
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+    if (trimmed.includes("entry")) {
+      if (!Number.isFinite(entryPrice)) return NaN;
+      const safe = trimmed.replace(/entry/g, entryPrice.toString());
+      if (!/^[0-9+\-*/ ().]+$/.test(safe)) return NaN;
+      try {
+        return Function(`return ${safe}`)();
+      } catch {
+        return NaN;
+      }
+    }
+  }
+
+  return NaN;
+}
+
+function summarizeTrades(trades) {
+  if (!trades.length) {
+    return { winRate: 0, avgDuration: 0 };
+  }
+
+  let wins = 0;
+  let totalDuration = 0;
+  trades.forEach((trade) => {
+    if (trade.exitPrice > trade.entryPrice) {
+      wins += 1;
+    }
+    totalDuration += trade.exitIndex - trade.entryIndex;
+  });
+
+  return {
+    winRate: wins / trades.length,
+    avgDuration: totalDuration / trades.length,
+  };
+}
+
+function sanitizePrices(prices) {
+  if (!Array.isArray(prices)) {
+    return [];
+  }
+
+  const sanitized = [];
+  prices.forEach((point) => {
+    if (!point) return;
+    const value = Number(point.live_price ?? point.close ?? point.price);
+    if (!Number.isFinite(value)) return;
+    sanitized.push({ ...point, live_price: value });
+  });
+  return sanitized;
+}
+
+function pickOutputKey(producer, fallback) {
+  const key = producer.outputKey || producer.outputParamName;
+  if (typeof key === "string" && key.trim().length) {
+    return key.trim();
+  }
+  return fallback;
+}
+
+function coerceNumber(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
 }
