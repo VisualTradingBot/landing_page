@@ -38,6 +38,60 @@ import {
   initialParameters,
   edgeTypes,
 } from "./initial.jsx";
+import {
+  DEFAULT_ASSET,
+  DEFAULT_FEE_PERCENT,
+  DEFAULT_DATA_RESOLUTION,
+  DEFAULT_HISTORY_WINDOW,
+  DEFAULT_SYNTHETIC_INTERVAL,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_NODE_HEIGHT,
+} from "./defaults";
+
+// Helper function to escape node IDs for use in CSS selectors
+function escapeNodeSelector(nodeId) {
+  return nodeId.replace(/[^\w-]/g, "\\$&");
+}
+
+// Helper function to reconcile parameters with auto-generated ones from nodes
+function reconcileParametersWithAuto(parameters, nodes) {
+  const autoParams = new Map();
+
+  // Collect all auto-generated parameters from nodes
+  nodes.forEach((node) => {
+    if (node.data?.parameters) {
+      node.data.parameters.forEach((param) => {
+        if (param.auto) {
+          autoParams.set(param.name, param);
+        }
+      });
+    }
+  });
+
+  // Check if any auto parameters changed or need to be added/removed
+  let changed = false;
+  const next = parameters.filter((param) => {
+    if (param.auto) {
+      // Remove auto params that no longer exist in nodes
+      if (!autoParams.has(param.name)) {
+        changed = true;
+        return false;
+      }
+      return true;
+    }
+    return true;
+  });
+
+  // Add new auto parameters that aren't in the current list
+  autoParams.forEach((param) => {
+    if (!parameters.find((p) => p.name === param.name)) {
+      next.push(param);
+      changed = true;
+    }
+  });
+
+  return { changed, next };
+}
 
 export default function Demo() {
   // === State for parameters and graph ===
@@ -91,6 +145,9 @@ export default function Demo() {
   );
   const [selectedAsset, setSelectedAsset] = useState(DEFAULT_ASSET); // Currently selected asset
   const [dataResolution, setDataResolution] = useState(DEFAULT_DATA_RESOLUTION);
+  const [syntheticInterval, setSyntheticInterval] = useState(
+    DEFAULT_SYNTHETIC_INTERVAL
+  );
   const [feePercent, setFeePercent] = useState(DEFAULT_FEE_PERCENT);
   const [historyWindow, setHistoryWindow] = useState(DEFAULT_HISTORY_WINDOW);
   const [inTradeCollapsed, setInTradeCollapsed] = useState(false); // Collapse state for in-trade block
@@ -120,10 +177,20 @@ export default function Demo() {
   const lastRunOptionsSignatureRef = useRef(null);
   const pendingSinceLastRunRef = useRef(false);
 
+  // === Tutorial state ===
+  const [showIntroductionMask, setShowIntroductionMask] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [parameterDashboardExpanded, setParameterDashboardExpanded] =
+    useState(false); // Tutorial control for parameter dashboard
+
   const handleRegisterRunHandler = useCallback((handler) => {
     runBacktestHandlerRef.current =
       typeof handler === "function" ? handler : null;
     setRunHandlerReady(typeof handler === "function");
+  }, []);
+
+  const handleRunBacktestStatusChange = useCallback((status) => {
+    setBacktestStatus((prev) => ({ ...prev, ...status }));
   }, []);
 
   const handleRunBacktestClick = useCallback(() => {
@@ -353,11 +420,6 @@ export default function Demo() {
     }
     closeDeleteModal();
   }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
-
-  // === Node types for ReactFlow ===
-  const toggleInTradeBlock = useCallback(() => {
-    setInTradeCollapsed((prev) => !prev);
-  }, []);
 
   // === Node types for ReactFlow ===
   const toggleInTradeBlock = useCallback(() => {
@@ -934,13 +996,6 @@ export default function Demo() {
       resolvedInterval = syntheticInterval || DEFAULT_SYNTHETIC_INTERVAL;
     }
 
-    const resolvedResolution =
-      inputNode?.data?.resolution || dataResolution || DEFAULT_DATA_RESOLUTION;
-    let resolvedInterval = Number(inputNode?.data?.interval);
-    if (!Number.isFinite(resolvedInterval) || resolvedInterval <= 0) {
-      resolvedInterval = historyWindow || DEFAULT_HISTORY_WINDOW;
-    }
-
     const resolvedFee =
       inputNode?.data?.feePercent || feePercent || DEFAULT_FEE_PERCENT;
 
@@ -1183,8 +1238,6 @@ export default function Demo() {
         {/* <div className="divider-demo"></div> */}
 
         {/* === Backtest results section === */}
-        <div className="backtest">
-          <BacktestView options={backtestOptions} externalControl />
         <div className="backtest" ref={backtestSectionRef}>
           <BacktestView
             options={backtestOptions}

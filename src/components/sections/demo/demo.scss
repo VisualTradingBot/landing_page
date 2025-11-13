@@ -1,5 +1,5 @@
 .demo {
-  padding: 0px 18px ;
+  padding: 0px 18px;
   background: transparent;
   color: #0f172a;
   position: relative;
@@ -13,14 +13,13 @@
 
   .demo-header {
     text-align: center;
-   
-
 
     .demo-title {
       font-size: clamp(3rem, 8vw, 6rem);
       margin: 0;
       color: var(--fg);
-      font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: -0.02em;
@@ -49,7 +48,6 @@
     );
     opacity: 0.3;
   }
-
 
   .run-backtest-overlay {
     position: absolute;
@@ -150,261 +148,260 @@
     }
   }
 
-    // Edge selection styling
-    .react-flow__edge.selected {
-      .react-flow__edge-path {
-        stroke-width: 4;
-        filter: drop-shadow(0 0 12px #000000);
-      }
+  // Edge selection styling
+  .react-flow__edge.selected {
+    .react-flow__edge-path {
+      stroke-width: 4;
+      filter: drop-shadow(0 0 12px #000000);
+    }
+  }
+
+  // Hide ReactFlow controls
+  .react-flow__controls {
+    display: none !important;
+  }
+
+  // Hide ReactFlow attribution - multiple selectors to catch all variations
+  .react-flow__attribution,
+  .react-flow_attribution,
+  .react-flow__panel.react-flow__attribution,
+  .react-flow_panel.react-flow_attribution,
+  [class*="attribution"],
+  [class*="react-flow"][class*="attribution"] {
+    display: none !important;
+  }
+
+  .react-flow__minimap {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  // Global override to prevent ReactFlow from adding borders/outlines to nodes
+  .react-flow__node {
+    &:focus,
+    &:focus-within,
+    &.selected,
+    &.selectable:focus {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
     }
 
-    // Hide ReactFlow controls
-    .react-flow__controls {
-      display: none !important;
-    }
+    // Override all dropdown option hover colors to use black
+    select option {
+      background: #ffffff !important;
+      color: #000000 !important;
 
-    // Hide ReactFlow attribution - multiple selectors to catch all variations
-    .react-flow__attribution,
-    .react-flow_attribution,
-    .react-flow__panel.react-flow__attribution,
-    .react-flow_panel.react-flow_attribution,
-    [class*="attribution"],
-    [class*="react-flow"][class*="attribution"] {
-      display: none !important;
-    }
-
-    .react-flow__minimap {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    // Global override to prevent ReactFlow from adding borders/outlines to nodes
-    .react-flow__node {
-      &:focus,
-      &:focus-within,
-      &.selected,
-      &.selectable:focus {
-        outline: none !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-      }
-
-      // Override all dropdown option hover colors to use black
-      select option {
-        background: #ffffff !important;
-        color: #000000 !important;
-
-        &:hover {
-          background: #000000 !important;
-          color: #ffffff !important;
-        }
-      }
-
-      // Override any browser default blue colors for individual option hover
-      select option:hover {
+      &:hover {
         background: #000000 !important;
         color: #ffffff !important;
       }
     }
-  }
 
-  // Backtest integration styling
-  .backtest {
-    margin-top: 40px;
-    padding: 20px 0;
-
-    .backtest-panel {
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(248, 250, 252, 0.9) 100%
-      );
-    }
-  }
-
-  // Responsive design
-  @media (max-width: 1200px) {
-    .demo {
-      padding: 0px 12px 48px 12px;
-    }
-
-    .parameter-table {
-      max-width: 500px;
-      padding: 16px;
-    }
-
-    .react-flow {
-      .react-flow__node {
-        transform: scale(0.9);
-      }
-
-      .react-flow__panel.react-flow__panel-top {
-        padding: 16px;
-      }
-    }
-  }
-
-  @media (max-width: 768px) {
-    .demo {
-      padding: 0px 8px 32px 8px;
-
-      &::before {
-        height: 1px;
-        opacity: 0.2;
-      }
-    }
-
-    .divider {
-      margin: 24px 0;
-      height: 2px;
-    }
-
-    .parameter-table {
-      max-width: 400px;
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .react-flow {
-      .react-flow__node {
-        transform: scale(0.8);
-      }
-
-      .react-flow__panel.react-flow__panel-top {
-        padding: 12px;
-      }
-    }
-
-    .backtest {
-      margin-top: 24px;
-      padding: 12px 0;
-
-      // Make text unselectable
-      -webkit-user-select: none !important;
-      -moz-user-select: none !important;
-      -ms-user-select: none !important;
-      user-select: none !important;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .demo {
-      padding: 0px 4px 24px 4px;
-    }
-
-    .parameter-table {
-      max-width: 320px;
-      padding: 10px;
-      margin: 0 auto;
-    }
-
-    .react-flow {
-      .react-flow__node {
-        transform: scale(0.7);
-      }
-
-      .react-flow__panel.react-flow__panel-top {
-        padding: 8px;
-      }
-    }
-  }
-
-  // Global override for all dropdown options to use black hover instead of blue
-  .react-flow__node select option,
-  select option {
-    background: #ffffff !important;
-    color: #000000 !important;
-
-    &:hover {
+    // Override any browser default blue colors for individual option hover
+    select option:hover {
       background: #000000 !important;
       color: #ffffff !important;
     }
   }
+}
 
-  // Override any browser default blue colors for individual option hover
-  .react-flow__node select option:hover,
-  select option:hover {
+// Backtest integration styling
+.backtest {
+  margin-top: 40px;
+  padding: 20px 0;
+
+  .backtest-panel {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(248, 250, 252, 0.9) 100%
+    );
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .demo {
+    padding: 0px 12px 48px 12px;
+  }
+
+  .parameter-table {
+    max-width: 500px;
+    padding: 16px;
+  }
+
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.9);
+    }
+
+    .react-flow__panel.react-flow__panel-top {
+      padding: 16px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .demo {
+    padding: 0px 8px 32px 8px;
+
+    &::before {
+      height: 1px;
+      opacity: 0.2;
+    }
+  }
+
+  .divider {
+    margin: 24px 0;
+    height: 2px;
+  }
+
+  .parameter-table {
+    max-width: 400px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.8);
+    }
+
+    .react-flow__panel.react-flow__panel-top {
+      padding: 12px;
+    }
+  }
+
+  .backtest {
+    margin-top: 24px;
+    padding: 12px 0;
+
+    // Make text unselectable
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .demo {
+    padding: 0px 4px 24px 4px;
+  }
+
+  .parameter-table {
+    max-width: 320px;
+    padding: 10px;
+    margin: 0 auto;
+  }
+
+  .react-flow {
+    .react-flow__node {
+      transform: scale(0.7);
+    }
+
+    .react-flow__panel.react-flow__panel-top {
+      padding: 8px;
+    }
+  }
+}
+
+// Global override for all dropdown options to use black hover instead of blue
+.react-flow__node select option,
+select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+
+  &:hover {
     background: #000000 !important;
     color: #ffffff !important;
   }
+}
 
-  // Global override to hide ReactFlow attribution anywhere
-  .react-flow__attribution,
-  .react-flow_attribution,
-  [class*="attribution"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
+// Override any browser default blue colors for individual option hover
+.react-flow__node select option:hover,
+select option:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
 
-  // Tutorial active state - dim non-highlighted elements, keep highlighted ones fully visible
-  &.tutorial-active {
-    .react-flow__node {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
+// Global override to hide ReactFlow attribution anywhere
+.react-flow__attribution,
+.react-flow_attribution,
+[class*="attribution"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
-      // Highlighted nodes remain fully visible (transparent background, no dimming)
-      &[data-highlight="true"] {
-        opacity: 1 !important;
-        z-index: 1000;
-        transform: scale(1.02);
-        background: transparent !important;
-      }
-    }
+// Tutorial active state - dim non-highlighted elements, keep highlighted ones fully visible
+.demo.tutorial-active {
+  .react-flow__node {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
 
-    .react-flow__edge {
-      opacity: 0.3;
-      transition: opacity 0.3s ease;
-    }
-
-    // Dim backtest and parameter block when highlighting graph
-    .backtest,
-    .parameter-block {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
-  }
-
-  // Highlight backtest section during tutorial
-  &.tutorial-backtest-active {
-    .react-flow {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
-
-    .parameter-block {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
-
-    .backtest {
+    // Highlighted nodes remain fully visible (transparent background, no dimming)
+    &[data-highlight="true"] {
       opacity: 1 !important;
+      z-index: 1000;
+      transform: scale(1.02);
       background: transparent !important;
     }
   }
 
-  // Highlight parameter block during tutorial
-  &.tutorial-parameter-active {
-    .react-flow {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
+  .react-flow__edge {
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+  }
 
-    .backtest {
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
+  // Dim backtest and parameter block when highlighting graph
+  .backtest,
+  .parameter-block {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+}
 
-    .parameter-block,
-    [class*="parameters-dropdown"] {
-      opacity: 1 !important;
-      background: transparent !important;
-    }
+// Highlight backtest section during tutorial
+.demo.tutorial-backtest-active {
+  .react-flow {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+
+  .parameter-block {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+
+  .backtest {
+    opacity: 1 !important;
+    background: transparent !important;
+  }
+}
+
+// Highlight parameter block during tutorial
+.demo.tutorial-parameter-active {
+  .react-flow {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+
+  .backtest {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+
+  .parameter-block,
+  [class*="parameters-dropdown"] {
+    opacity: 1 !important;
+    background: transparent !important;
   }
 }
