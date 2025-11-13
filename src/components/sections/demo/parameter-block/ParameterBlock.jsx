@@ -596,7 +596,7 @@ export default function ParameterBlock({
     <div
       ref={parameterBlockRef}
       className={`parameters-dropdown ${
-        dropdownState ? "expanded" : "collapsed"
+        isDropdownOpen ? "expanded" : "collapsed"
       } ${!hasMatchingParameters ? "empty" : ""} ${
         isDragging ? "dragging" : ""
       }`}
@@ -615,7 +615,7 @@ export default function ParameterBlock({
       >
         Parameter Dashboard
         <span className="toggle-icon" onClick={onClickToggleIcon}>
-          {dropdownState ? "▲" : "▼"}
+          {isDropdownOpen ? "▲" : "▼"}
         </span>
       </h1>
       <div className="dropdown-content">

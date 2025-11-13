@@ -390,7 +390,7 @@ select option:hover {
 // Highlight parameter block during tutorial
 .demo.tutorial-parameter-active {
   .react-flow {
-    opacity: 0.4;
+    opacity: 1;
     transition: opacity 0.3s ease;
   }
 
@@ -402,6 +402,5 @@ select option:hover {
   .parameter-block,
   [class*="parameters-dropdown"] {
     opacity: 1 !important;
-    background: transparent !important;
   }
 }
