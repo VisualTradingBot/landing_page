@@ -14,6 +14,7 @@ import { AssetContext } from "./AssetContext";
 // Components
 import ParameterBlock from "./parameter-block/ParameterBlock";
 import BacktestView from "./back-test/BacktestView";
+import BacktestDatasetSidebar from "./backtest-dataset-sidebar/BacktestDatasetSidebar";
 
 // Node components
 import Buy from "./nodes/buy/Buy";
@@ -1387,6 +1388,7 @@ export default function Demo() {
                   onShowDeleteModal={openDeleteModal}
                   onEditParameter={editParameter}
                 />
+                <BacktestDatasetSidebar />
               </ReactFlow>
               <div className="run-backtest-overlay">
                 <button

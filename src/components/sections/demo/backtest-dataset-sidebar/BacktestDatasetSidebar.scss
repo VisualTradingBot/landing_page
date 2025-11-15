@@ -1,0 +1,217 @@
+.backtest-dataset-sidebar {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  bottom: 5px;
+  width: 280px;
+  max-width: 90vw;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 4px;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  font-family: "ITC Avant Garde", sans-serif;
+  pointer-events: auto;
+
+  .sidebar-header {
+    padding: 12px 16px;
+    border-bottom: 2px solid #000000;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .sidebar-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #000000;
+      text-align: center;
+    }
+  }
+
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    font-family: "ShareTechMono", "JetBrains Mono", "Inter", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+
+    .dataset-empty {
+      font-size: 12px;
+      color: #6b7280;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .dataset-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .dataset-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+
+        label {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #111827;
+        }
+
+        select,
+        input {
+          border: 2px solid #000000;
+          border-radius: 2px;
+          background: #ffffff;
+          padding: 10px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          font-family: inherit;
+          color: #0f172a;
+          transition: border-color 0.2s ease, background 0.2s ease;
+          width: 100%;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: #000000;
+            background: #f8f8f8;
+          }
+        }
+
+        .dataset-history-input,
+        .dataset-fee-input {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          input {
+            flex: 1;
+          }
+
+          span {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4b5563;
+            min-width: 40px;
+            flex-shrink: 0;
+          }
+        }
+
+        &.flash::after {
+          content: "";
+          position: absolute;
+          left: -6px;
+          right: -6px;
+          top: -4px;
+          bottom: -4px;
+          border-radius: 8px;
+          border: 2px solid rgba(15, 23, 42, 0.4);
+          animation: datasetFieldFlash 0.6s ease;
+        }
+
+        &.locked {
+          .field-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            &--locked {
+              position: relative;
+            }
+
+            select {
+              cursor: var(--locked-cursor);
+              opacity: 0.7;
+            }
+          }
+
+          label {
+            color: #4b5563;
+          }
+
+          .field-lock {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+              width: 100%;
+              height: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes datasetFieldFlash {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .backtest-dataset-sidebar {
+    width: 260px;
+
+    .sidebar-header {
+      padding: 10px 12px;
+
+      .sidebar-title {
+        font-size: 12px;
+      }
+    }
+
+    .sidebar-content {
+      padding: 16px;
+      font-size: 13px;
+    }
+  }
+}
+
