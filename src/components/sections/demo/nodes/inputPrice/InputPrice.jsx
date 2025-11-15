@@ -101,6 +101,7 @@ export default function InputPrice({ data, id }) {
       id={id}
       title="Input-Price"
       right={{ active: true, type: "source" }}
+      explanation="The Input-Price node provides the current live price of the asset. It outputs the price as a parameter that can be used throughout your strategy. The price format can be set to close, open, high, low, volume, or OHLC (Open-High-Low-Close)."
     >
       <div className="input-price-container">
         {/* Asset Display */}

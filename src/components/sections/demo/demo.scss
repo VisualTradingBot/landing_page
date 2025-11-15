@@ -1,11 +1,11 @@
 .demo {
-  padding: 0px 18px ;
+  padding: 0px ;
   background: transparent;
   color: #0f172a;
   position: relative;
   min-height: 100vh;
 
-  @media (max-width: 767px) {
+  @media (max-width: 1024px) {
     min-height: auto;
     padding-bottom: 40px;
   }
@@ -54,7 +54,7 @@
     );
     opacity: 0.3;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
       content: unset;
     }
   }
@@ -265,7 +265,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .demo {
       padding: 0px 8px 0 8px;
 

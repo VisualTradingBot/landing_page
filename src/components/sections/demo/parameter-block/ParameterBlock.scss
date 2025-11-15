@@ -14,6 +14,7 @@
   overflow: hidden !important; // Contain content properly
   z-index: 1000 !important; // Ensure it's above other elements
   margin-top: 10px;
+
   
   // Draggable state styling
   &.dragging {
@@ -248,39 +249,6 @@
       animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .parameter-tabs {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      border-bottom: 2px solid #000000;
-      padding-bottom: 8px;
-
-      button {
-        border: none;
-        background: transparent;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-radius: 2px;
-        transition: background 0.2s ease, color 0.2s ease;
-        color: #000;
-
-        &.active {
-          background: #000000;
-          color: #ffffff;
-        }
-
-        &:hover:not(.active) {
-          color: #111827;
-          background: rgba(0, 0, 0, 0.08);
-        }
-      }
-    }
- 
     // Clean Parameter Controls
     .parameter-controls {
       display: flex;
