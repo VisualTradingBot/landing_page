@@ -175,6 +175,7 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
       title="Buy"
       left={{ active: true, type: "target" }}
       bottom={{ active: true, type: "source" }}
+      explanation="The Buy node executes a purchase order for the specified asset. It receives execution flow from conditional nodes (like If) and purchases the asset using the configured amount. The amount can be a fixed value in euros or connected to a parameter."
     >
       {/* Purple exclamation mark indicator */}
       <div className="buy-indicator">

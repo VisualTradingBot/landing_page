@@ -212,7 +212,11 @@ export default function If({ data, id }) {
   }, []);
 
   return (
-    <NodeDefault id={id} title="If">
+    <NodeDefault 
+      id={id} 
+      title="If"
+      explanation="The If node evaluates a condition by comparing two parameters using an operator (>, <, ==, >=, <=). If the condition is true, execution flows through the True output. If false, it flows through the False output. Parameters can be dragged from the Parameter Dashboard into the condition slots."
+    >
       <div className="if-condition-container">
         <div className="condition-row">
           <div className="condition-parameter">

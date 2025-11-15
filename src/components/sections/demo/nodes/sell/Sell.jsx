@@ -131,7 +131,12 @@ export default function Sell({ data, id }) {
   }, [amountVariable, id, updateNodeData]);
 
   return (
-    <NodeDefault id={id} title="Sell" left={{ active: true, type: "target" }}>
+    <NodeDefault 
+      id={id} 
+      title="Sell" 
+      left={{ active: true, type: "target" }}
+      explanation="The Sell node executes a sell order for the current position. It receives execution flow from conditional nodes and sells a percentage of the held asset. The amount is specified as a percentage of the current position."
+    >
       <div className="sell-container">
         <div className="asset-display">
           <span className="asset-label">Asset:</span>

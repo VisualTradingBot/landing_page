@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import PropTypes from "prop-types";
 import "./nodeDefault.scss";
@@ -21,11 +23,17 @@ export default function NodeDefault({
   id: nodeId,
   title = "Default Node",
   children,
+  explanation,
   top = { active: false, type: "target" },
   bottom = { active: false, type: "source" },
   left = { active: false, type: "target" },
   right = { active: false, type: "source" },
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const titleRef = useRef(null);
+  const tooltipRef = useRef(null);
+
   // Use nodeId if provided; otherwise fallback to a slugified title
   const baseId = nodeId || title.toLowerCase().replace(/\s+/g, "-");
 
@@ -34,9 +42,81 @@ export default function NodeDefault({
   const leftHandle = { ...left, id: left.id || `${baseId}-left` };
   const rightHandle = { ...right, id: right.id || `${baseId}-right` };
 
+  const updateTooltipPosition = () => {
+    if (!titleRef.current) return;
+
+    const titleRect = titleRef.current.getBoundingClientRect();
+    const spacing = 8;
+    const tooltipWidth = 250;
+    const tooltipHeight = 100;
+
+    let top = titleRect.bottom + spacing;
+    let left = titleRect.left;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left + tooltipWidth > viewportWidth - 20) {
+      left = viewportWidth - tooltipWidth - 20;
+    }
+    if (left < 20) {
+      left = 20;
+    }
+
+    if (top + tooltipHeight > viewportHeight - 20) {
+      top = titleRect.top - tooltipHeight - spacing;
+    }
+    if (top < 20) {
+      top = 20;
+    }
+
+    setTooltipPosition({ top, left });
+  };
+
+  useEffect(() => {
+    if (isHovered && explanation) {
+      updateTooltipPosition();
+      window.addEventListener("scroll", updateTooltipPosition, true);
+      window.addEventListener("resize", updateTooltipPosition);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updateTooltipPosition, true);
+      window.removeEventListener("resize", updateTooltipPosition);
+    };
+  }, [isHovered, explanation]);
+
+  const tooltip = isHovered && explanation ? (
+    createPortal(
+      <div
+        ref={tooltipRef}
+        className="info-tooltip"
+        style={{
+          top: `${tooltipPosition.top}px`,
+          left: `${tooltipPosition.left}px`,
+        }}
+      >
+        {explanation}
+      </div>,
+      document.body
+    )
+  ) : null;
+
   return (
     <div className="node-default">
-      <div className="node-default-header">{title}</div>
+      <div className="node-default-header">
+        <span
+          ref={titleRef}
+          className={`node-default-header-title ${explanation ? "node-default-header-title--interactive" : ""}`}
+          onMouseEnter={() => explanation && setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={(e) => explanation && e.stopPropagation()}
+          onMouseDown={(e) => explanation && e.stopPropagation()}
+        >
+          {title}
+        </span>
+      </div>
+      {tooltip}
       <div className="node-default-body">
         {children}
         {topHandle.active && (
@@ -88,6 +168,7 @@ NodeDefault.propTypes = {
   id: PropTypes.string,
   title: PropTypes.string,
   children: PropTypes.node,
+  explanation: PropTypes.string,
   top: PropTypes.object,
   bottom: PropTypes.object,
   left: PropTypes.object,

@@ -1,0 +1,140 @@
+.info-button-wrapper {
+  position: relative;
+  z-index: 10000 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto !important;
+  flex-shrink: 0;
+
+  // For absolute positioning (used in charts and stat cards)
+  &--absolute {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+
+    &.info-button-wrapper--absolute--right {
+      left: auto;
+      right: 8px;
+    }
+  }
+
+  // For header positioning (used in nodes)
+  &--header {
+    position: relative;
+    margin-right: 0;
+    margin-left: -4px; // Slight negative margin to bring it closer to title
+  }
+}
+
+.info-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
+
+  &:hover {
+    background: #000000;
+    color: #ffffff;
+    transform: scale(1.1);
+  }
+
+  // Smaller size for header variant
+  .info-button-wrapper--header & {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    border-width: 1px;
+  }
+
+  .info-icon {
+    display: block;
+    line-height: 1;
+    font-style: normal;
+  }
+}
+
+.info-tooltip {
+  position: fixed;
+  min-width: 200px;
+  max-width: 300px;
+  background: #000000;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  z-index: 999999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  white-space: normal;
+  word-wrap: break-word;
+  animation: tooltipFadeIn 0.2s ease;
+
+  // Arrow pointing up
+  &::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 12px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #000000;
+  }
+
+  // Right-aligned tooltip
+  &--right {
+    &::before {
+      left: auto;
+      right: 12px;
+    }
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .info-button-wrapper {
+    top: 6px;
+    left: 6px;
+  }
+
+  .info-button {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+
+  .info-tooltip {
+    min-width: 180px;
+    max-width: 250px;
+    font-size: 11px;
+    padding: 10px 12px;
+  }
+}
+

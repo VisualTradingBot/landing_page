@@ -23,6 +23,7 @@ import {
 import { mapCoinGeckoPricesToOHLC } from "../../../../utils/indicators";
 
 import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
+import InfoButton from "../InfoButton";
 
 import "./backtest.scss";
 
@@ -990,6 +991,10 @@ export default function BacktestView({
       <div className="backtest-charts-row">
         {/* Price Chart */}
         <div className="backtest-chart-container">
+          <InfoButton 
+            explanation="This chart displays the asset price over time along with any technical indicators used in your strategy. Green triangles (▲) mark entry points, and red triangles (▼) mark exit points." 
+            variant="absolute"
+          />
           <div className="chart-title">Price & Indicators</div>
           <div className="chart-legend">
             <div className="legend-item">
@@ -1173,6 +1178,10 @@ export default function BacktestView({
 
         {/* Equity Chart */}
         <div className="backtest-chart-container">
+          <InfoButton 
+            explanation="The equity curve shows how your portfolio value changes over time. It starts at 100% (baseline) and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns." 
+            variant="absolute"
+          />
           <div className="chart-title">Equity Curve</div>
           <div className="chart-legend">
             <div className="legend-item">
@@ -1258,18 +1267,38 @@ export default function BacktestView({
       {/* Statistics */}
       <div className="backtest-stats">
         <div className="backtest-stat-card positive">
+          <InfoButton 
+            explanation="Total Return represents the overall percentage gain or loss of your strategy over the entire backtest period. This includes all winning and losing trades, accounting for fees." 
+            position="right"
+            variant="absolute"
+          />
           <div className="stat-label">Total Return</div>
           <div className="stat-value">{(totalReturn * 100).toFixed(1)}%</div>
         </div>
         <div className="backtest-stat-card info">
+          <InfoButton 
+            explanation="Win Rate shows the percentage of trades that were profitable. A higher win rate indicates more consistent success, though it should be considered alongside average profit per trade." 
+            position="right"
+            variant="absolute"
+          />
           <div className="stat-label">Win Rate</div>
           <div className="stat-value">{(winRate * 100).toFixed(1)}%</div>
         </div>
         <div className="backtest-stat-card warning">
+          <InfoButton 
+            explanation="Average Trade Duration measures how long positions are held on average. Shorter durations may indicate more active trading, while longer durations suggest a more patient strategy." 
+            position="right"
+            variant="absolute"
+          />
           <div className="stat-label">Avg Trade Duration</div>
           <div className="stat-value">{Math.round(avgDuration)} days</div>
         </div>
         <div className="backtest-stat-card negative">
+          <InfoButton 
+            explanation="Max Drawdown is the largest peak-to-trough decline in your portfolio value during the backtest. Lower drawdowns indicate better risk management and less volatility in returns." 
+            position="right"
+            variant="absolute"
+          />
           <div className="stat-label">Max Drawdown</div>
           <div className="stat-value">{(maxDrawdown * 100).toFixed(1)}%</div>
         </div>

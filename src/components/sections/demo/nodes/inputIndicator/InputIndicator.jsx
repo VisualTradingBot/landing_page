@@ -244,6 +244,7 @@ export default function InputIndicator({ data, id }) {
       id={id}
       title="Input-Indicator"
       right={{ active: true, type: "source" }}
+      explanation="The Input-Indicator node calculates technical indicators (SMA, EMA, RSI, Bollinger Bands, ATR, Rolling High/Low) based on price data. It outputs the indicator value as a parameter that can be used in conditions or other nodes. The lookback window determines how many periods to use for calculation."
     >
       <div className="input-indicator-container">
         {/* Asset Display */}
