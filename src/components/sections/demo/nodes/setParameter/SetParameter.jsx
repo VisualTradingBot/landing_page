@@ -198,6 +198,7 @@ export default function SetParameter({ data, id }) {
       id={id}
       title="Set Parameter"
       left={{ active: true, type: "target" }}
+      explanation="The Set Parameter node receives data from other nodes (like Input-Price or Input-Indicator) and creates a named parameter that can be used throughout your strategy. It acts as a bridge, making data from source nodes available as parameters for use in conditions and calculations."
     >
       <div className="set-parameter-node">
         <div className={`set-parameter-card parameter-item ${colorVariant}`}>

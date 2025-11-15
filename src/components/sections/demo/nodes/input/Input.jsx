@@ -202,7 +202,11 @@ export default function Input({ id, data }) {
   };
 
   return (
-    <NodeDefault id={id} title="Back-Test Data-Set">
+    <NodeDefault 
+      id={id} 
+      title="Back-Test Data-Set"
+      explanation="The Back-Test Data-Set node configures the historical data used for backtesting. It sets the asset (BTC/ETH), data resolution (1 day or 1 hour), history window (how many periods to analyze), and trading fee percentage. This node provides the foundation data for all backtest simulations."
+    >
       <div className="input-container">
         <div className="field-row">
           <label className="field-label">Asset:</label>
