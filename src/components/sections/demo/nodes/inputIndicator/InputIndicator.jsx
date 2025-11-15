@@ -7,6 +7,7 @@ import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
 import { DEFAULT_ASSET } from "../../defaults";
+import CustomSelect from "../../CustomSelect";
 
 export default function InputIndicator({ data, id }) {
   const { updateNodeData } = useReactFlow();
@@ -344,20 +345,20 @@ export default function InputIndicator({ data, id }) {
         {/* Indicator Field */}
         <div className="field-row">
           <label className="field-label">Indicator:</label>
-          <select
+          <CustomSelect
             value={indicator}
             onChange={handleIndicatorChange}
-            className="field-select"
-          >
-            <option value="30d_low">Rolling Low</option>
-            <option value="30d_high">Rolling High</option>
-            <option value="sma">SMA (Simple Moving Average)</option>
-            <option value="ema">EMA (Exponential Moving Average)</option>
-            <option value="rsi">RSI (Relative Strength Index)</option>
-            <option value="bollinger_upper">Bollinger Upper Band</option>
-            <option value="bollinger_lower">Bollinger Lower Band</option>
-            <option value="atr">ATR (Average True Range)</option>
-          </select>
+            options={[
+              { value: "30d_low", label: "Rolling Low" },
+              { value: "30d_high", label: "Rolling High" },
+              { value: "sma", label: "SMA (Simple Moving Average)" },
+              { value: "ema", label: "EMA (Exponential Moving Average)" },
+              { value: "rsi", label: "RSI (Relative Strength Index)" },
+              { value: "bollinger_upper", label: "Bollinger Upper Band" },
+              { value: "bollinger_lower", label: "Bollinger Lower Band" },
+              { value: "atr", label: "ATR (Average True Range)" },
+            ]}
+          />
         </div>
       </div>
     </NodeDefault>
