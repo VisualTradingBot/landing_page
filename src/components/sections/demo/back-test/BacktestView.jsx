@@ -703,7 +703,7 @@ export default function BacktestView({
   const tradeIndexMaps = useMemo(() => {
     const entrySet = new Set();
     const entryMeta = new Map();
-    const exitMap = new Map(); // exitIndex -> { profit: boolean|null, profitValue: number|null }
+    const exitMap = new Map(); // exitIndex -> { profit: boolean|null, profitValue: number|null, quantity: number|null, sellPercent: number|null }
     if (Array.isArray(trades) && storedPrices) {
       for (const t of trades) {
         const ei = t.entryIndex;
@@ -735,7 +735,17 @@ export default function BacktestView({
             }
           }
 
-          exitMap.set(xi, { profit: profitFlag, profitValue });
+          const soldQuantity = Number.isFinite(t.quantity) ? t.quantity : null;
+          const normalizedPercent = Number.isFinite(t.sellPercent)
+            ? Math.min(Math.max(t.sellPercent, 0), 100)
+            : null;
+
+          exitMap.set(xi, {
+            profit: profitFlag,
+            profitValue,
+            quantity: soldQuantity,
+            sellPercent: normalizedPercent,
+          });
         }
       }
     }
@@ -750,6 +760,7 @@ export default function BacktestView({
         index: i,
         time: i + 1, // day number (numeric)
         price: Number(p.live_price),
+        assetSymbol,
       };
 
       // Add indicator if available
@@ -779,6 +790,8 @@ export default function BacktestView({
           dataPoint.isExit = true;
           dataPoint.exitProfit = !!exitMeta.profit;
           dataPoint.exitProfitValue = exitMeta.profitValue ?? null;
+          dataPoint.exitQuantity = exitMeta.quantity ?? null;
+          dataPoint.exitSellPercent = exitMeta.sellPercent ?? null;
           if (exitMeta.profitValue != null) {
             const formatted = profitFormatter.format(
               Math.abs(exitMeta.profitValue)
@@ -791,6 +804,8 @@ export default function BacktestView({
           }
         } else {
           dataPoint.isExit = false;
+          dataPoint.exitQuantity = null;
+          dataPoint.exitSellPercent = null;
         }
       }
 
@@ -991,8 +1006,8 @@ export default function BacktestView({
       <div className="backtest-charts-row">
         {/* Price Chart */}
         <div className="backtest-chart-container">
-          <InfoButton 
-            explanation="This chart displays the asset price over time along with any technical indicators used in your strategy. Green triangles (▲) mark entry points, and red triangles (▼) mark exit points." 
+          <InfoButton
+            explanation="This chart displays the asset price over time along with any technical indicators used in your strategy. Green triangles (▲) mark entry points, and red triangles (▼) mark exit points."
             variant="absolute"
           />
           <div className="chart-title">Price & Indicators</div>
@@ -1178,8 +1193,8 @@ export default function BacktestView({
 
         {/* Equity Chart */}
         <div className="backtest-chart-container">
-          <InfoButton 
-            explanation="The equity curve shows how your portfolio value changes over time. It starts at 100% (baseline) and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns." 
+          <InfoButton
+            explanation="The equity curve shows how your portfolio value changes over time. It starts at 100% (baseline) and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns."
             variant="absolute"
           />
           <div className="chart-title">Equity Curve</div>
@@ -1267,8 +1282,8 @@ export default function BacktestView({
       {/* Statistics */}
       <div className="backtest-stats">
         <div className="backtest-stat-card positive">
-          <InfoButton 
-            explanation="Total Return represents the overall percentage gain or loss of your strategy over the entire backtest period. This includes all winning and losing trades, accounting for fees." 
+          <InfoButton
+            explanation="Total Return represents the overall percentage gain or loss of your strategy over the entire backtest period. This includes all winning and losing trades, accounting for fees."
             position="right"
             variant="absolute"
           />
@@ -1276,8 +1291,8 @@ export default function BacktestView({
           <div className="stat-value">{(totalReturn * 100).toFixed(1)}%</div>
         </div>
         <div className="backtest-stat-card info">
-          <InfoButton 
-            explanation="Win Rate shows the percentage of trades that were profitable. A higher win rate indicates more consistent success, though it should be considered alongside average profit per trade." 
+          <InfoButton
+            explanation="Win Rate shows the percentage of trades that were profitable. A higher win rate indicates more consistent success, though it should be considered alongside average profit per trade."
             position="right"
             variant="absolute"
           />
@@ -1285,8 +1300,8 @@ export default function BacktestView({
           <div className="stat-value">{(winRate * 100).toFixed(1)}%</div>
         </div>
         <div className="backtest-stat-card warning">
-          <InfoButton 
-            explanation="Average Trade Duration measures how long positions are held on average. Shorter durations may indicate more active trading, while longer durations suggest a more patient strategy." 
+          <InfoButton
+            explanation="Average Trade Duration measures how long positions are held on average. Shorter durations may indicate more active trading, while longer durations suggest a more patient strategy."
             position="right"
             variant="absolute"
           />
@@ -1294,8 +1309,8 @@ export default function BacktestView({
           <div className="stat-value">{Math.round(avgDuration)} days</div>
         </div>
         <div className="backtest-stat-card negative">
-          <InfoButton 
-            explanation="Max Drawdown is the largest peak-to-trough decline in your portfolio value during the backtest. Lower drawdowns indicate better risk management and less volatility in returns." 
+          <InfoButton
+            explanation="Max Drawdown is the largest peak-to-trough decline in your portfolio value during the backtest. Lower drawdowns indicate better risk management and less volatility in returns."
             position="right"
             variant="absolute"
           />
