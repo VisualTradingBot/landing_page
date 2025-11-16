@@ -49,7 +49,9 @@ export default function Sell({ data, id }) {
     const value = event.target.value;
     // Remove any non-numeric characters except dots
     const numericValue = value.replace(/[^\d.]/g, "");
-    setAmount(numericValue);
+    if (Number(numericValue) > 100)
+      setAmount("100"); // Prevent values over 100%
+    else setAmount(numericValue);
 
     const currentParamData = amountVariable.parameterData || {};
     // Update both direct amount and parameter data
@@ -131,9 +133,9 @@ export default function Sell({ data, id }) {
   }, [amountVariable, id, updateNodeData]);
 
   return (
-    <NodeDefault 
-      id={id} 
-      title="Sell" 
+    <NodeDefault
+      id={id}
+      title="Sell"
       left={{ active: true, type: "target" }}
       explanation="The Sell node executes a sell order for the current position. It receives execution flow from conditional nodes and sells a percentage of the held asset. The amount is specified as a percentage of the current position."
     >

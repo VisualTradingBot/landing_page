@@ -1325,14 +1325,14 @@ export default function Demo() {
             <div className="demo-mobile-content">
               <h3 className="demo-mobile-title">Demo Available on Desktop</h3>
               <p className="demo-mobile-text">
-                The interactive demo requires a larger screen to provide the best
-                experience. Please visit this page on a laptop or desktop computer
-                to try out our visual trading strategy builder.
+                The interactive demo requires a larger screen to provide the
+                best experience. Please visit this page on a laptop or desktop
+                computer to try out our visual trading strategy builder.
               </p>
               <p className="demo-mobile-text">
-                On desktop, you'll be able to drag and drop trading nodes, build
-                custom strategies, and run backtests to see how your algorithms
-                perform.
+                On desktop, you&apos;ll be able to drag and drop trading nodes,
+                build custom strategies, and run backtests to see how your
+                algorithms perform.
               </p>
             </div>
           </div>
