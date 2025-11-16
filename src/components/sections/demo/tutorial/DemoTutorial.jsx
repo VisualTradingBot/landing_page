@@ -185,31 +185,40 @@ function DemoTutorialInner({
             setTargetRect(rects);
           }, duration + 50);
         }, 500);
-      } else if (
-        (step.type === "parameter" || step.type === "backtest") &&
-        step.selector
-      ) {
-        // For parameter type, we need to ensure the page scrolls to show the parameter dashboard
-        if (step.type === "parameter") {
-          // First, scroll to the demo section
+      } else if (step.selector) {
+        // For parameter dashboard step specifically (step 5), open the dashboard
+        if (step.type === "parameter" && step.selector) {
+          // Step 5 should only highlight the OPEN dashboard, never the closed toggle.
+          // 1) Hide any existing highlight.
+          setTargetRect(null);
+
+          // 2) Scroll demo into view so the dashboard opens in the viewport.
           const demoSection = document.getElementById("demo");
           if (demoSection) {
             demoSection.scrollIntoView({ behavior: "smooth", block: "start" });
           }
 
-          // Wait for scroll to settle (500ms for smooth scroll), then open dashboard
+          // 3) After scroll, open the dashboard.
           setTimeout(() => {
-            // Open the parameter dashboard
             if (onParameterDashboardToggle) {
               onParameterDashboardToggle(true);
             }
 
-            // Wait for dashboard to render and position, then get the element position
-            setTimeout(() => {
-              const element = document.querySelector(step.selector);
-              if (element) {
+            // 4) Poll for the actual open dashboard element and highlight that.
+            let attempts = 0;
+            const maxAttempts = 10; // ~1s total
+
+            const tryHighlight = () => {
+              attempts += 1;
+
+              // Prefer the full dashboard container when open
+              const dashboardElement = document.querySelector(
+                ".parameter-dashboard, .parameters-panel, .parameters-dropdown"
+              );
+
+              if (dashboardElement) {
                 const padding = 12;
-                const rect = element.getBoundingClientRect();
+                const rect = dashboardElement.getBoundingClientRect();
                 setTargetRect({
                   left: rect.left - padding,
                   top: rect.top - padding,
@@ -218,14 +227,24 @@ function DemoTutorialInner({
                   width: rect.width + padding * 2,
                   height: rect.height + padding * 2,
                 });
+                return;
               }
-            }, 300);
+
+              if (attempts < maxAttempts) {
+                setTimeout(tryHighlight, 50);
+              }
+            };
+
+            setTimeout(tryHighlight, 50);
           }, 500);
+
           return;
         }
 
         const element = document.querySelector(step.selector);
         if (element) {
+          const padding = 12;
+
           // For backtest, include the title "Demo Strategy ..."
           if (step.type === "backtest") {
             // Smooth scroll to element
@@ -444,19 +463,31 @@ function DemoTutorialInner({
 
   // Update single highlight overlay position (calculates bounding box for all elements)
   useEffect(() => {
-    if (!overlayRef.current || currentStep < 0 || !targetRect) return;
+    if (!overlayRef.current || currentStep < 0) return;
 
     const overlay = overlayRef.current;
     const highlight = overlay.querySelector(".tutorial-highlight");
     if (!highlight) return;
 
-    // Use the targetRect which already contains the bounding box with padding
-    // No additional padding needed since it's already included in targetRect
-    highlight.style.left = `${targetRect.left}px`;
-    highlight.style.top = `${targetRect.top}px`;
-    highlight.style.width = `${targetRect.width}px`;
-    highlight.style.height = `${targetRect.height}px`;
-    highlight.style.display = "block";
+    // If no targetRect, hide the highlight completely
+    if (!targetRect) {
+      highlight.style.display = "none";
+      return;
+    }
+
+    // Force a single complete re-render by hiding first, then showing
+    highlight.style.display = "none";
+
+    // Use requestAnimationFrame to ensure the hide takes effect before showing
+    requestAnimationFrame(() => {
+      // Use the targetRect which already contains the bounding box with padding
+      // No additional padding needed since it's already included in targetRect
+      highlight.style.left = `${targetRect.left}px`;
+      highlight.style.top = `${targetRect.top}px`;
+      highlight.style.width = `${targetRect.width}px`;
+      highlight.style.height = `${targetRect.height}px`;
+      highlight.style.display = "block";
+    });
   }, [currentStep, targetRect]);
 
   // Update target rect on window resize
@@ -823,8 +854,8 @@ function DemoTutorialInner({
 
   // Handle next step
   const handleNext = useCallback(() => {
-    // Close parameter dashboard if we're leaving the parameter step
-    if (currentStep === 2 && onParameterDashboardToggle) {
+    // Close parameter dashboard if we're leaving step 5 (Parameter Dashboard step)
+    if (currentStep === 4 && onParameterDashboardToggle) {
       onParameterDashboardToggle(false);
     }
 
