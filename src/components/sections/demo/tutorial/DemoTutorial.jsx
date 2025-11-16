@@ -83,31 +83,25 @@ function DemoTutorialInner({
 
     if (rects.length === 0) return null;
 
-    // Special handling for "In trade" block - include the title and gradient border
+    // Special handling for "In trade" block - use just the purple bordered body
     if (step && step.nodeIds && step.nodeIds.includes("blockNode-1")) {
       const blockElement = document.querySelector(`[data-id="blockNode-1"]`);
       if (blockElement) {
-        const blockRect = blockElement.getBoundingClientRect();
-        // Include the header (title) in the bounding box
-        const header = blockElement.querySelector(".node-default-header");
-        if (header) {
-          const headerRect = header.getBoundingClientRect();
+        // Get just the body with the purple border (excluding title)
+        const blockBody = blockElement.querySelector(".node-default-body");
+        if (blockBody) {
+          const bodyRect = blockBody.getBoundingClientRect();
           return {
-            left: Math.min(blockRect.left, headerRect.left) - padding,
-            top: Math.min(blockRect.top, headerRect.top) - padding,
-            right: Math.max(blockRect.right, headerRect.right) + padding,
-            bottom: Math.max(blockRect.bottom, headerRect.bottom) + padding,
-            width:
-              Math.max(blockRect.right, headerRect.right) -
-              Math.min(blockRect.left, headerRect.left) +
-              padding * 2,
-            height:
-              Math.max(blockRect.bottom, headerRect.bottom) -
-              Math.min(blockRect.top, headerRect.top) +
-              padding * 2,
+            left: bodyRect.left - padding,
+            top: bodyRect.top - padding,
+            right: bodyRect.right + padding,
+            bottom: bodyRect.bottom + padding,
+            width: bodyRect.width + padding * 2,
+            height: bodyRect.height + padding * 2,
           };
         }
-        // If no header found, use block rect with padding
+        // Fallback to whole block if body not found
+        const blockRect = blockElement.getBoundingClientRect();
         return {
           left: blockRect.left - padding,
           top: blockRect.top - padding,
