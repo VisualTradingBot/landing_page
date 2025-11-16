@@ -1,14 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useReactFlow } from "@xyflow/react";
 import "./ParameterBlock.scss";
 import PropTypes from "prop-types";
-import { useAsset } from "../AssetContext";
-import {
-  DEFAULT_ASSET,
-  DEFAULT_DATA_RESOLUTION,
-  DEFAULT_FEE_PERCENT,
-  DEFAULT_INTERVAL_BY_RESOLUTION,
-} from "../defaults";
 
 const PARAMETERS_UPDATED_EVENT = "parametersUpdated";
 const SYSTEM_COLOR_VARIANTS = [
@@ -73,12 +65,11 @@ export default function ParameterBlock({
   // Drag state management
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
-  const [currentX, setCurrentX] = useState(0);
+  const [currentX, setCurrentX] = useState(20);
   const [canvasBounds, setCanvasBounds] = useState({ left: 0, right: 0 });
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
   const [hasDragged, setHasDragged] = useState(false);
   const parameterBlockRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("parameters");
 
   const classifyParameter = useCallback((param) => {
     if (param.isDataParameter) {
@@ -380,9 +371,14 @@ export default function ParameterBlock({
         if (canvas) {
           const rect = canvas.getBoundingClientRect();
           const blockWidth = parameterBlockRef.current.offsetWidth;
+          
+          // Find the sidebar and get its width
+          const sidebar = canvas.querySelector(".backtest-dataset-sidebar");
+          const sidebarWidth = sidebar ? sidebar.offsetWidth : 280; // Default to 280px if not found
+          
           setCanvasBounds({
-            left: 0,
-            right: rect.width - blockWidth,
+            left: 20,
+            right: rect.width - blockWidth - sidebarWidth -20,
           });
         }
       }
@@ -619,93 +615,70 @@ export default function ParameterBlock({
         </span>
       </h1>
       <div className="dropdown-content">
-        <div className="parameter-tabs">
-          <button
-            type="button"
-            className={activeTab === "parameters" ? "active" : ""}
-            onClick={() => setActiveTab("parameters")}
-          >
-            Parameters
-          </button>
-          <button
-            type="button"
-            className={activeTab === "dataset" ? "active" : ""}
-            onClick={() => setActiveTab("dataset")}
-          >
-            Back-Test Data Set
-          </button>
+        <div className="parameter-controls">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search parameters..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="parameter-search"
+            />
+          </div>
+
+          <div className="buttons">
+            <button
+              className="add-parameter-btn"
+              onClick={() => onShowModal()}
+            >
+              Add Parameter
+            </button>
+          </div>
         </div>
 
-        {activeTab === "parameters" ? (
-          <>
-            <div className="parameter-controls">
-              <div className="search-container">
-                <input
-                  type="text"
-                  placeholder="Search parameters..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="parameter-search"
-                />
-              </div>
-
-              <div className="buttons">
-                <button
-                  className="add-parameter-btn"
-                  onClick={() => onShowModal()}
-                >
-                  Add Parameter
-                </button>
-              </div>
+        <div className="parameters-list">
+          {!hasMatchingParameters ? (
+            <div className="empty-state">
+              <p>
+                {searchTerm
+                  ? "No parameters match your search"
+                  : "No parameters found"}
+              </p>
+              <p>
+                {searchTerm
+                  ? "Try a different search term"
+                  : "Use the buttons above to add parameters"}
+              </p>
             </div>
-
-            <div className="parameters-list">
-              {!hasMatchingParameters ? (
-                <div className="empty-state">
-                  <p>
-                    {searchTerm
-                      ? "No parameters match your search"
-                      : "No parameters found"}
-                  </p>
-                  <p>
-                    {searchTerm
-                      ? "Try a different search term"
-                      : "Use the buttons above to add parameters"}
-                  </p>
-                </div>
-              ) : (
-                <div className="parameter-groups">
-                  {filteredGroupedParameters.map((group) => {
-                    const collapsed = Boolean(collapsedGroups[group.key]);
-                    return (
-                      <div className="parameter-group" key={group.key}>
-                        <div
-                          className={`group-header ${group.className}`}
-                          onClick={() => toggleGroup(group.key)}
-                        >
-                          <span className="group-title">{group.title}</span>
-                          <span className="group-count">
-                            ({group.params.length})
-                          </span>
-                          <span className="group-toggle">
-                            {collapsed ? "▼" : "▲"}
-                          </span>
-                        </div>
-                        {!collapsed && (
-                          <ul className="group-parameters">
-                            {group.params.map(renderParameterItem)}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+          ) : (
+            <div className="parameter-groups">
+              {filteredGroupedParameters.map((group) => {
+                const collapsed = Boolean(collapsedGroups[group.key]);
+                return (
+                  <div className="parameter-group" key={group.key}>
+                    <div
+                      className={`group-header ${group.className}`}
+                      onClick={() => toggleGroup(group.key)}
+                    >
+                      <span className="group-title">{group.title}</span>
+                      <span className="group-count">
+                        ({group.params.length})
+                      </span>
+                      <span className="group-toggle">
+                        {collapsed ? "▼" : "▲"}
+                      </span>
+                    </div>
+                    {!collapsed && (
+                      <ul className="group-parameters">
+                        {group.params.map(renderParameterItem)}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </>
-        ) : (
-          <BacktestDatasetTab />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -728,243 +701,3 @@ ParameterBlock.propTypes = {
   onShowDeleteModal: PropTypes.func.isRequired,
   onEditParameter: PropTypes.func,
 };
-
-function BacktestDatasetTab() {
-  const reactFlow = useReactFlow();
-  const assetContext = useAsset();
-  const inputNode = reactFlow?.getNode?.("inputNode") || null;
-  const data = inputNode?.data || {};
-  const RESOLUTION_LIMITS = useMemo(
-    () => ({
-      "1d": { min: 1, max: 365, unit: "days" },
-      "1h": { min: 1, max: 8760, unit: "hours" },
-    }),
-    []
-  );
-  const resolution = data.resolution || DEFAULT_DATA_RESOLUTION;
-  const intervalBounds =
-    RESOLUTION_LIMITS[resolution] || RESOLUTION_LIMITS["1d"];
-  const defaultInterval = String(
-    data.interval ??
-      DEFAULT_INTERVAL_BY_RESOLUTION[resolution] ??
-      intervalBounds.min
-  );
-  const defaultFee = String(
-    data.feePercent ??
-      data.feePercentage ??
-      assetContext.feePercent ??
-      DEFAULT_FEE_PERCENT
-  );
-
-  const [formState, setFormState] = useState({
-    asset: data.asset || DEFAULT_ASSET,
-    interval: defaultInterval,
-    fee: defaultFee,
-  });
-  const [dirty, setDirty] = useState({
-    asset: false,
-    interval: false,
-    fee: false,
-  });
-  const [flashing, setFlashing] = useState({});
-
-  useEffect(() => {
-    if (!inputNode) return;
-    const nodeData = inputNode.data || {};
-    const nodeResolution = nodeData.resolution || DEFAULT_DATA_RESOLUTION;
-    const bounds = RESOLUTION_LIMITS[nodeResolution] || RESOLUTION_LIMITS["1d"];
-    const syncedInterval = String(
-      nodeData.interval ??
-        DEFAULT_INTERVAL_BY_RESOLUTION[nodeResolution] ??
-        bounds.min
-    );
-    const syncedFee = String(
-      nodeData.feePercent ??
-        nodeData.feePercentage ??
-        assetContext.feePercent ??
-        DEFAULT_FEE_PERCENT
-    );
-
-    setFormState((prev) => ({
-      asset: dirty.asset ? prev.asset : nodeData.asset || DEFAULT_ASSET,
-      interval: dirty.interval ? prev.interval : syncedInterval,
-      fee: dirty.fee ? prev.fee : syncedFee,
-    }));
-  }, [
-    inputNode,
-    data.asset,
-    data.interval,
-    data.feePercent,
-    data.feePercentage,
-    data.resolution,
-    assetContext.feePercent,
-    dirty.asset,
-    dirty.interval,
-    dirty.fee,
-    RESOLUTION_LIMITS,
-  ]);
-
-  const flashField = useCallback((field) => {
-    setFlashing((prev) => ({ ...prev, [field]: true }));
-    setTimeout(() => setFlashing((prev) => ({ ...prev, [field]: false })), 600);
-  }, []);
-
-  const commitChanges = useCallback(
-    (patch) => {
-      if (!inputNode) return;
-      reactFlow.updateNodeData(inputNode.id, {
-        ...inputNode.data,
-        ...patch,
-      });
-    },
-    [inputNode, reactFlow]
-  );
-
-  const handleAssetChange = (value) => {
-    if (!value || value === formState.asset) return;
-    setDirty((prev) => ({ ...prev, asset: true }));
-    setFormState((prev) => ({ ...prev, asset: value }));
-    assetContext.setSelectedAsset(value);
-    commitChanges({ asset: value });
-    setDirty((prev) => ({ ...prev, asset: false }));
-    flashField("asset");
-  };
-
-  const handleIntervalChange = (value) => {
-    const cleaned = value.replace(/[^0-9-]/g, "").replace(/(?!^)-/g, "");
-    setDirty((prev) => ({ ...prev, interval: true }));
-    setFormState((prev) => ({ ...prev, interval: cleaned }));
-  };
-
-  const handleIntervalBlur = () => {
-    const numeric = Number(formState.interval);
-    const clamped =
-      Number.isFinite(numeric) && numeric > 0
-        ? Math.min(Math.max(numeric, intervalBounds.min), intervalBounds.max)
-        : intervalBounds.min;
-    const clampedStr = String(clamped);
-    if (clampedStr !== formState.interval) {
-      setFormState((prev) => ({ ...prev, interval: clampedStr }));
-    }
-    commitChanges({ interval: clamped });
-    assetContext.setHistoryWindow(clamped);
-    setDirty((prev) => ({ ...prev, interval: false }));
-    flashField("interval");
-  };
-
-  const handleFeeChange = (value) => {
-    const cleaned = value.replace(/[^0-9.-]/g, "");
-    setDirty((prev) => ({ ...prev, fee: true }));
-    setFormState((prev) => ({ ...prev, fee: cleaned }));
-  };
-
-  const handleFeeBlur = () => {
-    const numeric = Number(formState.fee);
-    const feeValue = Number.isFinite(numeric) ? numeric : DEFAULT_FEE_PERCENT;
-    const feeStr = String(feeValue);
-    if (feeStr !== formState.fee) {
-      setFormState((prev) => ({ ...prev, fee: feeStr }));
-    }
-    commitChanges({ feePercent: feeValue });
-    assetContext.setFeePercent(feeValue);
-    setDirty((prev) => ({ ...prev, fee: false }));
-    flashField("fee");
-  };
-
-  return (
-    <div className="dataset-tab">
-      {!inputNode ? (
-        <div className="dataset-empty">Back-test node not found.</div>
-      ) : (
-        <div className="dataset-form">
-          <div className={`dataset-field ${flashing.asset ? "flash" : ""}`}>
-            <label htmlFor="dataset-asset">Asset</label>
-            <select
-              id="dataset-asset"
-              value={formState.asset}
-              onChange={(e) => handleAssetChange(e.target.value)}
-            >
-              <option value="bitcoin">BTC</option>
-              <option value="ethereum">ETH</option>
-            </select>
-          </div>
-
-          <div className="dataset-field locked">
-            <label htmlFor="dataset-resolution">Data Resolution</label>
-            <div className="field-control field-control--locked">
-              <select id="dataset-resolution" value={resolution} disabled>
-                <option value="1d">1 Day</option>
-                <option value="1h">1 Hour</option>
-              </select>
-              <span className="field-lock" aria-hidden="true" title="Locked">
-                <svg
-                  viewBox="0 0 16 16"
-                  xmlns="http://www.w3.org/2000/svg"
-                  focusable="false"
-                >
-                  <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
-                  <path d="M11 7V5a3 3 0 0 0-6 0v2" />
-                  <circle cx="8" cy="10.5" r="0.85" />
-                </svg>
-              </span>
-            </div>
-          </div>
-
-          <div className={`dataset-field ${flashing.interval ? "flash" : ""}`}>
-            <label htmlFor="dataset-history">History Window</label>
-            <div className="dataset-history-input">
-              <input
-                id="dataset-history"
-                type="text"
-                value={formState.interval}
-                onChange={(e) => handleIntervalChange(e.target.value)}
-                onBlur={handleIntervalBlur}
-              />
-              <span>{intervalBounds.unit}</span>
-            </div>
-          </div>
-
-          <div className="dataset-field locked">
-            <label htmlFor="dataset-type">Type</label>
-            <div className="field-control field-control--locked">
-              <select
-                id="dataset-type"
-                value={data.type || "realtime"}
-                disabled
-              >
-                <option value="realtime">Real-Time</option>
-                <option value="batch">Batch</option>
-                <option value="stream">Stream</option>
-              </select>
-              <span className="field-lock" aria-hidden="true" title="Locked">
-                <svg
-                  viewBox="0 0 16 16"
-                  xmlns="http://www.w3.org/2000/svg"
-                  focusable="false"
-                >
-                  <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
-                  <path d="M11 7V5a3 3 0 0 0-6 0v2" />
-                  <circle cx="8" cy="10.5" r="0.85" />
-                </svg>
-              </span>
-            </div>
-          </div>
-
-          <div className={`dataset-field ${flashing.fee ? "flash" : ""}`}>
-            <label htmlFor="dataset-fee">Fee Percentage</label>
-            <div className="dataset-fee-input">
-              <input
-                id="dataset-fee"
-                type="text"
-                value={formState.fee}
-                onChange={(e) => handleFeeChange(e.target.value)}
-                onBlur={handleFeeBlur}
-              />
-              <span>%</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}

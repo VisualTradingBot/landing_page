@@ -9,43 +9,12 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  margin: 100px 0 0 0;
+  margin: 100px 18px 0 18px;
   border: 2px solid #000000;
   backdrop-filter: blur(20px);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 
-  // Inner border accent with black/white theme
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    background: linear-gradient(
-      45deg,
-      transparent 0%,
-      rgba(0, 0, 0, 0.1) 25%,
-      transparent 50%,
-      rgba(0, 0, 0, 0.1) 75%,
-      transparent 100%
-    );
-    opacity: 0.3;
-    animation: backgroundShift 20s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  @keyframes backgroundShift {
-    0%,
-    100% {
-      transform: translateX(-100%);
-    }
-    50% {
-      transform: translateX(100%);
-    }
-  }
 
   .backtest-header {
     margin-bottom: 32px;
@@ -98,6 +67,7 @@
         min-width: 70px;
         text-align: center;
         transition: all 0.2s ease;
+        position: relative;
 
         &:hover {
           background: #f8f9fa;
@@ -140,12 +110,12 @@
       rgba(255, 255, 255, 0.95) 0%,
       rgba(248, 250, 252, 0.9) 100%
     );
-    padding: 28px;
+    padding: 28px 0 12px 0;
     border: 2px solid #000000;
     border-radius: 8px;
     transition: all 0.4s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
 
     &:hover {
@@ -158,7 +128,7 @@
       font-size: 16px;
       font-weight: 600;
       color: #1e293b;
-      margin-bottom: 16px;
+      margin: 0 0 16px 38px;
       letter-spacing: -0.01em;
     }
 
@@ -166,7 +136,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-bottom: 16px;
+      margin: 16px 0 0 38px;
       padding: 8px 0;
 
       .legend-item {
@@ -200,6 +170,9 @@
         }
       }
     }
+    .recharts-responsive-container {
+      height: 280px !important;
+  }
   }
 
   /* Progress indicator used near the Run button */
@@ -299,7 +272,7 @@
       border-radius: 6px;
       transition: all 0.4s ease;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       backdrop-filter: blur(10px);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.06);
 

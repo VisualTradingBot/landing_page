@@ -1,0 +1,278 @@
+.custom-select {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+  flex: 1;
+
+  .custom-select-trigger {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    text-align: left;
+    box-sizing: border-box;
+
+  
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #9ca3af;
+    }
+
+    &:disabled {
+      cursor: var(--locked-cursor);
+      opacity: 0.7;
+      background: #f8fafc;
+      color: #64748b;
+    }
+  }
+
+  .custom-select-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-select-arrow {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: transform 0.2s ease;
+    margin-left: 8px;
+  }
+
+  &.open .custom-select-arrow {
+    transform: rotate(180deg);
+  }
+
+  &.disabled .custom-select-arrow {
+    color: #9ca3af;
+  }
+
+  .custom-select-dropdown {
+    position: absolute;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    box-shadow: none;
+    z-index: 10000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+
+  .custom-select-option {
+    padding: 10px 12px;
+    border: none;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: "ITC Avant Garde Gothic Medium", ui-sans-serif, system-ui,
+      -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-bottom: 1px solid #f1f1f1;
+    border-radius: 0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover,
+    &.highlighted {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    &.selected {
+      background: #f8f8f8;
+      color: #000000;
+      font-weight: 600;
+
+      &:hover,
+      &.highlighted {
+        background: #000000;
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+// Global styles for portal-rendered dropdown
+.custom-select-dropdown {
+  position: absolute;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: none;
+  z-index: 10000;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  font-family: "ITC Avant Garde Gothic Medium", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+
+  .custom-select-option {
+    padding: 10px 12px;
+    border: none;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: "ITC Avant Garde Gothic Medium", ui-sans-serif, system-ui,
+      -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-bottom: 1px solid #f1f1f1;
+    border-radius: 0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover,
+    &.highlighted {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    &.selected {
+      background: #f8f8f8;
+      color: #000000;
+      font-weight: 600;
+
+      &:hover,
+      &.highlighted {
+        background: #000000;
+        color: #ffffff;
+      }
+    }
+  }
+
+  // Special styling for condition-operator in If node
+  &.condition-operator {
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
+    flex-shrink: 0;
+
+    .custom-select-trigger {
+      background: #ffffff;
+      border: none !important;
+      border-radius: 6px;
+      padding: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      color: #000000;
+      width: 100%;
+      transition: none !important;
+      transform: none !important;
+      animation: none !important;
+      position: relative;
+      z-index: 100;
+      pointer-events: auto;
+
+      &:focus,
+      &:active,
+      &:hover {
+        transform: none !important;
+        transition: none !important;
+        animation: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #ffffff;
+      }
+
+      .custom-select-arrow {
+        display: none;
+      }
+    }
+
+    .custom-select-dropdown {
+      width: 45px;
+      min-width: 45px;
+      max-width: 45px;
+      left: 0;
+      right: auto;
+      border-radius: 0;
+    }
+
+    .custom-select-option {
+      text-align: center;
+      padding: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 0;
+    }
+  }
+
+}
+
+// Apply min-width only to InputIndicator dropdown
+.input-indicator-container .custom-select .custom-select-trigger {
+  min-width: 250px;
+}
+

@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import NodeDefault from "../nodeDefault";
 import { useState, useEffect, useCallback } from "react";
 import { useReactFlow, Handle, Position } from "@xyflow/react";
+import CustomSelect from "../../CustomSelect";
 
 export default function If({ data, id }) {
   const { updateNodeData } = useReactFlow();
@@ -212,7 +213,11 @@ export default function If({ data, id }) {
   }, []);
 
   return (
-    <NodeDefault id={id} title="If">
+    <NodeDefault 
+      id={id} 
+      title="If"
+      explanation="The If node evaluates a condition by comparing two parameters using an operator (>, <, ==, >=, <=). If the condition is true, execution flows through the True output. If false, it flows through the False output. Parameters can be dragged from the Parameter Dashboard into the condition slots."
+    >
       <div className="if-condition-container">
         <div className="condition-row">
           <div className="condition-parameter">
@@ -241,7 +246,7 @@ export default function If({ data, id }) {
             )}
           </div>
 
-          <select
+          <CustomSelect
             className="condition-operator"
             value={
               typeof variable[2].parameterData === "string"
@@ -253,22 +258,15 @@ export default function If({ data, id }) {
               newVar[2].parameterData = { value: e.target.value };
               setVariable(newVar);
             }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-            }}
-            onMouseUp={(e) => {
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <option value=">">&gt;</option>
-            <option value="<">&lt;</option>
-            <option value="==">==</option>
-            <option value=">=">&gt;=</option>
-            <option value="<=">&lt;=</option>
-          </select>
+            hideArrow={true}
+            options={[
+              { value: ">", label: ">" },
+              { value: "<", label: "<" },
+              { value: "==", label: "==" },
+              { value: ">=", label: ">=" },
+              { value: "<=", label: "<=" },
+            ]}
+          />
 
           <div className="condition-parameter">
             {variable[1].parameterData &&

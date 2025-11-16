@@ -73,15 +73,15 @@ export default function Hero({ onOpenModal }) {
                 // Show demo CTA after a delay with cooler animation
                 setTimeout(() => {
                   setShowDemoCta(true);
-                }, 800);
-              }, 500);
+                }, 400);
+              }, 200);
             }
-          }, 30); // Faster typing for tagline
+          }, 25); // Faster typing for tagline
 
           return () => clearInterval(typingTagline);
-        }, 1000);
+        }, 200);
       }
-    }, 250); // 3 times slower for main text
+    }, 150);  // 3 times slower for main text
 
     return () => clearInterval(typingMain);
   }, []);
