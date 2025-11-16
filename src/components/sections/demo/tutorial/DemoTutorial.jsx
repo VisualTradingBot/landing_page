@@ -3,6 +3,7 @@ import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { tutorialSteps, TUTORIAL_STORAGE_KEY } from "./tutorialSteps";
 import ExplanationPanel from "./ExplanationPanel";
 import "./tutorial.scss";
+import "./highlight.scss";
 
 function DemoTutorialInner({
   nodes,
@@ -14,6 +15,13 @@ function DemoTutorialInner({
   const [currentStep, setCurrentStep] = useState(-1); // -1 means not started
   const [targetRect, setTargetRect] = useState(null);
   const overlayRef = useRef(null);
+  const lockedHighlightRef = useRef(null);
+  const lockedContainerRef = useRef(null);
+  const scrollLoopRef = useRef(false);
+  const rafActiveRef = useRef(null);
+  const scrollEndTimeoutRef = useRef(null);
+  const baseMetricsRef = useRef({ windowY: 0, demoScroll: 0, viewportY: 0 });
+  const baseTargetRectRef = useRef(null);
 
   // Start tutorial when component mounts (if not completed)
   useEffect(() => {
@@ -65,7 +73,7 @@ function DemoTutorialInner({
 
   // Get DOM rect for ReactFlow nodes with padding and title inclusion
   const getNodeDOMRects = useCallback((nodeIds, step) => {
-    const padding = 5; // 5px padding as requested
+    const padding = 12; // Increased padding for better visual clearance
     const rects = nodeIds
       .map((nodeId) => {
         const element = document.querySelector(`[data-id="${nodeId}"]`);
@@ -206,7 +214,7 @@ function DemoTutorialInner({
             setTimeout(() => {
               const element = document.querySelector(step.selector);
               if (element) {
-                const padding = 5;
+                const padding = 12;
                 const rect = element.getBoundingClientRect();
                 setTargetRect({
                   left: rect.left - padding,
@@ -228,7 +236,7 @@ function DemoTutorialInner({
           if (step.type === "backtest") {
             // Smooth scroll to element
             element.scrollIntoView({ behavior: "smooth", block: "center" });
-            const padding = 5;
+            const padding = 12;
             // Find the backtest container
             const backtestContainer = element.closest(".backtest") || element;
             const titleElement = backtestContainer.querySelector("h3");
@@ -351,7 +359,7 @@ function DemoTutorialInner({
             }
           } else {
             // For parameter block, just add padding
-            const padding = 5;
+            const padding = 12;
             const rect = element.getBoundingClientRect();
             setTargetRect({
               left: rect.left - padding,
@@ -421,6 +429,22 @@ function DemoTutorialInner({
           "tutorial-active"
         );
       }
+      // If there is a locked highlight, remove it when changing steps
+      if (lockedHighlightRef.current && lockedHighlightRef.current.parentNode) {
+        lockedHighlightRef.current.parentNode.removeChild(
+          lockedHighlightRef.current
+        );
+      }
+      lockedHighlightRef.current = null;
+      lockedContainerRef.current = null;
+      // restore overlay highlight style
+      const overlay = overlayRef.current;
+      const ovHighlight =
+        overlay && overlay.querySelector(".tutorial-highlight");
+      if (ovHighlight) {
+        ovHighlight.style.border = "";
+        ovHighlight.style.boxShadow = "";
+      }
     };
   }, [currentStep, zoomToStep, nodes]);
 
@@ -466,7 +490,7 @@ function DemoTutorialInner({
 
           const element = document.querySelector(step.selector);
           if (element) {
-            const padding = 5;
+            const padding = 12;
             if (step.type === "backtest") {
               const backtestContainer = element.closest(".backtest") || element;
               const titleElement = backtestContainer.querySelector("h3");
@@ -519,6 +543,289 @@ function DemoTutorialInner({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [currentStep, getNodeDOMRects]);
+
+  // Update target rect while scrolling or when the ReactFlow viewport changes
+  useEffect(() => {
+    if (currentStep < 0 || currentStep >= tutorialSteps.length)
+      return undefined;
+
+    let raf = null;
+    const step = tutorialSteps[currentStep];
+
+    const updateCurrentRect = () => {
+      try {
+        if (!step) return;
+        if (step.type === "graph" && step.nodeIds) {
+          const rects = getNodeDOMRects(step.nodeIds, step);
+          if (rects) setTargetRect(rects);
+          return;
+        }
+
+        if (step.selector) {
+          const element = document.querySelector(step.selector);
+          if (!element) return;
+          const padding = 12;
+          if (step.type === "backtest") {
+            const backtestContainer = element.closest(".backtest") || element;
+            const titleElement = backtestContainer.querySelector("h3");
+            if (titleElement) {
+              const containerRect = backtestContainer.getBoundingClientRect();
+              const titleRect = titleElement.getBoundingClientRect();
+              setTargetRect({
+                left: Math.min(containerRect.left, titleRect.left) - padding,
+                top: Math.min(containerRect.top, titleRect.top) - padding,
+                right: Math.max(containerRect.right, titleRect.right) + padding,
+                bottom:
+                  Math.max(containerRect.bottom, titleRect.bottom) + padding,
+                width:
+                  Math.max(containerRect.right, titleRect.right) -
+                  Math.min(containerRect.left, titleRect.left) +
+                  padding * 2,
+                height:
+                  Math.max(containerRect.bottom, titleRect.bottom) -
+                  Math.min(containerRect.top, titleRect.top) +
+                  padding * 2,
+              });
+            } else {
+              const rect = element.getBoundingClientRect();
+              // If the element sits in a scrollable container such as
+              // ReactFlow's viewport or the demo section, create/update a
+              // locked highlight inside that container so it moves with the
+              // content natively.
+              const lockedCandidate =
+                element.closest(".react-flow__viewport") ||
+                element.closest("#demo") ||
+                element.offsetParent ||
+                document.body;
+
+              // compute relative rect for locked highlight
+              try {
+                const containerRect = lockedCandidate.getBoundingClientRect();
+                const leftRel = rect.left - containerRect.left;
+                const topRel = rect.top - containerRect.top;
+                const width = rect.width;
+                const height = rect.height;
+
+                // create locked highlight element if needed
+                if (
+                  !lockedHighlightRef.current ||
+                  lockedContainerRef.current !== lockedCandidate
+                ) {
+                  // remove previous locked highlight if it exists
+                  if (
+                    lockedHighlightRef.current &&
+                    lockedHighlightRef.current.parentNode
+                  ) {
+                    lockedHighlightRef.current.parentNode.removeChild(
+                      lockedHighlightRef.current
+                    );
+                  }
+                  const lockedEl = document.createElement("div");
+                  lockedEl.className = "tutorial-highlight-locked";
+                  lockedEl.style.position = "absolute";
+                  lockedEl.style.pointerEvents = "none";
+                  lockedEl.style.zIndex = "9999";
+                  lockedEl.style.border = "3px solid #fbbf24";
+                  lockedEl.style.boxShadow = "0 0 20px rgba(251, 191, 36, 0.6)";
+                  lockedCandidate.appendChild(lockedEl);
+                  lockedHighlightRef.current = lockedEl;
+                  lockedContainerRef.current = lockedCandidate;
+                  // when we add a locked highlight, hide the static overlay border
+                  const overlay = overlayRef.current;
+                  const ovHighlight =
+                    overlay && overlay.querySelector(".tutorial-highlight");
+                  if (ovHighlight) {
+                    ovHighlight.style.border = "none";
+                    ovHighlight.style.boxShadow =
+                      "0 0 0 9999px rgba(0,0,0,0.3)";
+                  }
+                }
+
+                if (lockedHighlightRef.current) {
+                  lockedHighlightRef.current.style.left = `${leftRel}px`;
+                  lockedHighlightRef.current.style.top = `${topRel}px`;
+                  lockedHighlightRef.current.style.width = `${width}px`;
+                  lockedHighlightRef.current.style.height = `${height}px`;
+                }
+              } catch (err) {}
+
+              setTargetRect({
+                left: rect.left - padding,
+                top: rect.top - padding,
+                right: rect.right + padding,
+                bottom: rect.bottom + padding,
+                width: rect.width + padding * 2,
+                height: rect.height + padding * 2,
+              });
+            }
+          } else {
+            const rect = element.getBoundingClientRect();
+            // (Parameter/backtest) similar locked highlight logic
+            const lockedCandidate =
+              element.closest(".react-flow__viewport") ||
+              element.closest("#demo") ||
+              element.offsetParent ||
+              document.body;
+            try {
+              const containerRect = lockedCandidate.getBoundingClientRect();
+              const leftRel = rect.left - containerRect.left;
+              const topRel = rect.top - containerRect.top;
+              if (
+                !lockedHighlightRef.current ||
+                lockedContainerRef.current !== lockedCandidate
+              ) {
+                if (
+                  lockedHighlightRef.current &&
+                  lockedHighlightRef.current.parentNode
+                ) {
+                  lockedHighlightRef.current.parentNode.removeChild(
+                    lockedHighlightRef.current
+                  );
+                }
+                const lockedEl = document.createElement("div");
+                lockedEl.className = "tutorial-highlight-locked";
+                lockedEl.style.position = "absolute";
+                lockedEl.style.pointerEvents = "none";
+                lockedEl.style.zIndex = "9999";
+                lockedEl.style.border = "3px solid #fbbf24";
+                lockedEl.style.boxShadow = "0 0 20px rgba(251, 191, 36, 0.6)";
+                lockedCandidate.appendChild(lockedEl);
+                lockedHighlightRef.current = lockedEl;
+                lockedContainerRef.current = lockedCandidate;
+              }
+              if (lockedHighlightRef.current) {
+                lockedHighlightRef.current.style.left = `${
+                  leftRel - padding
+                }px`;
+                lockedHighlightRef.current.style.top = `${topRel - padding}px`;
+                lockedHighlightRef.current.style.width = `${
+                  rect.width + padding * 2
+                }px`;
+                lockedHighlightRef.current.style.height = `${
+                  rect.height + padding * 2
+                }px`;
+              }
+            } catch (err) {}
+
+            setTargetRect({
+              left: rect.left - padding,
+              top: rect.top - padding,
+              right: rect.right + padding,
+              bottom: rect.bottom + padding,
+              width: rect.width + padding * 2,
+              height: rect.height + padding * 2,
+            });
+          }
+        }
+      } catch (err) {
+        // swallow
+      }
+    };
+
+    // Track previous scroll and viewport transform so we can adjust highlight
+
+    const onScrollOrMutation = () => {
+      // Immediately update rect position on any scroll or mutation
+      updateCurrentRect();
+    };
+
+    window.addEventListener("scroll", onScrollOrMutation, { passive: true });
+
+    const demoEl = document.getElementById("demo");
+    if (demoEl) {
+      demoEl.addEventListener("scroll", onScrollOrMutation, { passive: true });
+      const flow = demoEl.querySelector(".react-flow");
+      if (flow) {
+        flow.addEventListener("scroll", onScrollOrMutation, { passive: true });
+      }
+    }
+
+    // watch for transforms in ReactFlow viewport (panning/zoom)
+    const viewport = document.querySelector(".react-flow__viewport");
+    let mo = null;
+    if (viewport && typeof MutationObserver !== "undefined") {
+      mo = new MutationObserver(() => {
+        // Immediately update on viewport transform changes
+        onScrollOrMutation();
+      });
+      mo.observe(viewport, { attributes: true, attributeFilter: ["style"] });
+    }
+
+    // also update immediately so highlight stays in sync
+    updateCurrentRect();
+
+    // Create locked highlight if graph step (pan/zoom) so it moves naturally
+    if (targetRect) {
+      const step = tutorialSteps[currentStep];
+      if (step?.type === "graph") {
+        try {
+          const container = document.querySelector(".react-flow__viewport");
+          if (container) {
+            if (
+              !lockedHighlightRef.current ||
+              lockedContainerRef.current !== container
+            ) {
+              if (
+                lockedHighlightRef.current &&
+                lockedHighlightRef.current.parentNode
+              ) {
+                lockedHighlightRef.current.parentNode.removeChild(
+                  lockedHighlightRef.current
+                );
+              }
+              const lockedEl = document.createElement("div");
+              lockedEl.className = "tutorial-highlight-locked";
+              lockedEl.style.position = "absolute";
+              lockedEl.style.pointerEvents = "none";
+              lockedEl.style.zIndex = "9999";
+              lockedEl.style.border = "3px solid #fbbf24";
+              lockedEl.style.boxShadow = "0 0 20px rgba(251, 191, 36, 0.6)";
+              container.appendChild(lockedEl);
+              lockedHighlightRef.current = lockedEl;
+              lockedContainerRef.current = container;
+            }
+
+            if (lockedHighlightRef.current) {
+              const containerRect = container.getBoundingClientRect();
+              const leftRel = targetRect.left - containerRect.left;
+              const topRel = targetRect.top - containerRect.top;
+              lockedHighlightRef.current.style.left = `${leftRel}px`;
+              lockedHighlightRef.current.style.top = `${topRel}px`;
+              lockedHighlightRef.current.style.width = `${targetRect.width}px`;
+              lockedHighlightRef.current.style.height = `${targetRect.height}px`;
+            }
+
+            const overlay2 = overlayRef.current;
+            const ovHighlight2 =
+              overlay2 && overlay2.querySelector(".tutorial-highlight");
+            if (ovHighlight2) {
+              ovHighlight2.style.border = "none";
+              ovHighlight2.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.3)";
+            }
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+    }
+
+    return () => {
+      window.removeEventListener("scroll", onScrollOrMutation);
+      if (demoEl) demoEl.removeEventListener("scroll", onScrollOrMutation);
+      if (demoEl?.querySelector(".react-flow"))
+        demoEl
+          .querySelector(".react-flow")
+          .removeEventListener("scroll", onScrollOrMutation);
+      if (mo) mo.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+      if (rafActiveRef.current) cancelAnimationFrame(rafActiveRef.current);
+      rafActiveRef.current = null;
+      if (scrollEndTimeoutRef.current) {
+        clearTimeout(scrollEndTimeoutRef.current);
+        scrollEndTimeoutRef.current = null;
+      }
+    };
+  }, [currentStep, getNodeDOMRects, nodes]);
 
   // Handle next step
   const handleNext = useCallback(() => {

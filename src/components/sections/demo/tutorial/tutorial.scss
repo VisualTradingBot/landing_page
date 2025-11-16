@@ -269,12 +269,14 @@
     box-shadow: 0 0 0 9999px $base-color, 0 0 20px rgba(251, 191, 36, 0.9);
     pointer-events: none;
     animation: tutorial-pulse 3s ease-in-out infinite;
-    // Smooth transitions for all position and size changes
-    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-      top 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-      width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-      height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    // No transitions - instant positioning for smooth scrolling
+    transition: none;
     display: none;
+  }
+
+  /* make sure locked highlight sits visually under and is visible */
+  .tutorial-highlight-locked {
+    background: transparent;
   }
 
   @keyframes tutorial-pulse {

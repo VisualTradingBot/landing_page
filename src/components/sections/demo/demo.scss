@@ -170,6 +170,11 @@
     display: none !important;
   }
 
+  // Ensure ReactFlow panels (like Dataset Settings) appear above tutorial overlay
+  .react-flow__panel {
+    z-index: 10001 !important;
+  }
+
   // Hide ReactFlow attribution - multiple selectors to catch all variations
   .react-flow__attribution,
   .react-flow_attribution,
