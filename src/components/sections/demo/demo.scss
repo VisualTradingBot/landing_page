@@ -487,3 +487,29 @@ select option:hover {
     opacity: 1 !important;
   }
 }
+
+// Tutorial node visibility control (steps 1-3)
+// Hide all nodes by default during tutorial, show only those marked as visible
+.demo.tutorial-active {
+  .react-flow__node {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .react-flow__node[data-tutorial-visible="true"] {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  // Also hide edges connected to invisible nodes
+  .react-flow__edge {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  // Show edges between visible nodes (handled by checking if both nodes are visible)
+  .react-flow__edge[data-source-visible="true"][data-target-visible="true"] {
+    opacity: 1;
+  }
+}

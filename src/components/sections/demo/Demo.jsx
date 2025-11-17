@@ -1311,6 +1311,9 @@ export default function Demo() {
   );
 
   // === Tutorial handlers ===
+  const [tutorialCurrentStep, setTutorialCurrentStep] = useState(-1);
+  const [tutorialVisibleNodes, setTutorialVisibleNodes] = useState(new Set());
+
   const handleIntroductionMaskComplete = useCallback(() => {
     setShowIntroductionMask(false);
     // Start tutorial after introduction mask
@@ -1323,6 +1326,27 @@ export default function Demo() {
 
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
+    setTutorialCurrentStep(-1);
+    setTutorialVisibleNodes(new Set());
+  }, []);
+
+  const handleTutorialStepChange = useCallback((stepIndex, stepData) => {
+    setTutorialCurrentStep(stepIndex);
+
+    // Steps 1-3 are graph steps with cumulative node visibility
+    if (stepIndex >= 0 && stepIndex <= 2 && stepData?.nodeIds) {
+      setTutorialVisibleNodes((prev) => {
+        const newSet = new Set(prev);
+        stepData.nodeIds.forEach((id) => newSet.add(id));
+        return newSet;
+      });
+    } else if (stepIndex > 2) {
+      // Steps 4+ show all nodes
+      setTutorialVisibleNodes(new Set());
+    } else if (stepIndex === -1) {
+      // Tutorial not started or ended
+      setTutorialVisibleNodes(new Set());
+    }
   }, []);
 
   // Function to reset and start tutorial (for testing)
@@ -1334,8 +1358,53 @@ export default function Demo() {
     setShowIntroductionMask(true);
     setShowTutorial(false);
     setParameterDashboardExpanded(false);
+    setTutorialCurrentStep(-1);
+    setTutorialVisibleNodes(new Set());
     tutorialAutostartedRef.current = false;
   }, []);
+
+  // Update DOM nodes and edges with tutorial visibility attributes
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    // Update nodes
+    nodes.forEach((node) => {
+      const element = document.querySelector(`[data-id="${node.id}"]`);
+      if (element) {
+        const isVisible =
+          tutorialCurrentStep === -1 ||
+          tutorialCurrentStep > 2 ||
+          tutorialVisibleNodes.has(node.id);
+        element.setAttribute(
+          "data-tutorial-visible",
+          isVisible ? "true" : "false"
+        );
+      }
+    });
+
+    // Update edges
+    edges.forEach((edge) => {
+      const element = document.querySelector(`[data-id="${edge.id}"]`);
+      if (element) {
+        const sourceVisible =
+          tutorialCurrentStep === -1 ||
+          tutorialCurrentStep > 2 ||
+          tutorialVisibleNodes.has(edge.source);
+        const targetVisible =
+          tutorialCurrentStep === -1 ||
+          tutorialCurrentStep > 2 ||
+          tutorialVisibleNodes.has(edge.target);
+        element.setAttribute(
+          "data-source-visible",
+          sourceVisible ? "true" : "false"
+        );
+        element.setAttribute(
+          "data-target-visible",
+          targetVisible ? "true" : "false"
+        );
+      }
+    });
+  }, [showTutorial, nodes, edges, tutorialCurrentStep, tutorialVisibleNodes]);
 
   // Auto-start tutorial when demo section enters viewport
   useEffect(() => {
@@ -1483,10 +1552,40 @@ export default function Demo() {
             >
               <ReactFlow
                 defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-                nodes={nodes}
+                nodes={nodes.map((node) => ({
+                  ...node,
+                  data: {
+                    ...node.data,
+                    tutorialActive: showTutorial,
+                    tutorialVisible:
+                      !showTutorial ||
+                      tutorialCurrentStep === -1 ||
+                      tutorialCurrentStep > 2 ||
+                      tutorialVisibleNodes.has(node.id),
+                  },
+                }))}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                edges={edges}
+                edges={edges.map((edge) => {
+                  const sourceVisible =
+                    !showTutorial ||
+                    tutorialCurrentStep === -1 ||
+                    tutorialCurrentStep > 2 ||
+                    tutorialVisibleNodes.has(edge.source);
+                  const targetVisible =
+                    !showTutorial ||
+                    tutorialCurrentStep === -1 ||
+                    tutorialCurrentStep > 2 ||
+                    tutorialVisibleNodes.has(edge.target);
+                  return {
+                    ...edge,
+                    data: {
+                      ...edge.data,
+                      sourceVisible,
+                      targetVisible,
+                    },
+                  };
+                })}
                 onNodesChange={handleNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={handleConnect}
@@ -1530,6 +1629,7 @@ export default function Demo() {
                   onTutorialComplete={handleTutorialComplete}
                   onExpandInTrade={setInTradeCollapsed}
                   onParameterDashboardToggle={setParameterDashboardExpanded}
+                  onStepChange={handleTutorialStepChange}
                 />
               )}
               <div className="run-backtest-overlay">

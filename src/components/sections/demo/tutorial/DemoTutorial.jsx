@@ -10,6 +10,7 @@ function DemoTutorialInner({
   onTutorialComplete,
   onExpandInTrade,
   onParameterDashboardToggle,
+  onStepChange,
 }) {
   const { fitView, getViewport } = useReactFlow();
   const [currentStep, setCurrentStep] = useState(-1); // -1 means not started
@@ -394,6 +395,11 @@ function DemoTutorialInner({
     if (currentStep >= 0 && currentStep < tutorialSteps.length) {
       const step = tutorialSteps[currentStep];
 
+      // Notify parent about step change for node visibility
+      if (onStepChange) {
+        onStepChange(currentStep, step);
+      }
+
       // Update demo section class based on step type
       const demoSection = document.getElementById("demo");
       if (demoSection) {
@@ -459,7 +465,7 @@ function DemoTutorialInner({
         ovHighlight.style.boxShadow = "";
       }
     };
-  }, [currentStep, zoomToStep, nodes]);
+  }, [currentStep, zoomToStep, nodes, onStepChange]);
 
   // Update single highlight overlay position (calculates bounding box for all elements)
   useEffect(() => {
@@ -917,6 +923,7 @@ export default function DemoTutorial({
   onTutorialComplete,
   onExpandInTrade,
   onParameterDashboardToggle,
+  onStepChange,
 }) {
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -941,6 +948,7 @@ export default function DemoTutorial({
         }}
         onExpandInTrade={onExpandInTrade}
         onParameterDashboardToggle={onParameterDashboardToggle}
+        onStepChange={onStepChange}
       />
     </ReactFlowProvider>
   );
