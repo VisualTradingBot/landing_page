@@ -45,6 +45,7 @@ export default function ParameterBlock({
   parameters,
   onShowModal,
   onShowDeleteModal,
+  isExpandedByTutorial = null,
   onEditParameter,
 }) {
   // State to track which parameter and field is being edited
@@ -52,6 +53,12 @@ export default function ParameterBlock({
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState("");
   const [dropdownState, setDropdownState] = useState(false);
+
+  // Use external tutorial control if provided, otherwise use internal state
+  const isDropdownOpen =
+    isExpandedByTutorial !== null ? isExpandedByTutorial : dropdownState;
+  const setIsDropdownOpen =
+    isExpandedByTutorial !== null ? () => {} : setDropdownState;
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -320,13 +327,22 @@ export default function ParameterBlock({
     if (hasDragged) {
       return;
     }
-    setDropdownState((prev) => !prev);
-  }, [hasDragged]);
+    // Only allow toggling if not controlled by tutorial
+    if (isExpandedByTutorial === null) {
+      setDropdownState((prev) => !prev);
+    }
+  }, [hasDragged, isExpandedByTutorial]);
 
-  const onClickToggleIcon = useCallback((e) => {
-    e.stopPropagation();
-    setDropdownState((prev) => !prev);
-  }, []);
+  const onClickToggleIcon = useCallback(
+    (e) => {
+      e.stopPropagation();
+      // Only allow toggling if not controlled by tutorial
+      if (isExpandedByTutorial === null) {
+        setDropdownState((prev) => !prev);
+      }
+    },
+    [isExpandedByTutorial]
+  );
 
   // eslint-disable-next-line no-unused-vars
   const handleDeleteClick = useCallback(
@@ -337,6 +353,7 @@ export default function ParameterBlock({
       }
       onShowDeleteModal(index);
     },
+
     [onShowDeleteModal, parameters]
   );
 
@@ -575,7 +592,7 @@ export default function ParameterBlock({
     <div
       ref={parameterBlockRef}
       className={`parameters-dropdown ${
-        dropdownState ? "expanded" : "collapsed"
+        isDropdownOpen ? "expanded" : "collapsed"
       } ${!hasMatchingParameters ? "empty" : ""} ${
         isDragging ? "dragging" : ""
       }`}
@@ -594,7 +611,7 @@ export default function ParameterBlock({
       >
         Parameter Dashboard
         <span className="toggle-icon" onClick={onClickToggleIcon}>
-          {dropdownState ? "▲" : "▼"}
+          {isDropdownOpen ? "▲" : "▼"}
         </span>
       </h1>
       <div className="dropdown-content">

@@ -3,7 +3,11 @@ import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import "./InfoButton.scss";
 
-export default function InfoButton({ explanation, position = "left", variant = "header" }) {
+export default function InfoButton({
+  explanation,
+  position = "left",
+  variant = "header",
+}) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef(null);
@@ -60,26 +64,29 @@ export default function InfoButton({ explanation, position = "left", variant = "
     };
   }, [isHovered, position]);
 
-  const tooltip = isHovered ? (
-    createPortal(
-      <div
-        ref={tooltipRef}
-        className={`info-tooltip info-tooltip--${position}`}
-        style={{
-          top: `${tooltipPosition.top}px`,
-          left: `${tooltipPosition.left}px`,
-        }}
-      >
-        {explanation}
-      </div>,
-      document.body
-    )
-  ) : null;
+  const tooltip = isHovered
+    ? createPortal(
+        <div
+          ref={tooltipRef}
+          className={`info-tooltip info-tooltip--${position}`}
+          style={{
+            top: `${tooltipPosition.top}px`,
+            left: `${tooltipPosition.left}px`,
+          }}
+        >
+          {explanation}
+        </div>,
+        document.body
+      )
+    : null;
 
   // Determine wrapper class based on variant
-  const wrapperClass = variant === "absolute" 
-    ? `info-button-wrapper info-button-wrapper--absolute${position === "right" ? " info-button-wrapper--absolute--right" : ""}`
-    : `info-button-wrapper info-button-wrapper--${variant}`;
+  const wrapperClass =
+    variant === "absolute"
+      ? `info-button-wrapper info-button-wrapper--absolute${
+          position === "right" ? " info-button-wrapper--absolute--right" : ""
+        }`
+      : `info-button-wrapper info-button-wrapper--${variant}`;
 
   return (
     <>
@@ -91,8 +98,8 @@ export default function InfoButton({ explanation, position = "left", variant = "
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <button 
-          className="info-button" 
+        <button
+          className="info-button"
           aria-label="Information"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -110,4 +117,3 @@ InfoButton.propTypes = {
   position: PropTypes.oneOf(["left", "right"]),
   variant: PropTypes.oneOf(["header", "absolute"]),
 };
-

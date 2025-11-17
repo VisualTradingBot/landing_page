@@ -1,0 +1,10 @@
+/* Highlight inside scrollable containers */
+.tutorial-highlight-locked {
+  pointer-events: none;
+  border-radius: 8px;
+  transition: left 0.05s linear, top 0.05s linear, width 0.05s linear,
+    height 0.05s linear;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  outline: 3px solid #fbbf24;
+  background: transparent;
+}

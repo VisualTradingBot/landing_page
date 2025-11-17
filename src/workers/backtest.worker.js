@@ -1,6 +1,6 @@
 // Make sure you create these two files with the modular logic from the previous answer.
 import { parseGraph } from "../utils/parser";
-import { runSimulation } from "../utils/simulator";
+import { runSimulation, resolveAmountFromNode } from "../utils/simulator";
 // We don't need to generate prices here anymore.
 // import { generateSyntheticPrices } from "../utils/indicators";
 
@@ -205,9 +205,25 @@ self.onmessage = (event) => {
 
     // Step 3: Run the simulation. This is the heavy part.
     // Pass the blueprint, data, and any other options.
-    const results = runSimulation(strategyBlueprint, historicalData, {
-      feePercent,
-    });
+    const maxBuyNotional = nodesCopy.reduce((max, node) => {
+      if (!node || node.type !== "buyNode") return max;
+      const amount = resolveAmountFromNode(node);
+      if (Number.isFinite(amount) && amount > max) {
+        return amount;
+      }
+      return max;
+    }, 0);
+
+    const simulationOptions = { feePercent };
+    if (Number.isFinite(maxBuyNotional) && maxBuyNotional > 0) {
+      simulationOptions.initialCapital = maxBuyNotional;
+    }
+
+    const results = runSimulation(
+      strategyBlueprint,
+      historicalData,
+      simulationOptions
+    );
 
     // If simulator returned an error object, return it inside `data` rather than throwing
     if (results && results.error) {

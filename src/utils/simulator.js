@@ -33,7 +33,7 @@ export function runSimulation(blueprint, prices, options = {}) {
   let cash = initialCapital;
   let position = 0;
   let entryPrice = null;
-  let entryIndex = null;
+  let currentPosition = null;
   const trades = [];
   const equitySeries = [];
 
@@ -49,10 +49,7 @@ export function runSimulation(blueprint, prices, options = {}) {
     if (!position) {
       const action = executeSubgraph(blueprint.entryGraph, context);
       if (action?.type === "buy" && cash > 0) {
-        const requestedNotional = coerceNumber(
-          action.node?.data?.amountNumber ?? action.node?.data?.amount,
-          NaN
-        );
+        const requestedNotional = resolveAmountFromNode(action?.node);
         const spendableCash =
           Number.isFinite(requestedNotional) && requestedNotional > 0
             ? Math.min(requestedNotional, cash)
@@ -65,42 +62,63 @@ export function runSimulation(blueprint, prices, options = {}) {
             position = quantity;
             cash = Math.max(0, cash - spendableCash);
             entryPrice = livePrice;
-            entryIndex = i;
-            trades.push({
+            currentPosition = {
               entryIndex: i,
               entryPrice: livePrice,
               entryNotional: investable,
               quantity,
-              exitIndex: null,
-              exitPrice: null,
-              exitNotional: null,
-              profit: null,
-            });
+            };
           }
         }
       }
     } else {
       const action = executeSubgraph(blueprint.inTradeGraph, context);
-      if (action?.type === "sell") {
-        const exitNotional = position * livePrice * (1 - feeFraction);
-        cash += exitNotional;
-        position = 0;
-        if (trades.length) {
-          const openTrade = trades[trades.length - 1];
-          if (openTrade && openTrade.exitIndex == null) {
-            openTrade.exitIndex = i;
-            openTrade.exitPrice = livePrice;
-            openTrade.exitNotional = exitNotional;
-            const basis =
-              openTrade.entryNotional ??
-              openTrade.quantity * openTrade.entryPrice;
-            if (basis != null) {
-              openTrade.profit = exitNotional - basis;
+      if (action?.type === "sell" && currentPosition) {
+        const requestedPercent = resolveAmountFromNode(action.node);
+        const normalizedPercent = Number.isFinite(requestedPercent)
+          ? Math.min(Math.max(requestedPercent, 0), 100)
+          : 100;
+        if (normalizedPercent > 0) {
+          const fractionToSell = normalizedPercent / 100;
+          const totalQuantity = currentPosition.quantity;
+          const quantityToSell = totalQuantity * fractionToSell;
+          const safeQuantity = Math.min(quantityToSell, totalQuantity);
+          if (safeQuantity > 0) {
+            const exitNotional = safeQuantity * livePrice * (1 - feeFraction);
+            const basisFraction =
+              totalQuantity > 0
+                ? currentPosition.entryNotional * (safeQuantity / totalQuantity)
+                : 0;
+            cash += exitNotional;
+            currentPosition.quantity = Math.max(
+              totalQuantity - safeQuantity,
+              0
+            );
+            position = currentPosition.quantity;
+            currentPosition.entryNotional = Math.max(
+              currentPosition.entryNotional - basisFraction,
+              0
+            );
+
+            trades.push({
+              entryIndex: currentPosition.entryIndex,
+              entryPrice: currentPosition.entryPrice,
+              entryNotional: basisFraction,
+              quantity: safeQuantity,
+              exitIndex: i,
+              exitPrice: livePrice,
+              exitNotional,
+              profit: exitNotional - basisFraction,
+              sellPercent: normalizedPercent,
+            });
+
+            if (currentPosition.quantity <= 1e-12 || position <= 1e-12) {
+              currentPosition = null;
+              position = 0;
+              entryPrice = null;
             }
           }
         }
-        entryPrice = null;
-        entryIndex = null;
       }
     }
 
@@ -108,22 +126,24 @@ export function runSimulation(blueprint, prices, options = {}) {
     equitySeries.push(equity);
   }
 
-  if (position && entryIndex != null) {
+  if (currentPosition && currentPosition.quantity > 0) {
     const lastPrice = liveSeries[liveSeries.length - 1];
-    const exitNotional = position * lastPrice * (1 - feeFraction);
+    const quantity = currentPosition.quantity;
+    const exitNotional = quantity * lastPrice * (1 - feeFraction);
     cash += exitNotional;
-    const openTrade = trades[trades.length - 1];
-    if (openTrade && openTrade.exitIndex == null) {
-      openTrade.exitIndex = liveSeries.length - 1;
-      openTrade.exitPrice = lastPrice;
-      openTrade.exitNotional = exitNotional;
-      const basis =
-        openTrade.entryNotional ?? openTrade.quantity * openTrade.entryPrice;
-      if (basis != null) {
-        openTrade.profit = exitNotional - basis;
-      }
-    }
+    trades.push({
+      entryIndex: currentPosition.entryIndex,
+      entryPrice: currentPosition.entryPrice,
+      entryNotional: currentPosition.entryNotional,
+      quantity,
+      exitIndex: liveSeries.length - 1,
+      exitPrice: lastPrice,
+      exitNotional,
+      profit: exitNotional - currentPosition.entryNotional,
+      sellPercent: 100,
+    });
     position = 0;
+    currentPosition = null;
     entryPrice = null;
   }
 
@@ -368,4 +388,28 @@ function pickOutputKey(producer, fallback) {
 function coerceNumber(value, fallback) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+export function resolveAmountFromNode(node) {
+  if (!node || !node.data) return NaN;
+  const data = node.data;
+  const candidates = [
+    data.amountNumber,
+    data.amount,
+    data.amountParamData?.value,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate == null) continue;
+    const value = typeof candidate === "string" ? candidate.trim() : candidate;
+    if (value === "") continue;
+    const sanitized =
+      typeof value === "string" ? value.replace(/[^0-9.-]+/g, "") : value;
+    const numeric = Number(sanitized);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+
+  return NaN;
 }
