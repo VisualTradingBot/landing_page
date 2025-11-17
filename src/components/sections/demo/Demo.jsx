@@ -1477,7 +1477,7 @@ export default function Demo() {
       )}
 
       <section id="demo" className="demo" ref={demoSectionRef}>
-        {/* Test Tutorial Button - Only visible in development or always visible for testing */}
+        {/* Test Tutorial Button - Only visible in development or always visible for testing
         <div
           style={{
             position: "fixed",
@@ -1512,7 +1512,7 @@ export default function Demo() {
           }}
         >
           🎓 Test Tutorial
-        </div>
+        </div> */}
 
         {/* === Demo Header === */}
         <div className="demo-header">
