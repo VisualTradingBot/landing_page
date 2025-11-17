@@ -11,6 +11,7 @@ function DemoTutorialInner({
   onExpandInTrade,
   onParameterDashboardToggle,
   onStepChange,
+  forceStart = false,
 }) {
   const { fitView, getViewport } = useReactFlow();
   const [currentStep, setCurrentStep] = useState(-1); // -1 means not started
@@ -24,19 +25,19 @@ function DemoTutorialInner({
   const baseMetricsRef = useRef({ windowY: 0, demoScroll: 0, viewportY: 0 });
   const baseTargetRectRef = useRef(null);
 
-  // Start tutorial when component mounts (if not completed)
+  // Start tutorial when component mounts
   useEffect(() => {
     const hasCompletedTutorial =
       localStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
 
-    if (!hasCompletedTutorial && currentStep === -1) {
-      // Wait a bit for ReactFlow to initialize, then start with step 0
+    if ((forceStart || !hasCompletedTutorial) && currentStep === -1) {
+      // Small delay to ensure layout is ready, then start
       const timer = setTimeout(() => {
         setCurrentStep(0);
-      }, 1000);
+      }, 200);
       return () => clearTimeout(timer);
     }
-  }, [currentStep]);
+  }, [currentStep, forceStart]);
 
   // Calculate bounding box for multiple nodes
   const calculateNodesBounds = useCallback(
@@ -924,31 +925,17 @@ export default function DemoTutorial({
   onExpandInTrade,
   onParameterDashboardToggle,
   onStepChange,
+  forceStart = false,
 }) {
-  const [showTutorial, setShowTutorial] = useState(false);
-
-  useEffect(() => {
-    const hasCompletedTutorial =
-      localStorage.getItem(TUTORIAL_STORAGE_KEY) === "true";
-
-    if (!hasCompletedTutorial) {
-      setShowTutorial(true);
-    }
-  }, []);
-
-  if (!showTutorial) return null;
-
   return (
     <ReactFlowProvider>
       <DemoTutorialInner
         nodes={nodes}
-        onTutorialComplete={() => {
-          setShowTutorial(false);
-          onTutorialComplete();
-        }}
+        onTutorialComplete={onTutorialComplete}
         onExpandInTrade={onExpandInTrade}
         onParameterDashboardToggle={onParameterDashboardToggle}
         onStepChange={onStepChange}
+        forceStart={forceStart}
       />
     </ReactFlowProvider>
   );

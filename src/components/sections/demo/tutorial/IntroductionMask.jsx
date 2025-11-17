@@ -2,22 +2,29 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import "./tutorial.scss";
 
-export default function IntroductionMask({ onComplete, targetSectionId = "demo" }) {
+export default function IntroductionMask({
+  onComplete,
+  targetSectionId = "demo",
+  alwaysShow = false,
+}) {
   const [showMask, setShowMask] = useState(false);
   const observerRef = useRef(null);
 
   useEffect(() => {
-    // Check if mask should be shown immediately (not using IntersectionObserver)
-    // The parent component (Demo.jsx) controls when to show the mask
-    const hasShown = localStorage.getItem("demo-introduction-mask-shown") === "true";
+    // Parent controls mounting; when mounted, optionally force-show regardless of history
+    if (alwaysShow) {
+      setShowMask(true);
+      return;
+    }
+
+    const hasShown =
+      localStorage.getItem("demo-introduction-mask-shown") === "true";
     if (!hasShown) {
-      // Show mask immediately when component mounts
       setShowMask(true);
     } else {
-      // If already shown, just call onComplete
       onComplete();
     }
-  }, [onComplete]);
+  }, [onComplete, alwaysShow]);
 
   const handleClose = () => {
     setShowMask(false);

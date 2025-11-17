@@ -1313,21 +1313,22 @@ export default function Demo() {
   // === Tutorial handlers ===
   const [tutorialCurrentStep, setTutorialCurrentStep] = useState(-1);
   const [tutorialVisibleNodes, setTutorialVisibleNodes] = useState(new Set());
+  const [tutorialForceStart, setTutorialForceStart] = useState(false);
 
   const handleIntroductionMaskComplete = useCallback(() => {
     setShowIntroductionMask(false);
-    // Start tutorial after introduction mask
-    const hasCompletedTutorial =
-      localStorage.getItem("demo-tutorial-completed") === "true";
-    if (!hasCompletedTutorial) {
-      setShowTutorial(true);
-    }
+    // Start tutorial after the introduction mask closes
+    setTutorialCurrentStep(-1);
+    setTutorialVisibleNodes(new Set());
+    setTutorialForceStart(true);
+    setShowTutorial(true);
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
+    setTutorialForceStart(false);
   }, []);
 
   const handleTutorialStepChange = useCallback((stepIndex, stepData) => {
@@ -1406,44 +1407,42 @@ export default function Demo() {
     });
   }, [showTutorial, nodes, edges, tutorialCurrentStep, tutorialVisibleNodes]);
 
-  // Auto-start tutorial when demo section enters viewport
+  // Check every second if demo section is visible in viewport (once per page load)
   useEffect(() => {
-    const hasCompletedTutorial =
-      localStorage.getItem("demo-tutorial-completed") === "true";
+    const checkVisibility = () => {
+      if (tutorialAutostartedRef.current) return;
 
-    if (hasCompletedTutorial) {
-      return;
-    }
+      const el = demoSectionRef.current || document.getElementById("demo");
+      if (!el) return;
 
-    const el = demoSectionRef.current || document.getElementById("demo");
-    if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight;
 
-    const observer = new IntersectionObserver(
-      (entries, obs) => {
-        const entry = entries && entries[0];
-        if (!entry || !entry.isIntersecting) return;
+      // Calculate how much of the viewport the demo section occupies
+      const visibleTop = Math.max(rect.top, 0);
+      const visibleBottom = Math.min(rect.bottom, viewportHeight);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
 
-        if (tutorialAutostartedRef.current) {
-          return;
-        }
+      // Ratio of viewport filled by demo section
+      const viewportFillRatio =
+        viewportHeight > 0 ? visibleHeight / viewportHeight : 0;
 
+      // Trigger when demo fills 45% of the viewport
+      if (viewportFillRatio >= 0.45) {
         tutorialAutostartedRef.current = true;
+        setShowIntroductionMask(true);
+      }
+    };
 
-        const hasShownMask =
-          localStorage.getItem("demo-introduction-mask-shown") === "true";
+    // Check immediately on mount
+    checkVisibility();
 
-        if (!hasShownMask) {
-          setShowIntroductionMask(true);
-        } else {
-          setShowTutorial(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
+    // Then check every second
+    const interval = setInterval(checkVisibility, 1000);
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    return () => clearInterval(interval);
+  }, [showIntroductionMask, showTutorial]);
 
   // === Screen size detection for mobile ===
   const [isMobile, setIsMobile] = useState(false);
@@ -1471,7 +1470,10 @@ export default function Demo() {
     >
       {/* Introduction Mask */}
       {showIntroductionMask && (
-        <IntroductionMask onComplete={handleIntroductionMaskComplete} />
+        <IntroductionMask
+          alwaysShow
+          onComplete={handleIntroductionMaskComplete}
+        />
       )}
 
       <section id="demo" className="demo" ref={demoSectionRef}>
@@ -1630,6 +1632,7 @@ export default function Demo() {
                   onExpandInTrade={setInTradeCollapsed}
                   onParameterDashboardToggle={setParameterDashboardExpanded}
                   onStepChange={handleTutorialStepChange}
+                  forceStart={tutorialForceStart}
                 />
               )}
               <div className="run-backtest-overlay">
