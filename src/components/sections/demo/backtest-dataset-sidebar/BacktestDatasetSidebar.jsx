@@ -6,6 +6,7 @@ import {
   DEFAULT_DATA_RESOLUTION,
   DEFAULT_FEE_PERCENT,
   DEFAULT_INTERVAL_BY_RESOLUTION,
+  DEFAULT_PORTFOLIO_VALUE,
 } from "../defaults";
 import "./BacktestDatasetSidebar.scss";
 
@@ -35,16 +36,23 @@ export default function BacktestDatasetSidebar() {
       assetContext.feePercent ??
       DEFAULT_FEE_PERCENT
   );
+  const defaultPortfolio = String(
+    data.portfolioValue ??
+      assetContext.portfolioValue ??
+      DEFAULT_PORTFOLIO_VALUE
+  );
 
   const [formState, setFormState] = useState({
     asset: data.asset || DEFAULT_ASSET,
     interval: defaultInterval,
     fee: defaultFee,
+    portfolio: defaultPortfolio,
   });
   const [dirty, setDirty] = useState({
     asset: false,
     interval: false,
     fee: false,
+    portfolio: false,
   });
   const [flashing, setFlashing] = useState({});
 
@@ -64,23 +72,42 @@ export default function BacktestDatasetSidebar() {
         assetContext.feePercent ??
         DEFAULT_FEE_PERCENT
     );
+    const syncedPortfolio = String(
+      nodeData.portfolioValue ??
+        assetContext.portfolioValue ??
+        DEFAULT_PORTFOLIO_VALUE
+    );
 
     setFormState((prev) => ({
       asset: dirty.asset ? prev.asset : nodeData.asset || DEFAULT_ASSET,
       interval: dirty.interval ? prev.interval : syncedInterval,
       fee: dirty.fee ? prev.fee : syncedFee,
+      portfolio: dirty.portfolio ? prev.portfolio : syncedPortfolio,
     }));
+
+    if (!dirty.portfolio) {
+      const numericPortfolio = Number(syncedPortfolio);
+      if (Number.isFinite(numericPortfolio)) {
+        const currentPortfolio = Number(assetContext?.portfolioValue);
+        if (currentPortfolio !== numericPortfolio) {
+          assetContext?.setPortfolioValue?.(numericPortfolio);
+        }
+      }
+    }
   }, [
     inputNode,
     data.asset,
     data.interval,
     data.feePercent,
     data.feePercentage,
+    data.portfolioValue,
     data.resolution,
     assetContext.feePercent,
+    assetContext.portfolioValue,
     dirty.asset,
     dirty.interval,
     dirty.fee,
+    dirty.portfolio,
     RESOLUTION_LIMITS,
   ]);
 
@@ -151,106 +178,151 @@ export default function BacktestDatasetSidebar() {
     flashField("fee");
   };
 
+  const handlePortfolioChange = (value) => {
+    const cleaned = value.replace(/[^0-9.]/g, "");
+    setDirty((prev) => ({ ...prev, portfolio: true }));
+    setFormState((prev) => ({ ...prev, portfolio: cleaned }));
+  };
+
+  const handlePortfolioBlur = () => {
+    const numeric = Number(formState.portfolio);
+    const portfolioValue =
+      Number.isFinite(numeric) && numeric > 0
+        ? numeric
+        : DEFAULT_PORTFOLIO_VALUE;
+    const portfolioStr = String(portfolioValue);
+    if (portfolioStr !== formState.portfolio) {
+      setFormState((prev) => ({ ...prev, portfolio: portfolioStr }));
+    }
+    commitChanges({ portfolioValue });
+    assetContext?.setPortfolioValue?.(portfolioValue);
+    setDirty((prev) => ({ ...prev, portfolio: false }));
+    flashField("portfolio");
+  };
+
   return (
     <div className="backtest-dataset-sidebar">
       <div className="sidebar-header">
         <h3 className="sidebar-title">backtesting settings</h3>
       </div>
       <div className="sidebar-content">
-          {!inputNode ? (
-            <div className="dataset-empty">Back-test node not found.</div>
-          ) : (
-            <div className="dataset-form">
-              <div className={`dataset-field ${flashing.asset ? "flash" : ""}`}>
-                <label htmlFor="sidebar-dataset-asset">Asset</label>
+        {!inputNode ? (
+          <div className="dataset-empty">Back-test node not found.</div>
+        ) : (
+          <div className="dataset-form">
+            <div className={`dataset-field ${flashing.asset ? "flash" : ""}`}>
+              <label htmlFor="sidebar-dataset-asset">Asset</label>
+              <select
+                id="sidebar-dataset-asset"
+                value={formState.asset}
+                onChange={(e) => handleAssetChange(e.target.value)}
+              >
+                <option value="bitcoin">BTC</option>
+                <option value="ethereum">ETH</option>
+              </select>
+            </div>
+
+            <div className="dataset-field locked">
+              <label htmlFor="sidebar-dataset-resolution">
+                Data Resolution
+              </label>
+              <div className="field-control field-control--locked">
                 <select
-                  id="sidebar-dataset-asset"
-                  value={formState.asset}
-                  onChange={(e) => handleAssetChange(e.target.value)}
+                  id="sidebar-dataset-resolution"
+                  value={resolution}
+                  disabled
                 >
-                  <option value="bitcoin">BTC</option>
-                  <option value="ethereum">ETH</option>
+                  <option value="1d">1 Day</option>
+                  <option value="1h">1 Hour</option>
                 </select>
-              </div>
-
-              <div className="dataset-field locked">
-                <label htmlFor="sidebar-dataset-resolution">Data Resolution</label>
-                <div className="field-control field-control--locked">
-                  <select id="sidebar-dataset-resolution" value={resolution} disabled>
-                    <option value="1d">1 Day</option>
-                    <option value="1h">1 Hour</option>
-                  </select>
-                  <span className="field-lock" aria-hidden="true" title="Locked">
-                    <svg
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      focusable="false"
-                    >
-                      <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
-                      <path d="M11 7V5a3 3 0 0 0-6 0v2" />
-                      <circle cx="8" cy="10.5" r="0.85" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-
-              <div className={`dataset-field ${flashing.interval ? "flash" : ""}`}>
-                <label htmlFor="sidebar-dataset-history">History Window</label>
-                <div className="dataset-history-input">
-                  <input
-                    id="sidebar-dataset-history"
-                    type="text"
-                    value={formState.interval}
-                    onChange={(e) => handleIntervalChange(e.target.value)}
-                    onBlur={handleIntervalBlur}
-                  />
-                  <span>{intervalBounds.unit}</span>
-                </div>
-              </div>
-
-              <div className="dataset-field locked">
-                <label htmlFor="sidebar-dataset-type">Type</label>
-                <div className="field-control field-control--locked">
-                  <select
-                    id="sidebar-dataset-type"
-                    value={data.type || "realtime"}
-                    disabled
+                <span className="field-lock" aria-hidden="true" title="Locked">
+                  <svg
+                    viewBox="0 0 16 16"
+                    xmlns="http://www.w3.org/2000/svg"
+                    focusable="false"
                   >
-                    <option value="realtime">Real-Time</option>
-                    <option value="batch">Batch</option>
-                    <option value="stream">Stream</option>
-                  </select>
-                  <span className="field-lock" aria-hidden="true" title="Locked">
-                    <svg
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      focusable="false"
-                    >
-                      <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
-                      <path d="M11 7V5a3 3 0 0 0-6 0v2" />
-                      <circle cx="8" cy="10.5" r="0.85" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-
-              <div className={`dataset-field ${flashing.fee ? "flash" : ""}`}>
-                <label htmlFor="sidebar-dataset-fee">Fee Percentage</label>
-                <div className="dataset-fee-input">
-                  <input
-                    id="sidebar-dataset-fee"
-                    type="text"
-                    value={formState.fee}
-                    onChange={(e) => handleFeeChange(e.target.value)}
-                    onBlur={handleFeeBlur}
-                  />
-                  <span>%</span>
-                </div>
+                    <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
+                    <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                    <circle cx="8" cy="10.5" r="0.85" />
+                  </svg>
+                </span>
               </div>
             </div>
-          )}
+
+            <div
+              className={`dataset-field ${flashing.interval ? "flash" : ""}`}
+            >
+              <label htmlFor="sidebar-dataset-history">History Window</label>
+              <div className="dataset-history-input">
+                <input
+                  id="sidebar-dataset-history"
+                  type="text"
+                  value={formState.interval}
+                  onChange={(e) => handleIntervalChange(e.target.value)}
+                  onBlur={handleIntervalBlur}
+                />
+                <span>{intervalBounds.unit}</span>
+              </div>
+            </div>
+
+            <div className="dataset-field locked">
+              <label htmlFor="sidebar-dataset-type">Type</label>
+              <div className="field-control field-control--locked">
+                <select
+                  id="sidebar-dataset-type"
+                  value={data.type || "realtime"}
+                  disabled
+                >
+                  <option value="realtime">Real-Time</option>
+                  <option value="batch">Batch</option>
+                  <option value="stream">Stream</option>
+                </select>
+                <span className="field-lock" aria-hidden="true" title="Locked">
+                  <svg
+                    viewBox="0 0 16 16"
+                    xmlns="http://www.w3.org/2000/svg"
+                    focusable="false"
+                  >
+                    <rect x="3.25" y="7.25" width="9.5" height="7.5" rx="1.5" />
+                    <path d="M11 7V5a3 3 0 0 0-6 0v2" />
+                    <circle cx="8" cy="10.5" r="0.85" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <div className={`dataset-field ${flashing.fee ? "flash" : ""}`}>
+              <label htmlFor="sidebar-dataset-fee">Fee Percentage</label>
+              <div className="dataset-fee-input">
+                <input
+                  id="sidebar-dataset-fee"
+                  type="text"
+                  value={formState.fee}
+                  onChange={(e) => handleFeeChange(e.target.value)}
+                  onBlur={handleFeeBlur}
+                />
+                <span>%</span>
+              </div>
+            </div>
+
+            <div
+              className={`dataset-field ${flashing.portfolio ? "flash" : ""}`}
+            >
+              <label htmlFor="sidebar-dataset-portfolio">Portfolio Value</label>
+              <div className="dataset-fee-input">
+                <input
+                  id="sidebar-dataset-portfolio"
+                  type="text"
+                  value={formState.portfolio}
+                  onChange={(e) => handlePortfolioChange(e.target.value)}
+                  onBlur={handlePortfolioBlur}
+                />
+                <span>€</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
