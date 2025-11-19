@@ -1,11 +1,13 @@
 import "./buy.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
 import { useAsset } from "../../AssetContext";
+import { animate } from "animejs";
+import { remove } from "animejs/utils";
 
 const DEFAULT_AMOUNT = "10000";
 
@@ -21,6 +23,7 @@ const sanitizeAmountValue = (value) => {
 export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
   const { updateNodeData } = useReactFlow();
   const { selectedAsset, portfolioValue } = useAsset();
+  const coinRef = useRef(null);
   const [action, setAction] = useState("buy");
   const [type, setType] = useState(data?.type || "market");
   const [amount, setAmount] = useState(() => {
@@ -182,7 +185,7 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
     window.addEventListener("parametersUpdated", handleParameterUpdate);
     return () =>
       window.removeEventListener("parametersUpdated", handleParameterUpdate);
-  }, [amountVariable, id, updateNodeData]);
+  }, [amountVariable, clampAmountToPortfolio, id, updateNodeData]);
 
   useEffect(() => {
     const sanitizedCurrent = sanitizeAmountValue(amount);
@@ -241,6 +244,32 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
     }
   };
 
+  const playCoinBounce = useCallback((collapsed) => {
+    const coinEl = coinRef.current;
+    if (!coinEl) return;
+
+    remove(coinEl);
+    animate(coinEl, {
+      translateY: [
+        { to: -20, duration: 170, ease: "outQuad" },
+        { to: 0, duration: 260, ease: "outBounce" },
+      ],
+      scale: [
+        { to: 0.8, duration: 170, ease: "outQuad" },
+        { to: 1, duration: 260, ease: "outQuad" },
+      ],
+      rotateY: {
+        to: collapsed ? 180 : 0,
+        duration: 340,
+        ease: "outCubic",
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    playCoinBounce(isInTradeCollapsed);
+  }, [isInTradeCollapsed, playCoinBounce]);
+
   return (
     <NodeDefault
       id={id}
@@ -262,7 +291,10 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
             isInTradeCollapsed ? "Show in-trade block" : "Hide in-trade block"
           }
         >
-          !
+          <span ref={coinRef} className="coin" aria-hidden="true">
+            <span className="coin-face">€</span>
+            <span className="coin-shine" />
+          </span>
         </button>
       </div>
 
