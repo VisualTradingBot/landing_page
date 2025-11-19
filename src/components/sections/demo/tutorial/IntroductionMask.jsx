@@ -4,6 +4,7 @@ import "./tutorial.scss";
 
 export default function IntroductionMask({
   onComplete,
+  onSkip,
   targetSectionId = "demo",
   alwaysShow = false,
 }) {
@@ -38,6 +39,17 @@ export default function IntroductionMask({
     onComplete();
   };
 
+  const handleSkipTutorial = () => {
+    setShowMask(false);
+    localStorage.setItem("demo-introduction-mask-shown", "true");
+    if (onSkip) {
+      onSkip();
+    } else {
+      // Fallback: if onSkip is not provided, just call onComplete
+      onComplete();
+    }
+  };
+
   if (!showMask) return null;
 
   return (
@@ -59,9 +71,6 @@ export default function IntroductionMask({
       >
         <div className="introduction-mask-header">
           <h2>Interactive Demo</h2>
-          <button className="close-button" onClick={handleClose}>
-            ×
-          </button>
         </div>
 
         <div className="introduction-mask-body">
@@ -115,6 +124,9 @@ export default function IntroductionMask({
           </ul>
 
           <div className="introduction-mask-actions">
+            <button className="skip-tutorial-button" onClick={handleSkipTutorial}>
+              Skip Tutorial
+            </button>
             <button className="get-started-button" onClick={handleGetStarted}>
               Let's start
             </button>

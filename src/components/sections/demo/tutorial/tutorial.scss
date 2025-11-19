@@ -233,6 +233,20 @@
     min-width: 120px;
   }
 
+  .skip-tutorial-button {
+    background: transparent;
+    color: #000000;
+    border-color: #000000;
+    font-weight: 600;
+
+    &:hover {
+      background: #f5f5f5;
+      border-color: #000000;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
   .get-started-button {
     background: #000000;
     color: #fff;

@@ -1360,6 +1360,15 @@ export default function Demo() {
     setShowTutorial(true);
   }, []);
 
+  const handleSkipTutorial = useCallback(() => {
+    setShowIntroductionMask(false);
+    // Skip tutorial - just close the mask without starting the tutorial
+    setShowTutorial(false);
+    setTutorialCurrentStep(-1);
+    setTutorialVisibleNodes(new Set());
+    setTutorialForceStart(false);
+  }, []);
+
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setTutorialCurrentStep(-1);
@@ -1533,6 +1542,7 @@ export default function Demo() {
         <IntroductionMask
           alwaysShow
           onComplete={handleIntroductionMaskComplete}
+          onSkip={handleSkipTutorial}
         />
       )}
 
