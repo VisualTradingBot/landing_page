@@ -697,7 +697,7 @@ export default function Demo() {
     }
   }, [nodes]);
 
-  // Dynamically update the viewport extent based on container size
+  // Dynamically update the viewport extent based on container size and screen size
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -705,16 +705,52 @@ export default function Demo() {
     function updateExtent() {
       const width = el.clientWidth;
       const height = el.clientHeight;
+      const screenWidth = window.innerWidth;
+      
+      // Use same media query thresholds as zoom calculation
+      let minX, minY, maxX, maxY;
+      
+      if (screenWidth >= 1920) {
+        // Extra large desktop (1920px+)
+        minX = -0.65 * width;
+        minY = -0.4 * height;
+        maxX = 1.65 * width;
+        maxY = 2 * height;
+      } else if (screenWidth >= 1441) {
+        // Large desktop (1441px - 1919px)
+        minX = -0.75 * width;
+        minY = -1 * height;
+        maxX = 2 * width;
+        maxY = 2.5 * height;
+      } else if (screenWidth >= 1024) {
+        // Medium desktop (1024px - 1440px)
+        minX = -0.75 * width;
+        minY = -1 * height;
+        maxX = 2 * width;
+        maxY = 2.5 * height;
+      } else {
+        // Tablets and below
+        minX = -0.75 * width;
+        minY = -1 * height;
+        maxX = 2 * width;
+        maxY = 2.5 * height;
+      }
+      
       setTranslateExtent([
-        [-2.5 * width, -1.5 * height],
-        [1.5 * width, 1.5 * height],
+        [minX, minY],
+        [maxX, maxY],
       ]);
     }
 
     updateExtent();
     const ro = new ResizeObserver(updateExtent);
     ro.observe(el);
-    return () => ro.disconnect();
+    // Also update on window resize to catch screen size changes
+    window.addEventListener('resize', updateExtent);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateExtent);
+    };
   }, []);
 
   useEffect(() => {
@@ -1338,6 +1374,15 @@ export default function Demo() {
     setShowTutorial(true);
   }, []);
 
+  const handleSkipTutorial = useCallback(() => {
+    setShowIntroductionMask(false);
+    // Skip tutorial - just close the mask without starting the tutorial
+    setShowTutorial(false);
+    setTutorialCurrentStep(-1);
+    setTutorialVisibleNodes(new Set());
+    setTutorialForceStart(false);
+  }, []);
+
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setTutorialCurrentStep(-1);
@@ -1460,6 +1505,30 @@ export default function Demo() {
 
   // === Screen size detection for mobile ===
   const [isMobile, setIsMobile] = useState(false);
+  
+  // === Zoom calculation based on screen size at initialization ===
+  const getInitialZoom = () => {
+    const width = window.innerWidth;
+    
+    // Media query rules for different screen sizes
+    // Default (without rules): 130% of previous zoom (0.8 * 1.3 = 1.04)
+    if (width >= 1920) {
+      // Extra large desktop (1920px+)
+      return 0.95;
+    } if (width >= 1550) {
+      // Large desktop (1550px - 1919px)
+      return 0.7;
+    } else if (width >= 1441) {
+      // Large desktop (1441px - 1919px)
+      return 0.63;
+    } else{
+      // Medium desktop (1024px - 1440px)
+      return 0.6; 
+    } 
+  };
+
+  // Calculate zoom only once at initialization based on screen size
+  const [initialZoom] = useState(() => getInitialZoom());
 
   useEffect(() => {
     const checkMobile = () => {
@@ -1487,6 +1556,7 @@ export default function Demo() {
         <IntroductionMask
           alwaysShow
           onComplete={handleIntroductionMaskComplete}
+          onSkip={handleSkipTutorial}
         />
       )}
 
@@ -1567,19 +1637,8 @@ export default function Demo() {
               }}
             >
               <ReactFlow
-                defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-                nodes={nodes.map((node) => ({
-                  ...node,
-                  data: {
-                    ...node.data,
-                    tutorialActive: showTutorial,
-                    tutorialVisible:
-                      !showTutorial ||
-                      tutorialCurrentStep === -1 ||
-                      tutorialCurrentStep > 2 ||
-                      tutorialVisibleNodes.has(node.id),
-                  },
-                }))}
+                defaultViewport={{ x: 0, y: 0, zoom: initialZoom }}
+                nodes={nodes}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 edges={edges.map((edge) => {

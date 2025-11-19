@@ -99,13 +99,131 @@ const createVariable = ({
   return variable;
 };
 
+// Helper function to get canvas center based on screen size (same boundaries as zoom)
+const getCanvasCenter = () => {
+  if (typeof window === 'undefined') {
+    // Fallback for SSR
+    return { x: 720, y: 405 };
+  }
+  
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const canvasHeight = Math.max(height * 0.75, 650); // 75vh with minHeight 650px
+  
+  // Use same media query boundaries as zoom calculation
+  let canvasCenterX, canvasCenterY;
+  
+  if (width >= 1920) {
+    // Extra large desktop (1920px+)
+    canvasCenterX = width / 2 - (width * 0.14); // ~11.5% of viewport width
+    canvasCenterY = canvasHeight / 2 + (height * 0.1);
+  } else if (width >= 1441) {
+    // Large desktop (1441px - 1919px)
+    canvasCenterX = width / 2 -(width * 0.1);
+    canvasCenterY = canvasHeight / 2 + (height * 0.1);
+  } else if (width >= 1024) {
+    // Medium desktop (1024px - 1440px)
+    canvasCenterX = width / 2;
+    canvasCenterY = canvasHeight / 2 + 200;
+  } else {
+    // Tablets and below
+    canvasCenterX = width / 2;
+    canvasCenterY = canvasHeight / 2 -(height * 0.5);
+  }
+  
+  return { x: canvasCenterX, y: canvasCenterY };
+};
+
+// Helper function to get initial node positions based on screen size
+const getInitialNodePositions = () => {
+  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1440;
+  const isSmallScreen = screenWidth < 1441;
+  
+  if (isSmallScreen) {
+    // Compact layout for screens < 1400px
+    return {
+      "inputIndicatorNode": { x: -200, y: 50 },
+      "inputPriceNode": { x: -200, y: 300 },
+      "setParameterNode-indicator": { x: 400, y: 160 },
+      "setParameterNode-price": { x: 200, y: 420 },
+      "inputNode": { x: -200, y: 550 },
+      "ifNode-1": { x: -200, y: 530 },
+      "buyNode-1": { x: 60, y: 680 },
+      "ifNode-2": { x: 480, y: 350 },
+      "sellNode-1": { x: 750, y: 470 },
+      "ifNode-3": { x: 480, y: 580 },
+      "sellNode-2": { x: 750, y: 700 },
+      "recordNode-1": { x: 88, y: 870 },
+      "setParameterNode-entry": { x: 410, y: 890 },
+      "blockNode-1": { x: 450, y: 300 },
+    };
+    // -480  +250
+  } else {
+    // Standard layout for screens >= 1400px
+    return {
+      "inputIndicatorNode": { x: -200, y: 50 },
+      "inputPriceNode": { x: -200, y: 300 },
+      "setParameterNode-indicator": { x: 400, y: 160 },
+      "setParameterNode-price": { x: 200, y: 420 },
+      "inputNode": { x: -200, y: 550 },
+      "ifNode-1": { x: 350, y: 280 },
+      "buyNode-1": { x: 610, y: 430 },
+      "ifNode-2": { x: 960, y: 100 },
+      "sellNode-1": { x: 1230, y: 220 },
+      "ifNode-3": { x: 960, y: 330 },
+      "sellNode-2": { x: 1230, y: 450 },
+      "recordNode-1": { x: 638, y: 620 },
+      "setParameterNode-entry": { x: 960, y: 640 },
+      "blockNode-1": { x: 930, y: 50 },
+    };
+  }
+};
+
+// Helper function to calculate canvas center and center nodes
+const centerNodesOnCanvas = (nodes) => {
+  // Calculate bounding box of all visible nodes
+  const visibleNodes = nodes.filter(node => !node.hidden);
+  if (visibleNodes.length === 0) return nodes;
+
+  const xPositions = visibleNodes.map(node => node.position.x);
+  const yPositions = visibleNodes.map(node => node.position.y);
+  
+  const minX = Math.min(...xPositions);
+  const maxX = Math.max(...xPositions);
+  const minY = Math.min(...yPositions);
+  const maxY = Math.max(...yPositions);
+  
+  // Center of the node group
+  const nodesCenterX = (minX + maxX) / 2;
+  const nodesCenterY = (minY + maxY) / 2;
+  
+  // Get canvas center based on screen size
+  const { x: canvasCenterX, y: canvasCenterY } = getCanvasCenter();
+  
+  // Calculate offset needed to center nodes
+  const offsetX = canvasCenterX - nodesCenterX;
+  const offsetY = canvasCenterY - nodesCenterY;
+  
+  // Apply offset to all nodes
+  return nodes.map(node => ({
+    ...node,
+    position: {
+      x: node.position.x + offsetX,
+      y: node.position.y + offsetY,
+    },
+  }));
+};
+
 // 2. Pre-configure nodes with data linked to the initial parameters.
 // Organized in logical flow: Input → Indicator → Decision Logic → Execution
-const initialNodes = [
+// Get initial positions based on screen size
+const nodePositions = getInitialNodePositions();
+
+const initialNodesRaw = [
   {
     id: "inputIndicatorNode",
     type: "inputIndicatorNode",
-    position: { x: -50, y: 200 },
+    position: nodePositions["inputIndicatorNode"],
     data: (() => {
       const lookbackBinding = bindParam("lookback");
       const indicatorBinding = bindParam("indicator_output");
@@ -129,7 +247,7 @@ const initialNodes = [
   {
     id: "inputPriceNode",
     type: "inputPriceNode",
-    position: { x: -50, y: 450 },
+    position: nodePositions["inputPriceNode"],
     data: (() => {
       const livePriceBinding = bindParam("live_price");
       return {
@@ -146,7 +264,7 @@ const initialNodes = [
   {
     id: "setParameterNode-indicator",
     type: "setParameterNode",
-    position: { x: 550, y: 310 },
+    position: nodePositions["setParameterNode-indicator"],
     data: (() => {
       const indicatorBinding = bindParam("indicator_output");
       return {
@@ -168,7 +286,7 @@ const initialNodes = [
   {
     id: "setParameterNode-price",
     type: "setParameterNode",
-    position: { x: 350, y: 570 },
+    position: nodePositions["setParameterNode-price"],
     data: (() => {
       const priceBinding = bindParam("live_price");
       return {
@@ -190,7 +308,7 @@ const initialNodes = [
   {
     id: "inputNode",
     type: "inputNode",
-    position: { x: -50, y: 700 },
+    position: nodePositions["inputNode"],
     hidden: true,
     selectable: false,
     draggable: false,
@@ -207,7 +325,7 @@ const initialNodes = [
   {
     id: "ifNode-1",
     type: "ifNode",
-    position: { x: 500, y: 430 },
+    position: nodePositions["ifNode-1"],
     data: {
       label: "If Entry",
       parameters: initialParameters,
@@ -237,7 +355,7 @@ const initialNodes = [
   {
     id: "buyNode-1",
     type: "buyNode",
-    position: { x: 760, y: 580 },
+    position: nodePositions["buyNode-1"],
     data: {
       label: "Buy",
       action: "buy",
@@ -248,7 +366,7 @@ const initialNodes = [
   {
     id: "ifNode-2",
     type: "ifNode",
-    position: { x: 1110, y: 250 },
+    position: nodePositions["ifNode-2"],
     data: {
       label: "If Exit (Stop-Loss)",
       parameters: initialParameters,
@@ -276,7 +394,7 @@ const initialNodes = [
   {
     id: "sellNode-1",
     type: "sellNode",
-    position: { x: 1380, y: 370 },
+    position: nodePositions["sellNode-1"],
     data: {
       label: "Sell (Stop-Loss)",
       action: "sell",
@@ -287,7 +405,7 @@ const initialNodes = [
   {
     id: "ifNode-3",
     type: "ifNode",
-    position: { x: 1110, y: 480 },
+    position: nodePositions["ifNode-3"],
     data: {
       label: "If Exit (Profit)",
       parameters: initialParameters,
@@ -315,7 +433,7 @@ const initialNodes = [
   {
     id: "sellNode-2",
     type: "sellNode",
-    position: { x: 1380, y: 600 },
+    position: nodePositions["sellNode-2"],
     data: {
       label: "Sell (Profit)",
       action: "sell",
@@ -326,7 +444,7 @@ const initialNodes = [
   {
     id: "recordNode-1",
     type: "recordNode",
-    position: { x: 788, y: 770 },
+    position: nodePositions["recordNode-1"],
     data: {
       recordType: "entry_price",
       recordValue: "",
@@ -337,7 +455,7 @@ const initialNodes = [
   {
     id: "setParameterNode-entry",
     type: "setParameterNode",
-    position: { x: 1110, y: 790 },
+    position: nodePositions["setParameterNode-entry"],
     data: (() => {
       const entryBinding = bindParam("entry_price");
       return {
@@ -359,7 +477,7 @@ const initialNodes = [
   {
     id: "blockNode-1",
     type: "blockNode",
-    position: { x: 1080, y: 200 },
+    position: nodePositions["blockNode-1"],
     data: {
       label: "In a trade",
       parameters: initialParameters,
@@ -367,6 +485,9 @@ const initialNodes = [
     },
   },
 ];
+
+// Center all nodes on the canvas
+const initialNodes = centerNodesOnCanvas(initialNodesRaw);
 
 // Edge types for ReactFlow - use step edges instead of smooth
 const edgeTypes = {
