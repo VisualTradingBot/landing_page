@@ -67,6 +67,7 @@ export function runSimulation(blueprint, prices, options = {}) {
               entryPrice: livePrice,
               entryNotional: investable,
               quantity,
+              initialQuantity: quantity,
             };
           }
         }
@@ -81,17 +82,22 @@ export function runSimulation(blueprint, prices, options = {}) {
         if (normalizedPercent > 0) {
           const fractionToSell = normalizedPercent / 100;
           const totalQuantity = currentPosition.quantity;
-          const quantityToSell = totalQuantity * fractionToSell;
-          const safeQuantity = Math.min(quantityToSell, totalQuantity);
-          if (safeQuantity > 0) {
-            const exitNotional = safeQuantity * livePrice * (1 - feeFraction);
+          const initialQuantity =
+            currentPosition.initialQuantity ?? totalQuantity;
+          const quantityToSell = Math.min(
+            initialQuantity * fractionToSell,
+            totalQuantity
+          );
+          if (quantityToSell > 0) {
+            const exitNotional = quantityToSell * livePrice * (1 - feeFraction);
             const basisFraction =
               totalQuantity > 0
-                ? currentPosition.entryNotional * (safeQuantity / totalQuantity)
+                ? currentPosition.entryNotional *
+                  (quantityToSell / totalQuantity)
                 : 0;
             cash += exitNotional;
             currentPosition.quantity = Math.max(
-              totalQuantity - safeQuantity,
+              totalQuantity - quantityToSell,
               0
             );
             position = currentPosition.quantity;
@@ -99,17 +105,30 @@ export function runSimulation(blueprint, prices, options = {}) {
               currentPosition.entryNotional - basisFraction,
               0
             );
+            if (currentPosition.initialQuantity == null) {
+              currentPosition.initialQuantity = totalQuantity;
+            }
+            const baseQuantity =
+              currentPosition.initialQuantity ||
+              initialQuantity ||
+              totalQuantity;
+            const actualPercentSold = baseQuantity
+              ? Math.min(
+                  Math.max((quantityToSell / baseQuantity) * 100, 0),
+                  100
+                )
+              : normalizedPercent;
 
             trades.push({
               entryIndex: currentPosition.entryIndex,
               entryPrice: currentPosition.entryPrice,
               entryNotional: basisFraction,
-              quantity: safeQuantity,
+              quantity: quantityToSell,
               exitIndex: i,
               exitPrice: livePrice,
               exitNotional,
               profit: exitNotional - basisFraction,
-              sellPercent: normalizedPercent,
+              sellPercent: actualPercentSold,
             });
 
             if (currentPosition.quantity <= 1e-12 || position <= 1e-12) {
@@ -131,6 +150,7 @@ export function runSimulation(blueprint, prices, options = {}) {
     const quantity = currentPosition.quantity;
     const exitNotional = quantity * lastPrice * (1 - feeFraction);
     cash += exitNotional;
+    const baseQuantity = currentPosition.initialQuantity || quantity;
     trades.push({
       entryIndex: currentPosition.entryIndex,
       entryPrice: currentPosition.entryPrice,
@@ -140,7 +160,9 @@ export function runSimulation(blueprint, prices, options = {}) {
       exitPrice: lastPrice,
       exitNotional,
       profit: exitNotional - currentPosition.entryNotional,
-      sellPercent: 100,
+      sellPercent: baseQuantity
+        ? Math.min(Math.max((quantity / baseQuantity) * 100, 0), 100)
+        : 100,
     });
     position = 0;
     currentPosition = null;

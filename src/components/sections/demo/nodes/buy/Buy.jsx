@@ -1,7 +1,7 @@
 import "./buy.scss";
 import NodeDefault from "../nodeDefault";
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 import bitcoinLogo from "../../../../../assets/images/bitcoin.png";
 import ethereumLogo from "../../../../../assets/images/etherium.png";
@@ -20,13 +20,40 @@ const sanitizeAmountValue = (value) => {
 
 export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
   const { updateNodeData } = useReactFlow();
-  const { selectedAsset } = useAsset();
+  const { selectedAsset, portfolioValue } = useAsset();
   const [action, setAction] = useState("buy");
   const [type, setType] = useState(data?.type || "market");
   const [amount, setAmount] = useState(() => {
     const initial = sanitizeAmountValue(data?.amount ?? DEFAULT_AMOUNT);
     return initial || DEFAULT_AMOUNT;
   });
+
+  const clampAmountToPortfolio = useCallback(
+    (rawValue) => {
+      const sanitized = sanitizeAmountValue(rawValue);
+      if (sanitized === "") return sanitized;
+
+      let numericValue = Number(sanitized);
+      if (!Number.isFinite(numericValue)) {
+        return "";
+      }
+
+      if (numericValue < 0) {
+        numericValue = 0;
+      }
+
+      const numericPortfolio = Number(portfolioValue);
+      if (Number.isFinite(numericPortfolio)) {
+        const maxAllowed = Math.max(0, Math.floor(numericPortfolio));
+        if (numericValue > maxAllowed) {
+          numericValue = maxAllowed;
+        }
+      }
+
+      return String(numericValue);
+    },
+    [portfolioValue]
+  );
 
   // Parameter system for amount
   const [amountVariable, setAmountVariable] = useState(() => {
@@ -73,29 +100,30 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
 
   const handleAmountChange = (event) => {
     const value = event.target.value;
-    const sanitizedValue = sanitizeAmountValue(value);
-    setAmount(sanitizedValue);
+    const clampedValue = clampAmountToPortfolio(value);
+    setAmount(clampedValue);
 
     const currentParamData = amountVariable.parameterData || {};
-    // Update both direct amount and parameter data
+    const updatedParamData = {
+      ...currentParamData,
+      value: clampedValue,
+      source: currentParamData.source || "user",
+    };
+
     setAmountVariable((prev) => ({
       ...prev,
       parameterData: {
         ...prev.parameterData,
-        value: sanitizedValue,
+        value: clampedValue,
         source: prev.parameterData?.source || "user",
       },
     }));
 
     if (id) {
       updateNodeData(id, {
-        amount: sanitizedValue,
-        amountNumber: parseFloat(sanitizedValue) || 0,
-        amountParamData: {
-          ...currentParamData,
-          value: sanitizedValue,
-          source: currentParamData.source || "user",
-        },
+        amount: clampedValue,
+        amountNumber: parseFloat(clampedValue) || 0,
+        amountParamData: updatedParamData,
       });
     }
   };
@@ -125,25 +153,26 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
       if (!amountParam) return;
 
       const newValue = sanitizeAmountValue(amountParam.value);
-      setAmount(newValue);
+      const clampedValue = clampAmountToPortfolio(newValue);
+      setAmount(clampedValue);
       setAmountVariable((prev) => ({
         ...prev,
         parameterData: {
           ...prev.parameterData,
           parameterId: amountParam.id,
           label: amountParam.label,
-          value: newValue,
+          value: clampedValue,
           source: amountParam.source || prev.parameterData?.source || "user",
         },
       }));
       if (id) {
         updateNodeData(id, {
-          amount: newValue,
-          amountNumber: parseFloat(newValue) || 0,
+          amount: clampedValue,
+          amountNumber: parseFloat(clampedValue) || 0,
           amountParamData: {
             parameterId: amountParam.id,
             label: amountParam.label,
-            value: newValue,
+            value: clampedValue,
             source: amountParam.source || "user",
           },
         });
@@ -154,6 +183,46 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
     return () =>
       window.removeEventListener("parametersUpdated", handleParameterUpdate);
   }, [amountVariable, id, updateNodeData]);
+
+  useEffect(() => {
+    const sanitizedCurrent = sanitizeAmountValue(amount);
+    const clampedValue = clampAmountToPortfolio(sanitizedCurrent);
+    if (clampedValue === sanitizedCurrent) {
+      return;
+    }
+
+    const currentParamData = amountVariable?.parameterData || {};
+    const updatedParamData = {
+      ...currentParamData,
+      value: clampedValue,
+      source: currentParamData.source || "user",
+    };
+
+    setAmount(clampedValue);
+    setAmountVariable((prev) => ({
+      ...prev,
+      parameterData: {
+        ...prev.parameterData,
+        value: clampedValue,
+        source: prev.parameterData?.source || "user",
+      },
+    }));
+
+    if (id) {
+      updateNodeData(id, {
+        amount: clampedValue,
+        amountNumber: parseFloat(clampedValue) || 0,
+        amountParamData: updatedParamData,
+      });
+    }
+  }, [
+    amount,
+    clampAmountToPortfolio,
+    amountVariable,
+    id,
+    portfolioValue,
+    updateNodeData,
+  ]);
 
   // Format number with thousands separators
   const formatAmount = (value) => {

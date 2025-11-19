@@ -57,8 +57,6 @@ export default function ParameterBlock({
   // Use external tutorial control if provided, otherwise use internal state
   const isDropdownOpen =
     isExpandedByTutorial !== null ? isExpandedByTutorial : dropdownState;
-  const setIsDropdownOpen =
-    isExpandedByTutorial !== null ? () => {} : setDropdownState;
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -371,14 +369,14 @@ export default function ParameterBlock({
         if (canvas) {
           const rect = canvas.getBoundingClientRect();
           const blockWidth = parameterBlockRef.current.offsetWidth;
-          
+
           // Find the sidebar and get its width
           const sidebar = canvas.querySelector(".backtest-dataset-sidebar");
           const sidebarWidth = sidebar ? sidebar.offsetWidth : 280; // Default to 280px if not found
-          
+
           setCanvasBounds({
             left: 20,
-            right: rect.width - blockWidth - sidebarWidth -20,
+            right: rect.width - blockWidth - sidebarWidth - 20,
           });
         }
       }
@@ -627,10 +625,7 @@ export default function ParameterBlock({
           </div>
 
           <div className="buttons">
-            <button
-              className="add-parameter-btn"
-              onClick={() => onShowModal()}
-            >
+            <button className="add-parameter-btn" onClick={() => onShowModal()}>
               Add Parameter
             </button>
           </div>
@@ -700,4 +695,5 @@ ParameterBlock.propTypes = {
   onShowModal: PropTypes.func.isRequired,
   onShowDeleteModal: PropTypes.func.isRequired,
   onEditParameter: PropTypes.func,
+  isExpandedByTutorial: PropTypes.bool,
 };
