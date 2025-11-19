@@ -322,6 +322,7 @@ export default function Demo() {
 
   // === Modal state ===
   const [showParameterModal, setShowParameterModal] = useState(false); // Show add parameter modal
+  const [parameterModalType, setParameterModalType] = useState("parameter"); // 'parameter' | 'custom'
   const [parameterForm, setParameterForm] = useState({
     label: "",
     value: "",
@@ -455,7 +456,8 @@ export default function Demo() {
   );
 
   // === Modal handlers ===
-  const openParameterModal = useCallback(() => {
+  const openParameterModal = useCallback((type = "parameter") => {
+    setParameterModalType(type || "parameter");
     setParameterForm({
       label: "",
       value: "",
