@@ -154,7 +154,7 @@ export default function BacktestDatasetSidebar() {
   return (
     <div className="backtest-dataset-sidebar">
       <div className="sidebar-header">
-        <h3 className="sidebar-title">Dataset settings</h3>
+        <h3 className="sidebar-title">backtesting settings</h3>
       </div>
       <div className="sidebar-content">
           {!inputNode ? (
