@@ -29,7 +29,6 @@ export default function IntroductionMask({
   const handleClose = () => {
     setShowMask(false);
     localStorage.setItem("demo-introduction-mask-shown", "true");
-    onComplete();
   };
 
   const handleGetStarted = () => {
