@@ -435,7 +435,19 @@ export default function Demo() {
       const { source, sourceHandle } = connectionParams;
       // The sourceHandle is available during the connection event.
       // We can add it to the edge payload to be used by the simulator.
-      const edge = { ...connectionParams };
+      const edge = {
+        // Preserve all provided params
+        ...connectionParams,
+        // Ensure newly created edges keep the animated style
+        animated: true,
+        type: connectionParams.type || "shortStep",
+        style: {
+          stroke: "#000000",
+          strokeWidth: 3,
+          strokeDasharray: "5,5",
+          ...(connectionParams.style || {}),
+        },
+      };
       if (sourceHandle) {
         const sourceNode = nodes.find((n) => n.id === source);
         if (sourceNode && sourceNode.type === "ifNode") {
@@ -1594,7 +1606,15 @@ export default function Demo() {
                 onEdgesChange={onEdgesChange}
                 onConnect={handleConnect}
                 onEdgeDoubleClick={handleEdgeDoubleClick}
-                defaultEdgeOptions={{ type: "shortStep" }}
+                defaultEdgeOptions={{
+                  type: "shortStep",
+                  animated: true,
+                  style: {
+                    stroke: "#000000",
+                    strokeWidth: 3,
+                    strokeDasharray: "5,5",
+                  },
+                }}
                 connectionLineType="step"
                 connectionLineStyle={{
                   strokeWidth: 3,
