@@ -21,6 +21,7 @@ import {
 } from "recharts";
 
 import { mapCoinGeckoPricesToOHLC } from "../../../../utils/indicators";
+import { DEFAULT_PORTFOLIO_VALUE } from "../defaults";
 
 import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
 import InfoButton from "../InfoButton";
@@ -109,6 +110,17 @@ export default function BacktestView({
     []
   );
 
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
   useEffect(() => {
     if (optionsInitializedRef.current) return;
     if (!options) return;
@@ -135,6 +147,13 @@ export default function BacktestView({
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
   const lookback = activeOptions?.lookback ?? 30;
   const feePercent = activeOptions?.feePercent ?? 0.05;
+  const rawPortfolio = Number(
+    activeOptions?.portfolioValue ?? activeOptions?.initialCapital
+  );
+  const portfolioValue =
+    Number.isFinite(rawPortfolio) && rawPortfolio > 0
+      ? rawPortfolio
+      : DEFAULT_PORTFOLIO_VALUE;
 
   const xAxisUnitLabel = useMemo(() => {
     switch (dataResolution) {
@@ -197,6 +216,13 @@ export default function BacktestView({
 
     const numericFee = Number(runOptions?.feePercent);
     const feeForRun = Number.isFinite(numericFee) ? numericFee : 0.05;
+    const numericPortfolio = Number(
+      runOptions?.portfolioValue ?? runOptions?.initialCapital
+    );
+    const portfolioForRun =
+      Number.isFinite(numericPortfolio) && numericPortfolio > 0
+        ? numericPortfolio
+        : DEFAULT_PORTFOLIO_VALUE;
 
     setIsLoading(true);
     setProgress(0);
@@ -213,6 +239,8 @@ export default function BacktestView({
       parameters: runOptions.parameters,
       prices: priceSeries,
       feePercent: feeForRun,
+      portfolioValue: portfolioForRun,
+      initialCapital: portfolioForRun,
     });
   }, []);
 
@@ -987,6 +1015,12 @@ export default function BacktestView({
             <div className="param-label">Asset</div>
             <div className="param-value">{assetLabel}</div>
           </div>
+          <div className="param-block">
+            <div className="param-label">Portfolio</div>
+            <div className="param-value">
+              {currencyFormatter.format(portfolioValue)}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1333,6 +1367,8 @@ BacktestView.propTypes = {
     asset: PropTypes.string,
     lookback: PropTypes.number,
     feePercent: PropTypes.number,
+    portfolioValue: PropTypes.number,
+    initialCapital: PropTypes.number,
     graph: PropTypes.object,
     nodes: PropTypes.array,
     edges: PropTypes.array,

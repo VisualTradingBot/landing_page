@@ -7,7 +7,15 @@ import { runSimulation, resolveAmountFromNode } from "../utils/simulator";
 // Listen for messages from the main React app
 self.onmessage = (event) => {
   // Destructure the data sent from BacktestView.jsx
-  const { nodes, edges, prices, feePercent, parameters } = event.data;
+  const {
+    nodes,
+    edges,
+    prices,
+    feePercent,
+    parameters,
+    portfolioValue,
+    initialCapital,
+  } = event.data;
 
   // Basic validation
   if (!nodes || !edges || !prices) {
@@ -214,8 +222,14 @@ self.onmessage = (event) => {
       return max;
     }, 0);
 
+    const providedCapital = Number(
+      Number.isFinite(initialCapital) ? initialCapital : portfolioValue
+    );
+
     const simulationOptions = { feePercent };
-    if (Number.isFinite(maxBuyNotional) && maxBuyNotional > 0) {
+    if (Number.isFinite(providedCapital) && providedCapital > 0) {
+      simulationOptions.initialCapital = providedCapital;
+    } else if (Number.isFinite(maxBuyNotional) && maxBuyNotional > 0) {
       simulationOptions.initialCapital = maxBuyNotional;
     }
 

@@ -2,6 +2,7 @@ import { StepEdge } from "@xyflow/react";
 import {
   DEFAULT_DATA_RESOLUTION,
   DEFAULT_INTERVAL_BY_RESOLUTION,
+  DEFAULT_PORTFOLIO_VALUE,
 } from "./defaults";
 
 // 1. Define initial parameters for the demo strategy.
@@ -101,26 +102,26 @@ const createVariable = ({
 
 // Helper function to get canvas center based on screen size (same boundaries as zoom)
 const getCanvasCenter = () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Fallback for SSR
     return { x: 720, y: 405 };
   }
-  
+
   const width = window.innerWidth;
   const height = window.innerHeight;
   const canvasHeight = Math.max(height * 0.75, 650); // 75vh with minHeight 650px
-  
+
   // Use same media query boundaries as zoom calculation
   let canvasCenterX, canvasCenterY;
-  
+
   if (width >= 1920) {
     // Extra large desktop (1920px+)
-    canvasCenterX = width / 2 - (width * 0.14); // ~11.5% of viewport width
-    canvasCenterY = canvasHeight / 2 + (height * 0.1);
+    canvasCenterX = width / 2 - width * 0.14; // ~11.5% of viewport width
+    canvasCenterY = canvasHeight / 2 + height * 0.1;
   } else if (width >= 1441) {
     // Large desktop (1441px - 1919px)
-    canvasCenterX = width / 2 -(width * 0.1);
-    canvasCenterY = canvasHeight / 2 + (height * 0.1);
+    canvasCenterX = width / 2 - width * 0.1;
+    canvasCenterY = canvasHeight / 2 + height * 0.1;
   } else if (width >= 1024) {
     // Medium desktop (1024px - 1440px)
     canvasCenterX = width / 2;
@@ -128,25 +129,25 @@ const getCanvasCenter = () => {
   } else {
     // Tablets and below
     canvasCenterX = width / 2;
-    canvasCenterY = canvasHeight / 2 -(height * 0.5);
+    canvasCenterY = canvasHeight / 2 - height * 0.5;
   }
-  
+
   return { x: canvasCenterX, y: canvasCenterY };
 };
 
 // Helper function to get initial node positions based on screen size
 const getInitialNodePositions = () => {
-  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1440;
+  const screenWidth = typeof window !== "undefined" ? window.innerWidth : 1440;
   const isSmallScreen = screenWidth < 1441;
-  
+
   if (isSmallScreen) {
     // Compact layout for screens < 1400px
     return {
-      "inputIndicatorNode": { x: -200, y: 50 },
-      "inputPriceNode": { x: -200, y: 300 },
+      inputIndicatorNode: { x: -200, y: 50 },
+      inputPriceNode: { x: -200, y: 300 },
       "setParameterNode-indicator": { x: 400, y: 160 },
       "setParameterNode-price": { x: 200, y: 420 },
-      "inputNode": { x: -200, y: 550 },
+      inputNode: { x: -200, y: 550 },
       "ifNode-1": { x: -200, y: 530 },
       "buyNode-1": { x: 60, y: 680 },
       "ifNode-2": { x: 480, y: 350 },
@@ -161,11 +162,11 @@ const getInitialNodePositions = () => {
   } else {
     // Standard layout for screens >= 1400px
     return {
-      "inputIndicatorNode": { x: -200, y: 50 },
-      "inputPriceNode": { x: -200, y: 300 },
+      inputIndicatorNode: { x: -200, y: 50 },
+      inputPriceNode: { x: -200, y: 300 },
       "setParameterNode-indicator": { x: 400, y: 160 },
       "setParameterNode-price": { x: 200, y: 420 },
-      "inputNode": { x: -200, y: 550 },
+      inputNode: { x: -200, y: 550 },
       "ifNode-1": { x: 350, y: 280 },
       "buyNode-1": { x: 610, y: 430 },
       "ifNode-2": { x: 960, y: 100 },
@@ -182,30 +183,30 @@ const getInitialNodePositions = () => {
 // Helper function to calculate canvas center and center nodes
 const centerNodesOnCanvas = (nodes) => {
   // Calculate bounding box of all visible nodes
-  const visibleNodes = nodes.filter(node => !node.hidden);
+  const visibleNodes = nodes.filter((node) => !node.hidden);
   if (visibleNodes.length === 0) return nodes;
 
-  const xPositions = visibleNodes.map(node => node.position.x);
-  const yPositions = visibleNodes.map(node => node.position.y);
-  
+  const xPositions = visibleNodes.map((node) => node.position.x);
+  const yPositions = visibleNodes.map((node) => node.position.y);
+
   const minX = Math.min(...xPositions);
   const maxX = Math.max(...xPositions);
   const minY = Math.min(...yPositions);
   const maxY = Math.max(...yPositions);
-  
+
   // Center of the node group
   const nodesCenterX = (minX + maxX) / 2;
   const nodesCenterY = (minY + maxY) / 2;
-  
+
   // Get canvas center based on screen size
   const { x: canvasCenterX, y: canvasCenterY } = getCanvasCenter();
-  
+
   // Calculate offset needed to center nodes
   const offsetX = canvasCenterX - nodesCenterX;
   const offsetY = canvasCenterY - nodesCenterY;
-  
+
   // Apply offset to all nodes
-  return nodes.map(node => ({
+  return nodes.map((node) => ({
     ...node,
     position: {
       x: node.position.x + offsetX,
@@ -318,6 +319,7 @@ const initialNodesRaw = [
       asset: "bitcoin",
       resolution: DEFAULT_DATA_RESOLUTION,
       interval: DEFAULT_INTERVAL_BY_RESOLUTION[DEFAULT_DATA_RESOLUTION],
+      portfolioValue: DEFAULT_PORTFOLIO_VALUE,
       parameters: initialParameters,
       preventInTradeGrouping: true,
     },
