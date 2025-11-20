@@ -104,7 +104,9 @@ export default function InfoButton({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <span className="info-icon">ℹ</span>
+          <span className="info-icon" style={{ fontVariant: 'normal', WebkitFontFeatureSettings: '"liga" off' }}>
+            ℹ
+          </span>
         </button>
       </div>
       {tooltip}

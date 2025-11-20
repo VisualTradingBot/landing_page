@@ -1241,7 +1241,7 @@ export default function BacktestView({
         {/* Equity Chart */}
         <div className="backtest-chart-container">
           <InfoButton
-            explanation="The equity curve shows how your portfolio value changes over time. It starts at 100% (baseline) and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns."
+            explanation="The equity curve shows how your portfolio value changes over time. It starts at 0% and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns."
             variant="absolute"
           />
           <div className="chart-title">Equity Curve</div>

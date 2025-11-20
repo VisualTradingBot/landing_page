@@ -251,18 +251,14 @@ export default function Buy({ data, id, onToggleInTrade, isInTradeCollapsed }) {
     remove(coinEl);
     animate(coinEl, {
       translateY: [
-        { to: -20, duration: 170, ease: "outQuad" },
+        { to: -10, duration: 170, ease: "outQuad" },
         { to: 0, duration: 260, ease: "outBounce" },
       ],
       scale: [
         { to: 0.8, duration: 170, ease: "outQuad" },
         { to: 1, duration: 260, ease: "outQuad" },
       ],
-      rotateY: {
-        to: collapsed ? 180 : 0,
-        duration: 340,
-        ease: "outCubic",
-      },
+      // Removed rotateY - character no longer rotates
     });
   }, []);
 

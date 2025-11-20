@@ -1282,6 +1282,14 @@ export default function Demo() {
     [optionsSignature]
   );
 
+  // === Screen size detection for mobile ===
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+
   // === Tutorial handlers ===
   const [tutorialCurrentStep, setTutorialCurrentStep] = useState(-1);
   const [tutorialVisibleNodes, setTutorialVisibleNodes] = useState(new Set());
@@ -1289,6 +1297,11 @@ export default function Demo() {
 
   const handleIntroductionMaskComplete = useCallback(() => {
     setShowIntroductionMask(false);
+    // Don't start tutorial on mobile/tablet (<1024px)
+    if (window.innerWidth < 1024) {
+      setShowTutorial(false);
+      return;
+    }
     // Start tutorial after the introduction mask closes
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
@@ -1392,6 +1405,9 @@ export default function Demo() {
   useEffect(() => {
     const checkVisibility = () => {
       if (tutorialAutostartedRef.current) return;
+      
+      // Don't show tutorial on mobile/tablet (<1024px)
+      if (isMobile) return;
 
       const el = demoSectionRef.current || document.getElementById("demo");
       if (!el) return;
@@ -1423,10 +1439,7 @@ export default function Demo() {
     const interval = setInterval(checkVisibility, 1000);
 
     return () => clearInterval(interval);
-  }, [showIntroductionMask, showTutorial]);
-
-  // === Screen size detection for mobile ===
-  const [isMobile, setIsMobile] = useState(false);
+  }, [showIntroductionMask, showTutorial, isMobile]);
 
   // === Zoom calculation based on screen size at initialization ===
   const getInitialZoom = () => {
@@ -1455,7 +1468,17 @@ export default function Demo() {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const isMobileWidth = window.innerWidth < 1024;
+      setIsMobile(isMobileWidth);
+      
+      // Close introduction mask and tutorial if screen becomes mobile
+      if (isMobileWidth) {
+        setShowIntroductionMask(false);
+        setShowTutorial(false);
+        setTutorialCurrentStep(-1);
+        setTutorialVisibleNodes(new Set());
+        setTutorialForceStart(false);
+      }
     };
 
     checkMobile();
@@ -1480,8 +1503,8 @@ export default function Demo() {
         setPortfolioValue,
       }}
     >
-      {/* Introduction Mask */}
-      {showIntroductionMask && (
+      {/* Introduction Mask - Only show on desktop (>=1024px) */}
+      {showIntroductionMask && !isMobile && (
         <IntroductionMask
           alwaysShow
           onComplete={handleIntroductionMaskComplete}
@@ -1634,8 +1657,8 @@ export default function Demo() {
                 <BacktestDatasetSidebar />
               </ReactFlow>
 
-              {/* Tutorial component */}
-              {showTutorial && (
+              {/* Tutorial component - Only show on desktop (>=1024px) */}
+              {showTutorial && !isMobile && (
                 <DemoTutorial
                   nodes={nodes}
                   onTutorialComplete={handleTutorialComplete}
