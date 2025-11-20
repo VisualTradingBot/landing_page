@@ -792,6 +792,31 @@ export default function Demo() {
     return map;
   }, [nodes, dimensionsVersion]);
 
+  // Calculate block boundary offsets based on screen size (same thresholds as zoom)
+  const getBlockBoundaryOffsets = useCallback(() => {
+    if (typeof window === "undefined") {
+      return { offsetX: 0, offsetY: 0 };
+    }
+
+    const width = window.innerWidth;
+
+    // Use same media query boundaries as zoom calculation
+    if (width >= 1920) {
+      // Extra large desktop (1920px+)
+      return { offsetX: -140, offsetY: -110 };
+    }
+    if (width >= 1550) {
+      // Large desktop (1550px - 1919px)
+      return { offsetX: -10, offsetY: 30 };
+    } else if (width >= 1441) {
+      // Large desktop (1441px - 1549px)
+      return { offsetX: 20, offsetY: 80 };
+    } else {
+      // Medium desktop (1024px - 1440px)
+      return { offsetX: 35, offsetY: 100 };
+    }
+  }, []);
+
   const blockBounds = useMemo(() => {
     void dimensionsVersion;
     if (!blockNode?.position) return null;
@@ -800,13 +825,17 @@ export default function Demo() {
       storedDimensions?.width ?? blockNode.width ?? FALLBACK_BLOCK_SIZE;
     const height =
       storedDimensions?.height ?? blockNode.height ?? FALLBACK_BLOCK_SIZE;
+    
+    // Get offsets based on screen size
+    const { offsetX, offsetY } = getBlockBoundaryOffsets();
+    
     return {
       minX: blockNode.position.x,
-      maxX: blockNode.position.x + width,
+      maxX: blockNode.position.x + width + offsetX,
       minY: blockNode.position.y,
-      maxY: blockNode.position.y + height,
+      maxY: blockNode.position.y + height + offsetY,
     };
-  }, [blockNode, dimensionsVersion]);
+  }, [blockNode, dimensionsVersion, getBlockBoundaryOffsets]);
 
   const nodesById = useMemo(() => {
     const map = new Map();
