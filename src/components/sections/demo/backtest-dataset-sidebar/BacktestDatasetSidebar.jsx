@@ -129,12 +129,17 @@ export default function BacktestDatasetSidebar() {
 
   const handleAssetChange = (value) => {
     if (!value || value === formState.asset) return;
+    const oldValue = formState.asset;
     setDirty((prev) => ({ ...prev, asset: true }));
     setFormState((prev) => ({ ...prev, asset: value }));
     assetContext.setSelectedAsset(value);
     commitChanges({ asset: value });
     setDirty((prev) => ({ ...prev, asset: false }));
     flashField("asset");
+    // Track dataset change
+    if (typeof window !== "undefined" && window.__demoAnalytics) {
+      window.__demoAnalytics.trackDatasetChange("asset", oldValue, value);
+    }
   };
 
   const handleIntervalChange = (value) => {
@@ -144,6 +149,7 @@ export default function BacktestDatasetSidebar() {
   };
 
   const handleIntervalBlur = () => {
+    const oldValue = formState.interval;
     const numeric = Number(formState.interval);
     const clamped =
       Number.isFinite(numeric) && numeric > 0
@@ -157,6 +163,10 @@ export default function BacktestDatasetSidebar() {
     assetContext.setHistoryWindow(clamped);
     setDirty((prev) => ({ ...prev, interval: false }));
     flashField("interval");
+    // Track dataset change
+    if (typeof window !== "undefined" && window.__demoAnalytics && oldValue !== clampedStr) {
+      window.__demoAnalytics.trackDatasetChange("interval", oldValue, clampedStr);
+    }
   };
 
   const handleFeeChange = (value) => {
@@ -166,6 +176,7 @@ export default function BacktestDatasetSidebar() {
   };
 
   const handleFeeBlur = () => {
+    const oldValue = formState.fee;
     const numeric = Number(formState.fee);
     const feeValue = Number.isFinite(numeric) ? numeric : DEFAULT_FEE_PERCENT;
     const feeStr = String(feeValue);
@@ -176,6 +187,10 @@ export default function BacktestDatasetSidebar() {
     assetContext.setFeePercent(feeValue);
     setDirty((prev) => ({ ...prev, fee: false }));
     flashField("fee");
+    // Track dataset change
+    if (typeof window !== "undefined" && window.__demoAnalytics && oldValue !== feeStr) {
+      window.__demoAnalytics.trackDatasetChange("fee", oldValue, feeStr);
+    }
   };
 
   const handlePortfolioChange = (value) => {
@@ -185,6 +200,7 @@ export default function BacktestDatasetSidebar() {
   };
 
   const handlePortfolioBlur = () => {
+    const oldValue = formState.portfolio;
     const numeric = Number(formState.portfolio);
     const portfolioValue =
       Number.isFinite(numeric) && numeric > 0
@@ -198,6 +214,10 @@ export default function BacktestDatasetSidebar() {
     assetContext?.setPortfolioValue?.(portfolioValue);
     setDirty((prev) => ({ ...prev, portfolio: false }));
     flashField("portfolio");
+    // Track dataset change
+    if (typeof window !== "undefined" && window.__demoAnalytics && oldValue !== portfolioStr) {
+      window.__demoAnalytics.trackDatasetChange("portfolio", oldValue, portfolioStr);
+    }
   };
 
   return (

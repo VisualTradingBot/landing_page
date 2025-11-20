@@ -18,12 +18,14 @@ import IntroductionMask from "./tutorial/IntroductionMask";
 import DemoTutorial from "./tutorial/DemoTutorial";
 import BacktestDatasetSidebar from "./backtest-dataset-sidebar/BacktestDatasetSidebar";
 
+// Analytics
+import demoAnalytics from "../../../utils/demoAnalytics";
+
 // Node components
 import Buy from "./nodes/buy/Buy";
 import Sell from "./nodes/sell/Sell";
 import Record from "./nodes/record/Record";
 import If from "./nodes/if/If";
-import Input from "./nodes/input/Input";
 import InputIndicator from "./nodes/inputIndicator/InputIndicator";
 import InputPrice from "./nodes/inputPrice/InputPrice";
 import SetParameter from "./nodes/setParameter/SetParameter";
@@ -290,8 +292,19 @@ export default function Demo() {
         (change) => change.type === "position"
       );
 
+      // Track node drag start
       if (isDraggingUpdate) {
         isDraggingRef.current = true;
+        // Track drag for the first node being dragged
+        const dragChange = changes.find(
+          (change) => change.type === "position" && change.dragging
+        );
+        if (dragChange && dragChange.id) {
+          const node = nodes.find((n) => n.id === dragChange.id);
+          if (node) {
+            demoAnalytics.trackNodeDrag(node.id, node.type || "unknown");
+          }
+        }
       } else if (isDraggingRef.current && hasPositionChange) {
         dragIdleTimeoutRef.current = setTimeout(() => {
           isDraggingRef.current = false;
@@ -301,7 +314,7 @@ export default function Demo() {
 
       rawOnNodesChange(changes);
     },
-    [rawOnNodesChange]
+    [rawOnNodesChange, nodes]
   );
 
   const onEdgesChange = useCallback(
@@ -360,6 +373,9 @@ export default function Demo() {
   }, []);
 
   const handleRunBacktestClick = useCallback(() => {
+    // Track button click
+    demoAnalytics.trackBacktestRun();
+
     // Dismiss tutorial overlays to mirror main's unobstructed scroll
     if (showTutorial) {
       setShowTutorial(false);
@@ -415,7 +431,20 @@ export default function Demo() {
   // Add a new edge to the graph
   const handleConnect = useCallback(
     (connectionParams) => {
-      const { source, sourceHandle } = connectionParams;
+      const { source, target, sourceHandle } = connectionParams;
+      
+      // Track node connection
+      const sourceNode = nodes.find((n) => n.id === source);
+      const targetNode = nodes.find((n) => n.id === target);
+      if (sourceNode && targetNode) {
+        demoAnalytics.trackNodeConnect(
+          source,
+          target,
+          sourceNode.type || "unknown",
+          targetNode.type || "unknown"
+        );
+      }
+      
       // The sourceHandle is available during the connection event.
       // We can add it to the edge payload to be used by the simulator.
       const edge = {
@@ -452,6 +481,9 @@ export default function Demo() {
 
   // === Modal handlers ===
   const openParameterModal = useCallback((type = "parameter") => {
+    demoAnalytics.trackButtonClick("parameter_add_button", {
+      modal_type: type || "parameter",
+    });
     setParameterModalType(type || "parameter");
     setParameterForm({
       label: "",
@@ -483,6 +515,7 @@ export default function Demo() {
   }, []);
 
   const addParameter = useCallback((newParam) => {
+    demoAnalytics.trackParameterAdd(newParam?.label || "unknown");
     setParameters((prev) => [...prev, newParam]);
   }, []);
 
@@ -491,8 +524,12 @@ export default function Demo() {
       return;
     }
 
-    setParameters((prev) =>
-      prev.map((param) => {
+    setParameters((prev) => {
+      const param = prev.find((p) => p?.id === id);
+      if (param) {
+        demoAnalytics.trackParameterEdit(param.label || "unknown");
+      }
+      return prev.map((param) => {
         if (!param || param.id !== id) {
           return param;
         }
@@ -506,8 +543,8 @@ export default function Demo() {
         }
 
         return { ...param, [field]: value };
-      })
-    );
+      });
+    });
   }, []);
 
   // === Parameter handlers ===
@@ -517,14 +554,22 @@ export default function Demo() {
 
   const confirmDeleteParameter = useCallback(() => {
     if (parameterIndexToDelete !== null) {
+      const paramToDelete = parameters[parameterIndexToDelete];
+      if (paramToDelete) {
+        demoAnalytics.trackParameterDelete(paramToDelete.label || "unknown");
+      }
       removeParameter(parameterIndexToDelete);
     }
     closeDeleteModal();
-  }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
+  }, [parameterIndexToDelete, removeParameter, closeDeleteModal, parameters]);
 
   // === Node types for ReactFlow ===
   const toggleInTradeBlock = useCallback(() => {
-    setInTradeCollapsed((prev) => !prev);
+    setInTradeCollapsed((prev) => {
+      const newValue = !prev;
+      demoAnalytics.trackInTradeBlockToggle(!newValue); // Track with expanded state
+      return newValue;
+    });
   }, []);
 
   const nodeTypes = useMemo(
@@ -539,7 +584,6 @@ export default function Demo() {
       sellNode: (props) => <Sell {...props} />,
       recordNode: Record,
       ifNode: If,
-      inputNode: (props) => <Input {...props} />,
       inputIndicatorNode: (props) => <InputIndicator {...props} />,
       inputPriceNode: (props) => <InputPrice {...props} />,
       setParameterNode: (props) => <SetParameter {...props} />,
@@ -794,6 +838,31 @@ export default function Demo() {
     return map;
   }, [nodes, dimensionsVersion]);
 
+  // Calculate block boundary offsets based on screen size (same thresholds as zoom)
+  const getBlockBoundaryOffsets = useCallback(() => {
+    if (typeof window === "undefined") {
+      return { offsetX: 0, offsetY: 0 };
+    }
+
+    const width = window.innerWidth;
+
+    // Use same media query boundaries as zoom calculation
+    if (width >= 1920) {
+      // Extra large desktop (1920px+)
+      return { offsetX: -140, offsetY: -110 };
+    }
+    if (width >= 1550) {
+      // Large desktop (1550px - 1919px)
+      return { offsetX: -10, offsetY: 30 };
+    } else if (width >= 1441) {
+      // Large desktop (1441px - 1549px)
+      return { offsetX: 20, offsetY: 80 };
+    } else {
+      // Medium desktop (1024px - 1440px)
+      return { offsetX: 35, offsetY: 100 };
+    }
+  }, []);
+
   const blockBounds = useMemo(() => {
     void dimensionsVersion;
     if (!blockNode?.position) return null;
@@ -802,13 +871,17 @@ export default function Demo() {
       storedDimensions?.width ?? blockNode.width ?? FALLBACK_BLOCK_SIZE;
     const height =
       storedDimensions?.height ?? blockNode.height ?? FALLBACK_BLOCK_SIZE;
+    
+    // Get offsets based on screen size
+    const { offsetX, offsetY } = getBlockBoundaryOffsets();
+    
     return {
       minX: blockNode.position.x,
-      maxX: blockNode.position.x + width,
+      maxX: blockNode.position.x + width + offsetX,
       minY: blockNode.position.y,
-      maxY: blockNode.position.y + height,
+      maxY: blockNode.position.y + height + offsetY,
     };
-  }, [blockNode, dimensionsVersion]);
+  }, [blockNode, dimensionsVersion, getBlockBoundaryOffsets]);
 
   const nodesById = useMemo(() => {
     const map = new Map();
@@ -1284,6 +1357,14 @@ export default function Demo() {
     [optionsSignature]
   );
 
+  // === Screen size detection for mobile ===
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+
   // === Tutorial handlers ===
   const [tutorialCurrentStep, setTutorialCurrentStep] = useState(-1);
   const [tutorialVisibleNodes, setTutorialVisibleNodes] = useState(new Set());
@@ -1291,6 +1372,13 @@ export default function Demo() {
 
   const handleIntroductionMaskComplete = useCallback(() => {
     setShowIntroductionMask(false);
+    // Don't start tutorial on mobile/tablet (<1024px)
+    if (window.innerWidth < 1024) {
+      setShowTutorial(false);
+      return;
+    }
+    // Track tutorial start
+    demoAnalytics.trackTutorialStart();
     // Start tutorial after the introduction mask closes
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
@@ -1299,6 +1387,7 @@ export default function Demo() {
   }, []);
 
   const handleSkipTutorial = useCallback(() => {
+    demoAnalytics.trackTutorialSkip();
     setShowIntroductionMask(false);
     // Skip tutorial - just close the mask without starting the tutorial
     setShowTutorial(false);
@@ -1308,6 +1397,7 @@ export default function Demo() {
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
+    demoAnalytics.trackTutorialComplete();
     setShowTutorial(false);
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
@@ -1316,6 +1406,11 @@ export default function Demo() {
 
   const handleTutorialStepChange = useCallback((stepIndex, stepData) => {
     setTutorialCurrentStep(stepIndex);
+
+    // Track tutorial step
+    if (stepIndex >= 0 && stepData?.title) {
+      demoAnalytics.trackTutorialStep(stepIndex, stepData.title);
+    }
 
     // Steps 1-3 are graph steps with cumulative node visibility
     if (stepIndex >= 0 && stepIndex <= 2 && stepData?.nodeIds) {
@@ -1390,10 +1485,27 @@ export default function Demo() {
     });
   }, [showTutorial, nodes, edges, tutorialCurrentStep, tutorialVisibleNodes]);
 
+  // Track demo visibility and time spent
+  useEffect(() => {
+    if (!isMobile) {
+      demoAnalytics.trackDemoStart();
+    }
+
+    return () => {
+      // Track demo end when component unmounts or becomes mobile
+      if (!isMobile) {
+        demoAnalytics.trackDemoEnd();
+      }
+    };
+  }, [isMobile]);
+
   // Check every second if demo section is visible in viewport (once per page load)
   useEffect(() => {
     const checkVisibility = () => {
       if (tutorialAutostartedRef.current) return;
+      
+      // Don't show tutorial on mobile/tablet (<1024px)
+      if (isMobile) return;
 
       const el = demoSectionRef.current || document.getElementById("demo");
       if (!el) return;
@@ -1425,10 +1537,7 @@ export default function Demo() {
     const interval = setInterval(checkVisibility, 1000);
 
     return () => clearInterval(interval);
-  }, [showIntroductionMask, showTutorial]);
-
-  // === Screen size detection for mobile ===
-  const [isMobile, setIsMobile] = useState(false);
+  }, [showIntroductionMask, showTutorial, isMobile]);
 
   // === Zoom calculation based on screen size at initialization ===
   const getInitialZoom = () => {
@@ -1457,7 +1566,17 @@ export default function Demo() {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const isMobileWidth = window.innerWidth < 1024;
+      setIsMobile(isMobileWidth);
+      
+      // Close introduction mask and tutorial if screen becomes mobile
+      if (isMobileWidth) {
+        setShowIntroductionMask(false);
+        setShowTutorial(false);
+        setTutorialCurrentStep(-1);
+        setTutorialVisibleNodes(new Set());
+        setTutorialForceStart(false);
+      }
     };
 
     checkMobile();
@@ -1482,8 +1601,8 @@ export default function Demo() {
         setPortfolioValue,
       }}
     >
-      {/* Introduction Mask */}
-      {showIntroductionMask && (
+      {/* Introduction Mask - Only show on desktop (>=1024px) */}
+      {showIntroductionMask && !isMobile && (
         <IntroductionMask
           alwaysShow
           onComplete={handleIntroductionMaskComplete}
@@ -1636,13 +1755,16 @@ export default function Demo() {
                 <BacktestDatasetSidebar />
               </ReactFlow>
 
-              {/* Tutorial component */}
-              {showTutorial && (
+              {/* Tutorial component - Only show on desktop (>=1024px) */}
+              {showTutorial && !isMobile && (
                 <DemoTutorial
                   nodes={nodes}
                   onTutorialComplete={handleTutorialComplete}
                   onExpandInTrade={setInTradeCollapsed}
-                  onParameterDashboardToggle={setParameterDashboardExpanded}
+                  onParameterDashboardToggle={(expanded) => {
+                    demoAnalytics.trackParameterDashboardToggle(expanded);
+                    setParameterDashboardExpanded(expanded);
+                  }}
                   onStepChange={handleTutorialStepChange}
                   forceStart={tutorialForceStart}
                 />

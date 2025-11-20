@@ -24,6 +24,43 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
+    border: 2px solid var(--accent); // Purple border matching the "in a trade" block
+    // Purple glow effect matching the block colors
+    box-shadow: 0 0 12px rgba(232, 61, 255, 0.4),
+                0 0 20px rgba(154, 2, 255, 0.3),
+                0 0 30px rgba(31, 2, 255, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+
+    // Hide highlight when block is expanded (shown)
+    &.expanded {
+      box-shadow: none;
+    }
+
+    &:hover {
+      border-color: #9a02ff; // Lighter purple on hover
+      box-shadow: 0 0 16px rgba(232, 61, 255, 0.6),
+                  0 0 28px rgba(154, 2, 255, 0.5),
+                  0 0 40px rgba(31, 2, 255, 0.4);
+      transform: scale(1.05);
+
+    }
+
+    &:active {
+      transform: scale(0.98);
+      box-shadow: 0 0 8px rgba(232, 61, 255, 0.5),
+                  0 0 16px rgba(154, 2, 255, 0.4),
+                  0 0 24px rgba(31, 2, 255, 0.3);
+
+      // Don't show highlight on active if expanded
+      &.expanded {
+        border-color: transparent;
+        box-shadow: none;
+      }
+    }
+  }
+  .coin {
+   transform: translatex(-2px) !important;
   }
 }
 

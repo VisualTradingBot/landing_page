@@ -46,7 +46,7 @@ const initialParameters = [
   {
     id: "param-5",
     label: "profit_target",
-    value: "entry * 1.10",
+    value: "entry * 1.05",
     family: "variable",
     source: "user",
     group: "Core Variables",
