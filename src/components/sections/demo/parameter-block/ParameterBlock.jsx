@@ -327,7 +327,14 @@ export default function ParameterBlock({
     }
     // Only allow toggling if not controlled by tutorial
     if (isExpandedByTutorial === null) {
-      setDropdownState((prev) => !prev);
+      setDropdownState((prev) => {
+        const newState = !prev;
+        // Track parameter dashboard toggle
+        if (typeof window !== "undefined" && window.__demoAnalytics) {
+          window.__demoAnalytics.trackParameterDashboardToggle(newState);
+        }
+        return newState;
+      });
     }
   }, [hasDragged, isExpandedByTutorial]);
 
@@ -336,7 +343,14 @@ export default function ParameterBlock({
       e.stopPropagation();
       // Only allow toggling if not controlled by tutorial
       if (isExpandedByTutorial === null) {
-        setDropdownState((prev) => !prev);
+        setDropdownState((prev) => {
+          const newState = !prev;
+          // Track parameter dashboard toggle
+          if (typeof window !== "undefined" && window.__demoAnalytics) {
+            window.__demoAnalytics.trackParameterDashboardToggle(newState);
+          }
+          return newState;
+        });
       }
     },
     [isExpandedByTutorial]

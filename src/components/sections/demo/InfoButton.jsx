@@ -101,7 +101,15 @@ export default function InfoButton({
         <button
           className="info-button"
           aria-label="Information"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Track info button click
+            if (typeof window !== "undefined" && window.__demoAnalytics) {
+              window.__demoAnalytics.trackInfoButtonClick(
+                explanation?.substring(0, 50) || "unknown"
+              );
+            }
+          }}
           onMouseDown={(e) => e.stopPropagation()}
         >
           <span className="info-icon" style={{ fontVariant: 'normal', WebkitFontFeatureSettings: '"liga" off' }}>

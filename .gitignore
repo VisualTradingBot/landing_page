@@ -54,3 +54,5 @@ Desktop.ini
 analytics-data/
 ANALYTICS_SETUP.md
 CHANGES_SUMMARY.md
+create_demo_analytics_table.sql
+demoAnalyticsQueries.sql

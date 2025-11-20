@@ -18,6 +18,9 @@ import IntroductionMask from "./tutorial/IntroductionMask";
 import DemoTutorial from "./tutorial/DemoTutorial";
 import BacktestDatasetSidebar from "./backtest-dataset-sidebar/BacktestDatasetSidebar";
 
+// Analytics
+import demoAnalytics from "../../../utils/demoAnalytics";
+
 // Node components
 import Buy from "./nodes/buy/Buy";
 import Sell from "./nodes/sell/Sell";
@@ -289,8 +292,19 @@ export default function Demo() {
         (change) => change.type === "position"
       );
 
+      // Track node drag start
       if (isDraggingUpdate) {
         isDraggingRef.current = true;
+        // Track drag for the first node being dragged
+        const dragChange = changes.find(
+          (change) => change.type === "position" && change.dragging
+        );
+        if (dragChange && dragChange.id) {
+          const node = nodes.find((n) => n.id === dragChange.id);
+          if (node) {
+            demoAnalytics.trackNodeDrag(node.id, node.type || "unknown");
+          }
+        }
       } else if (isDraggingRef.current && hasPositionChange) {
         dragIdleTimeoutRef.current = setTimeout(() => {
           isDraggingRef.current = false;
@@ -300,7 +314,7 @@ export default function Demo() {
 
       rawOnNodesChange(changes);
     },
-    [rawOnNodesChange]
+    [rawOnNodesChange, nodes]
   );
 
   const onEdgesChange = useCallback(
@@ -359,6 +373,9 @@ export default function Demo() {
   }, []);
 
   const handleRunBacktestClick = useCallback(() => {
+    // Track button click
+    demoAnalytics.trackBacktestRun();
+
     // Dismiss tutorial overlays to mirror main's unobstructed scroll
     if (showTutorial) {
       setShowTutorial(false);
@@ -414,7 +431,20 @@ export default function Demo() {
   // Add a new edge to the graph
   const handleConnect = useCallback(
     (connectionParams) => {
-      const { source, sourceHandle } = connectionParams;
+      const { source, target, sourceHandle } = connectionParams;
+      
+      // Track node connection
+      const sourceNode = nodes.find((n) => n.id === source);
+      const targetNode = nodes.find((n) => n.id === target);
+      if (sourceNode && targetNode) {
+        demoAnalytics.trackNodeConnect(
+          source,
+          target,
+          sourceNode.type || "unknown",
+          targetNode.type || "unknown"
+        );
+      }
+      
       // The sourceHandle is available during the connection event.
       // We can add it to the edge payload to be used by the simulator.
       const edge = {
@@ -451,6 +481,9 @@ export default function Demo() {
 
   // === Modal handlers ===
   const openParameterModal = useCallback((type = "parameter") => {
+    demoAnalytics.trackButtonClick("parameter_add_button", {
+      modal_type: type || "parameter",
+    });
     setParameterModalType(type || "parameter");
     setParameterForm({
       label: "",
@@ -482,6 +515,7 @@ export default function Demo() {
   }, []);
 
   const addParameter = useCallback((newParam) => {
+    demoAnalytics.trackParameterAdd(newParam?.label || "unknown");
     setParameters((prev) => [...prev, newParam]);
   }, []);
 
@@ -490,8 +524,12 @@ export default function Demo() {
       return;
     }
 
-    setParameters((prev) =>
-      prev.map((param) => {
+    setParameters((prev) => {
+      const param = prev.find((p) => p?.id === id);
+      if (param) {
+        demoAnalytics.trackParameterEdit(param.label || "unknown");
+      }
+      return prev.map((param) => {
         if (!param || param.id !== id) {
           return param;
         }
@@ -505,8 +543,8 @@ export default function Demo() {
         }
 
         return { ...param, [field]: value };
-      })
-    );
+      });
+    });
   }, []);
 
   // === Parameter handlers ===
@@ -516,14 +554,22 @@ export default function Demo() {
 
   const confirmDeleteParameter = useCallback(() => {
     if (parameterIndexToDelete !== null) {
+      const paramToDelete = parameters[parameterIndexToDelete];
+      if (paramToDelete) {
+        demoAnalytics.trackParameterDelete(paramToDelete.label || "unknown");
+      }
       removeParameter(parameterIndexToDelete);
     }
     closeDeleteModal();
-  }, [parameterIndexToDelete, removeParameter, closeDeleteModal]);
+  }, [parameterIndexToDelete, removeParameter, closeDeleteModal, parameters]);
 
   // === Node types for ReactFlow ===
   const toggleInTradeBlock = useCallback(() => {
-    setInTradeCollapsed((prev) => !prev);
+    setInTradeCollapsed((prev) => {
+      const newValue = !prev;
+      demoAnalytics.trackInTradeBlockToggle(!newValue); // Track with expanded state
+      return newValue;
+    });
   }, []);
 
   const nodeTypes = useMemo(
@@ -1331,6 +1377,8 @@ export default function Demo() {
       setShowTutorial(false);
       return;
     }
+    // Track tutorial start
+    demoAnalytics.trackTutorialStart();
     // Start tutorial after the introduction mask closes
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
@@ -1339,6 +1387,7 @@ export default function Demo() {
   }, []);
 
   const handleSkipTutorial = useCallback(() => {
+    demoAnalytics.trackTutorialSkip();
     setShowIntroductionMask(false);
     // Skip tutorial - just close the mask without starting the tutorial
     setShowTutorial(false);
@@ -1348,6 +1397,7 @@ export default function Demo() {
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
+    demoAnalytics.trackTutorialComplete();
     setShowTutorial(false);
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
@@ -1356,6 +1406,11 @@ export default function Demo() {
 
   const handleTutorialStepChange = useCallback((stepIndex, stepData) => {
     setTutorialCurrentStep(stepIndex);
+
+    // Track tutorial step
+    if (stepIndex >= 0 && stepData?.title) {
+      demoAnalytics.trackTutorialStep(stepIndex, stepData.title);
+    }
 
     // Steps 1-3 are graph steps with cumulative node visibility
     if (stepIndex >= 0 && stepIndex <= 2 && stepData?.nodeIds) {
@@ -1429,6 +1484,20 @@ export default function Demo() {
       }
     });
   }, [showTutorial, nodes, edges, tutorialCurrentStep, tutorialVisibleNodes]);
+
+  // Track demo visibility and time spent
+  useEffect(() => {
+    if (!isMobile) {
+      demoAnalytics.trackDemoStart();
+    }
+
+    return () => {
+      // Track demo end when component unmounts or becomes mobile
+      if (!isMobile) {
+        demoAnalytics.trackDemoEnd();
+      }
+    };
+  }, [isMobile]);
 
   // Check every second if demo section is visible in viewport (once per page load)
   useEffect(() => {
@@ -1692,7 +1761,10 @@ export default function Demo() {
                   nodes={nodes}
                   onTutorialComplete={handleTutorialComplete}
                   onExpandInTrade={setInTradeCollapsed}
-                  onParameterDashboardToggle={setParameterDashboardExpanded}
+                  onParameterDashboardToggle={(expanded) => {
+                    demoAnalytics.trackParameterDashboardToggle(expanded);
+                    setParameterDashboardExpanded(expanded);
+                  }}
                   onStepChange={handleTutorialStepChange}
                   forceStart={tutorialForceStart}
                 />
