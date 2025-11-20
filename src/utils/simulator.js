@@ -349,9 +349,11 @@ function resolveValue(variable, context) {
     if (Number.isFinite(numeric)) {
       return numeric;
     }
-    if (trimmed.includes("entry")) {
+    if (trimmed.includes("entry_price") || trimmed.includes("entry")) {
       if (!Number.isFinite(entryPrice)) return NaN;
-      const safe = trimmed.replace(/entry/g, entryPrice.toString());
+      const safe = trimmed
+        .replace(/entry_price/g, entryPrice.toString())
+        .replace(/entry/g, entryPrice.toString());
       if (!/^[0-9+\-*/ ().]+$/.test(safe)) return NaN;
       try {
         return Function(`return ${safe}`)();
