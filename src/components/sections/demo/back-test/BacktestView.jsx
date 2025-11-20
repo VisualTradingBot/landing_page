@@ -135,6 +135,19 @@ export default function BacktestView({
     setWorkerNotice(null);
   }, [options]);
 
+  // Keep the initial pending run aligned with the latest props before results exist.
+  useEffect(() => {
+    if (!optionsInitializedRef.current) return;
+    if (!options) return;
+    if (stats) return;
+    if (runInProgressRef.current) return;
+
+    if (activeOptions !== options) {
+      setActiveOptions(options);
+    }
+    pendingRunRef.current = options;
+  }, [options, stats, activeOptions]);
+
   // === Backtest options ===
   const asset = activeOptions?.asset ?? "bitcoin";
   const assetSymbol =
@@ -952,7 +965,7 @@ export default function BacktestView({
     if (value == null) return "";
     // Convert normalized equity (starting at 1.0) to percentage return
     const returnPercent = (value - 1) * 100;
-    return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(1)}%`;
+    return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(2)}%`;
   }, []);
 
   // Render priority:

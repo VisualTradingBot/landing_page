@@ -23,7 +23,6 @@ import Buy from "./nodes/buy/Buy";
 import Sell from "./nodes/sell/Sell";
 import Record from "./nodes/record/Record";
 import If from "./nodes/if/If";
-import Input from "./nodes/input/Input";
 import InputIndicator from "./nodes/inputIndicator/InputIndicator";
 import InputPrice from "./nodes/inputPrice/InputPrice";
 import SetParameter from "./nodes/setParameter/SetParameter";
@@ -539,7 +538,6 @@ export default function Demo() {
       sellNode: (props) => <Sell {...props} />,
       recordNode: Record,
       ifNode: If,
-      inputNode: (props) => <Input {...props} />,
       inputIndicatorNode: (props) => <InputIndicator {...props} />,
       inputPriceNode: (props) => <InputPrice {...props} />,
       setParameterNode: (props) => <SetParameter {...props} />,
