@@ -21,6 +21,12 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  // Prevent layout shift by ensuring consistent sizing
+  min-width: 0;
+  box-sizing: border-box;
+  // Force hardware acceleration for smoother animation
+  transform: translateZ(0);
+  will-change: transform, opacity;
 }
 
 .modal-header {

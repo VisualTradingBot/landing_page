@@ -167,13 +167,18 @@ export default function ContactModal({ isOpen, onClose }) {
   // Lock/unlock body scroll when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      // Lock body scroll
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflow = "hidden";
+      // Delay scroll lock by 1 second to allow animation to complete
+      const timeoutId = setTimeout(() => {
+        // Save current scroll position
+        const scrollY = window.scrollY;
+        // Lock body scroll
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = "100%";
+        document.body.style.overflow = "hidden";
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
     } else {
       // Restore body scroll
       const scrollY = document.body.style.top;
@@ -186,20 +191,6 @@ export default function ContactModal({ isOpen, onClose }) {
         window.scrollTo(0, parseInt(scrollY || "0") * -1);
       }
     }
-
-    // Cleanup function
-    return () => {
-      if (isOpen) {
-        const scrollY = document.body.style.top;
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.width = "";
-        document.body.style.overflow = "";
-        if (scrollY) {
-          window.scrollTo(0, parseInt(scrollY || "0") * -1);
-        }
-      }
-    };
   }, [isOpen]);
 
   if (!isOpen) return null;
