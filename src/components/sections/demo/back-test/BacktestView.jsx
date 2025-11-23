@@ -400,36 +400,49 @@ export default function BacktestView({
           windowSize
         );
         if (cancelled) return;
-        priceKeyRef.current = windowKey;
+
+        const previousKey = priceKeyRef.current;
         const limited = series.slice(
           -Math.min(series.length, normalizedWindow)
         );
-        // Skip state updates when the derived series hasn't actually changed;
-        // this prevents an infinite fetch/set loop when cached data already
-        // satisfies the requested window.
-        const shouldUpdate = (() => {
-          if (!storedPrices || storedPrices.length !== limited.length) {
+
+        const shouldReplace = (() => {
+          if (!storedPrices) {
             return true;
           }
-          if (!storedPrices.length) {
-            return false;
+          if (previousKey !== windowKey) {
+            return true;
           }
-          const lastExisting = storedPrices[storedPrices.length - 1];
-          const lastNext = limited[limited.length - 1];
+          if (storedPrices.length !== limited.length) {
+            return true;
+          }
+          if (!storedPrices.length || !limited.length) {
+            return storedPrices.length !== limited.length;
+          }
 
-          const existingTs =
-            lastExisting?.time instanceof Date
-              ? lastExisting.time.getTime()
+          const firstExisting =
+            storedPrices[0]?.time instanceof Date
+              ? storedPrices[0].time.getTime()
               : null;
-          const nextTs =
-            lastNext?.time instanceof Date ? lastNext.time.getTime() : null;
+          const firstNext =
+            limited[0]?.time instanceof Date ? limited[0].time.getTime() : null;
+          const lastExisting =
+            storedPrices[storedPrices.length - 1]?.time instanceof Date
+              ? storedPrices[storedPrices.length - 1].time.getTime()
+              : null;
+          const lastNext =
+            limited[limited.length - 1]?.time instanceof Date
+              ? limited[limited.length - 1].time.getTime()
+              : null;
 
-          return existingTs !== nextTs;
+          return firstExisting !== firstNext || lastExisting !== lastNext;
         })();
 
-        if (shouldUpdate) {
+        if (shouldReplace) {
           setStoredPrices(limited);
         }
+
+        priceKeyRef.current = windowKey;
       } catch (error) {
         if (!cancelled) {
           console.error("Error fetching prices:", error);
