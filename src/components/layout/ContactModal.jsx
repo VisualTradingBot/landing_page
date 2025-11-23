@@ -11,6 +11,7 @@ const ADDITIONAL_RECIPIENT_EMAIL = "valerii.f@cryptiq.trade";
 const INITIAL_FORM_STATE = {
   name: "",
   email: "",
+  question: "",
   tradingExperience: "beginner", // beginner, intermediate, advanced
   botExperience: "beginner", // beginner, intermediate, advanced
 };
@@ -62,6 +63,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 {
                   name: formData.name || null,
                   email: formData.email,
+                  question: formData.question || null,
                   trading_experience: formData.tradingExperience,
                   bot_experience: formData.botExperience,
                   session_id: sessionContext.sessionId || null,
@@ -104,7 +106,9 @@ export default function ContactModal({ isOpen, onClose }) {
               formData.name || "Anonymous"
             }\\n\\nEmail: ${formData.email}\\nTrading experience: ${
               formData.tradingExperience
-            }\\nBot experience: ${formData.botExperience}`,
+            }\\nBot experience: ${formData.botExperience}${
+              formData.question ? `\\n\\nQuestion/Comment: ${formData.question}` : ""
+            }`,
             _cc: ADDITIONAL_RECIPIENT_EMAIL, // Send copy to second email
           }),
         }
@@ -160,6 +164,44 @@ export default function ContactModal({ isOpen, onClose }) {
     }
   }, [isOpen, trackClick]);
 
+  // Lock/unlock body scroll when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      // Lock body scroll
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body scroll
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      // Restore scroll position
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      if (isOpen) {
+        const scrollY = document.body.style.top;
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY || "0") * -1);
+        }
+      }
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -179,8 +221,12 @@ export default function ContactModal({ isOpen, onClose }) {
       >
         <div className="modal-header">
           <h2>Get in Touch</h2>
-          <button className="close-button" onClick={onClose}>
-            ×
+          <button className="close-button" onClick={onClose} aria-label="Close modal">
+            <span className="hamburger active">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
           </button>
         </div>
 
@@ -248,6 +294,18 @@ export default function ContactModal({ isOpen, onClose }) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="question">Question/Comment (Optional)</label>
+            <textarea
+              id="question"
+              name="question"
+              value={formData.question}
+              onChange={handleInputChange}
+              placeholder="Your question or comment..."
+              rows={4}
+            />
           </div>
 
           {submitStatus && (
