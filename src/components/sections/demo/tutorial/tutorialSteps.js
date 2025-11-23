@@ -45,7 +45,7 @@ export const tutorialSteps = [
   },
   {
     id: 4,
-    title: "Dataset Settings",
+    title: "Backtesting Settings",
     description:
       "Configure your backtest parameters here: select the cryptocurrency asset (BTC, ETH, etc.), choose the data resolution (1 Day, 4 Hour, etc.), set the history window for how far back to test, and adjust the trading fee percentage.",
     selector: ".backtest-dataset-sidebar",
