@@ -178,13 +178,16 @@ export default function BacktestDatasetSidebar() {
   const handleFeeBlur = () => {
     const oldValue = formState.fee;
     const numeric = Number(formState.fee);
-    const feeValue = Number.isFinite(numeric) ? numeric : DEFAULT_FEE_PERCENT;
-    const feeStr = String(feeValue);
+    // Clamp fee between 0 and 99%
+    const clampedFee = Number.isFinite(numeric) 
+      ? Math.min(Math.max(numeric, 0), 99) 
+      : DEFAULT_FEE_PERCENT;
+    const feeStr = String(clampedFee);
     if (feeStr !== formState.fee) {
       setFormState((prev) => ({ ...prev, fee: feeStr }));
     }
-    commitChanges({ feePercent: feeValue });
-    assetContext.setFeePercent(feeValue);
+    commitChanges({ feePercent: clampedFee });
+    assetContext.setFeePercent(clampedFee);
     setDirty((prev) => ({ ...prev, fee: false }));
     flashField("fee");
     // Track dataset change
