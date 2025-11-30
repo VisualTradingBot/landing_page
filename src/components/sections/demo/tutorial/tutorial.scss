@@ -443,3 +443,106 @@
     }
   }
 }
+
+// Compact styling for post-tutorial popup
+.post-tutorial-popup-compact {
+  max-width: 280px;
+  min-width: 240px;
+
+  .explanation-panel-header {
+    padding: 14px 18px 10px;
+
+    .step-indicator {
+      font-size: 10px;
+      margin-bottom: 6px;
+    }
+
+    .explanation-title {
+      font-size: 1.1rem;
+    }
+  }
+
+  .explanation-panel-body {
+    padding: 14px 18px;
+
+    .explanation-description {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  }
+
+  .explanation-panel-footer {
+    padding: 12px 18px 14px;
+
+    .explanation-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+  }
+
+  // Arrow indicator pointing to target
+  .popup-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    z-index: 1;
+
+    // Arrow pointing left (popup is on the right of target)
+    &.popup-arrow-left {
+      left: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 8px 12px 8px 0;
+      border-color: transparent #000000 transparent transparent;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: -6px;
+        border-style: solid;
+        border-width: 6px 9px 6px 0;
+        border-color: transparent #ffffff transparent transparent;
+      }
+    }
+
+    // Arrow pointing right (popup is on the left of target)
+    &.popup-arrow-right {
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 8px 0 8px 12px;
+      border-color: transparent transparent transparent #000000;
+
+      &::after {
+        content: '';
+        position: absolute;
+        right: 3px;
+        top: -6px;
+        border-style: solid;
+        border-width: 6px 0 6px 9px;
+        border-color: transparent transparent transparent #ffffff;
+      }
+    }
+
+    // Arrow pointing up (popup is below target)
+    &.popup-arrow-top {
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 0 8px 12px 8px;
+      border-color: transparent transparent #000000 transparent;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: -6px;
+        border-style: solid;
+        border-width: 0 6px 9px 6px;
+        border-color: transparent transparent #ffffff transparent;
+      }
+    }
+  }
+}

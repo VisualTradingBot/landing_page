@@ -16,6 +16,7 @@ import ParameterBlock from "./parameter-block/ParameterBlock";
 import BacktestView from "./back-test/BacktestView";
 import IntroductionMask from "./tutorial/IntroductionMask";
 import DemoTutorial from "./tutorial/DemoTutorial";
+import PostTutorialPopup from "./tutorial/PostTutorialPopup";
 import BacktestDatasetSidebar from "./backtest-dataset-sidebar/BacktestDatasetSidebar";
 
 // Analytics
@@ -365,6 +366,8 @@ export default function Demo() {
   const [parameterDashboardExpanded, setParameterDashboardExpanded] =
     useState(false); // Tutorial control for parameter dashboard
   const tutorialAutostartedRef = useRef(false);
+  const [showPostTutorialPopup, setShowPostTutorialPopup] = useState(false);
+  const [postTutorialTargetRect, setPostTutorialTargetRect] = useState(null);
 
   const handleRegisterRunHandler = useCallback((handler) => {
     runBacktestHandlerRef.current =
@@ -1394,6 +1397,30 @@ export default function Demo() {
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
     setTutorialForceStart(false);
+
+    // Show post-tutorial popup after 5 seconds (same as complete)
+    setTimeout(() => {
+      console.log("Post-tutorial popup (skip): Attempting to show popup");
+      
+      // Find the central If block (ifNode-1)
+      const nodeElement = document.querySelector(
+        '[data-id="ifNode-1"]'
+      );
+      
+      console.log("Post-tutorial popup (skip): Node element found:", nodeElement);
+      
+      if (nodeElement) {
+        // Use the node itself as the target
+        const rect = nodeElement.getBoundingClientRect();
+        console.log("Post-tutorial popup (skip): Target rect:", rect);
+        
+        setPostTutorialTargetRect(rect);
+        setShowPostTutorialPopup(true);
+        console.log("Post-tutorial popup (skip): State updated");
+      } else {
+        console.warn("Post-tutorial popup (skip): ifNode-1 not found");
+      }
+    }, 5000);
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
@@ -1402,6 +1429,30 @@ export default function Demo() {
     setTutorialCurrentStep(-1);
     setTutorialVisibleNodes(new Set());
     setTutorialForceStart(false);
+
+    // Show post-tutorial popup after 5 seconds
+    setTimeout(() => {
+      console.log("Post-tutorial popup: Attempting to show popup");
+      
+      // Find the central If block (ifNode-1)
+      const nodeElement = document.querySelector(
+        '[data-id="ifNode-1"]'
+      );
+      
+      console.log("Post-tutorial popup: Node element found:", nodeElement);
+      
+      if (nodeElement) {
+        // Use the node itself as the target
+        const rect = nodeElement.getBoundingClientRect();
+        console.log("Post-tutorial popup: Target rect:", rect);
+        
+        setPostTutorialTargetRect(rect);
+        setShowPostTutorialPopup(true);
+        console.log("Post-tutorial popup: State updated");
+      } else {
+        console.warn("Post-tutorial popup: ifNode-1 not found");
+      }
+    }, 5000);
   }, []);
 
   const handleTutorialStepChange = useCallback((stepIndex, stepData) => {
@@ -1905,6 +1956,13 @@ export default function Demo() {
           </div>
         )}
       </section>
+      {/* Post-tutorial popup */}
+      {showPostTutorialPopup && postTutorialTargetRect && (
+        <PostTutorialPopup
+          targetRect={postTutorialTargetRect}
+          onClose={() => setShowPostTutorialPopup(false)}
+        />
+      )}
     </AssetContext.Provider>
   );
 }

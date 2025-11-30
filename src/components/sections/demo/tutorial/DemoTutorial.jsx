@@ -278,6 +278,55 @@ function DemoTutorialInner({
         if (element) {
           const padding = 12;
 
+          // For button type (step 6 - Run Backtest), scroll it into view
+          if (step.type === "button") {
+            // Smooth scroll to element
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            
+            const rect = element.getBoundingClientRect();
+            
+            // Progressive updates during scroll
+            const startTime = Date.now();
+            const duration = 500;
+
+            const updateRect = () => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(1, elapsed / duration);
+
+              // Recalculate during scroll
+              const currentRect = element.getBoundingClientRect();
+              setTargetRect({
+                left: currentRect.left - padding,
+                top: currentRect.top - padding,
+                right: currentRect.right + padding,
+                bottom: currentRect.bottom + padding,
+                width: currentRect.width + padding * 2,
+                height: currentRect.height + padding * 2,
+              });
+
+              if (progress < 1) {
+                requestAnimationFrame(updateRect);
+              }
+            };
+
+            requestAnimationFrame(updateRect);
+
+            // Final update
+            setTimeout(() => {
+              const finalRect = element.getBoundingClientRect();
+              setTargetRect({
+                left: finalRect.left - padding,
+                top: finalRect.top - padding,
+                right: finalRect.right + padding,
+                bottom: finalRect.bottom + padding,
+                width: finalRect.width + padding * 2,
+                height: finalRect.height + padding * 2,
+              });
+            }, duration + 50);
+            
+            return;
+          }
+
           // For backtest, include the title "Demo Strategy ..."
           if (step.type === "backtest") {
             // Smooth scroll to element
