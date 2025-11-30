@@ -46,16 +46,9 @@ class DemoAnalytics {
     if (isSupabaseConfigured()) {
       try {
         this.supabase = await getSupabaseClient();
-        if (this.supabase) {
-          console.log("[DemoAnalytics] ✅ Supabase connected successfully");
-        }
       } catch (error) {
-        console.warn("[DemoAnalytics] Supabase not available:", error);
-        console.warn("[DemoAnalytics] Falling back to localStorage only");
+        // Supabase not available, falling back to localStorage
       }
-    } else {
-      console.warn("[DemoAnalytics] ⚠️ Supabase not configured");
-      console.log("[DemoAnalytics] 📦 Using localStorage only");
     }
   }
 
@@ -64,7 +57,6 @@ class DemoAnalytics {
    */
   async processEventQueue() {
     if (this.eventQueue.length > 0) {
-      console.log(`[DemoAnalytics] Processing ${this.eventQueue.length} queued events`);
       for (const event of this.eventQueue) {
         await this.sendEventToSupabase(event);
       }
@@ -128,52 +120,55 @@ class DemoAnalytics {
       try {
         // Extract demo-specific fields from properties
         const props = event.properties || {};
-        
+
         // Build the optimized record structure
         const record = {
           session_id: event.sessionId,
           timestamp: event.timestamp,
-          demo_session_start: this.demoStartTime ? new Date(this.demoStartTime).toISOString() : null,
+          demo_session_start: this.demoStartTime
+            ? new Date(this.demoStartTime).toISOString()
+            : null,
           event_name: event.eventName || null,
           device_type: event.device?.deviceType || null,
           screen_width: event.device?.screenWidth || null,
           screen_height: event.device?.screenHeight || null,
-          
+
           // Button-specific fields
           button_name: props.button_name || null,
           click_count: props.click_count || null,
-          
+
           // Tutorial-specific fields
           tutorial_step_number: props.step_number || null,
           tutorial_step_title: props.step_title || null,
           tutorial_action: props.tutorial_action || null,
-          
+
           // Node-specific fields
           node_id: props.node_id || props.source_id || null,
           node_type: props.node_type || props.source_type || null,
           node_action: props.node_action || null,
           connected_to_node_id: props.target_id || null,
           connected_to_node_type: props.target_type || null,
-          
+
           // Parameter-specific fields
           parameter_label: props.parameter_label || null,
           parameter_action: props.parameter_action || null,
-          
+
           // Backtest-specific fields
           backtest_duration_seconds: props.duration_seconds || null,
           backtest_action: props.backtest_action || null,
-          
+
           // Dataset-specific fields
           dataset_field: props.field || null,
           dataset_old_value: props.old_value || null,
           dataset_new_value: props.new_value || null,
-          
+
           // In-trade block
-          in_trade_block_expanded: props.is_expanded !== undefined ? props.is_expanded : null,
-          
+          in_trade_block_expanded:
+            props.is_expanded !== undefined ? props.is_expanded : null,
+
           // Info button
           info_button_context: props.context || null,
-          
+
           // Session summary (only for demo_end event)
           time_spent_seconds: props.time_spent_seconds || null,
           time_spent_minutes: props.time_spent_minutes || null,
@@ -186,24 +181,19 @@ class DemoAnalytics {
           tutorial_skipped: props.tutorial_skipped || null,
           tutorial_steps_completed: props.tutorial_steps_completed || null,
           button_breakdown: props.button_breakdown || null,
-          
+
           // Flexible properties for any additional data
           properties: event.properties || null,
         };
 
-        const { error } = await this.supabase.from("demo_analytics_events").insert([record]);
+        const { error } = await this.supabase
+          .from("demo_analytics_events")
+          .insert([record]);
 
         if (error) {
-          console.error("[DemoAnalytics] Supabase error:", error);
           this.storeEventLocally(event);
-        } else if (!import.meta.env.DEV) {
-          console.log(
-            `[DemoAnalytics] ✅ Event sent: ${event.eventName || event.type}`,
-            event.eventName || ""
-          );
         }
       } catch (error) {
-        console.error("[DemoAnalytics] Failed to send to Supabase:", error);
         this.storeEventLocally(event);
       }
     } else {
@@ -228,7 +218,7 @@ class DemoAnalytics {
 
       localStorage.setItem("demo_analytics_events", JSON.stringify(events));
     } catch (e) {
-      console.warn("[DemoAnalytics] Could not store event locally:", e);
+      // Storage full or disabled
     }
   }
 
@@ -236,9 +226,8 @@ class DemoAnalytics {
    * Send event to Supabase or queue it
    */
   async sendEvent(event) {
-    // Log to console in development
+    // In development, only store locally
     if (import.meta.env.DEV) {
-      console.log("[DemoAnalytics] [DEV MODE - Not sending to Supabase]", event);
       this.storeEventLocally(event);
       return;
     }
@@ -257,7 +246,7 @@ class DemoAnalytics {
    */
   trackDemoStart() {
     if (this.isInDemo) return; // Already tracking
-    
+
     this.demoStartTime = Date.now();
     this.isInDemo = true;
     this.resetInteractionCounts();
@@ -437,7 +426,7 @@ class DemoAnalytics {
    */
   trackParameterAdd(parameterLabel) {
     this.demoInteractions.parametersModified++;
-    this.trackButtonClick("parameter_add", { 
+    this.trackButtonClick("parameter_add", {
       parameter_label: parameterLabel,
       parameter_action: "add",
     });
@@ -445,7 +434,7 @@ class DemoAnalytics {
 
   trackParameterEdit(parameterLabel) {
     this.demoInteractions.parametersModified++;
-    this.trackButtonClick("parameter_edit", { 
+    this.trackButtonClick("parameter_edit", {
       parameter_label: parameterLabel,
       parameter_action: "edit",
     });
@@ -453,7 +442,7 @@ class DemoAnalytics {
 
   trackParameterDelete(parameterLabel) {
     this.demoInteractions.parametersModified++;
-    this.trackButtonClick("parameter_delete", { 
+    this.trackButtonClick("parameter_delete", {
       parameter_label: parameterLabel,
       parameter_action: "delete",
     });
@@ -573,4 +562,3 @@ if (typeof window !== "undefined") {
 }
 
 export default demoAnalytics;
-

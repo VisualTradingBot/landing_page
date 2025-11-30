@@ -19,12 +19,12 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
     // Get fresh bounding rect to account for scroll
     const nodeElement = document.querySelector('[data-id="ifNode-1"]');
     if (!nodeElement) return;
-    
+
     const currentRect = nodeElement.getBoundingClientRect();
 
     let top = 0;
     let left = 0;
-    let arrowPosition = 'left'; // Track which side the arrow should be on
+    let arrowPosition = "left"; // Track which side the arrow should be on
 
     // Calculate position - always place on the side (right) to avoid overlaying
     const spaceOnRight = viewportWidth - currentRect.right - padding;
@@ -34,17 +34,17 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
       // Place on the right side
       top = currentRect.top + currentRect.height / 2 - panelHeight / 2;
       left = currentRect.right + padding;
-      arrowPosition = 'left'; // Arrow points left to the target
+      arrowPosition = "left"; // Arrow points left to the target
     } else if (spaceOnLeft >= panelWidth + 20) {
       // Place on the left side
       top = currentRect.top + currentRect.height / 2 - panelHeight / 2;
       left = currentRect.left - panelWidth - padding;
-      arrowPosition = 'right'; // Arrow points right to the target
+      arrowPosition = "right"; // Arrow points right to the target
     } else {
       // Fallback: place below if no side space
       top = currentRect.bottom + padding;
       left = currentRect.left + currentRect.width / 2 - panelWidth / 2;
-      arrowPosition = 'top'; // Arrow points up to the target
+      arrowPosition = "top"; // Arrow points up to the target
     }
 
     // Adjust to keep panel within viewport
@@ -64,7 +64,6 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
   }, [targetRect]);
 
   useEffect(() => {
-    console.log("PostTutorialPopup: Component mounted/updated", { targetRect });
     calculatePosition();
   }, [targetRect, calculatePosition]);
 
@@ -77,7 +76,7 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    
+
     const demoEl = document.getElementById("demo");
     if (demoEl) {
       demoEl.addEventListener("scroll", handleScroll, { passive: true });
@@ -99,10 +98,7 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
     };
   }, [targetRect, calculatePosition]);
 
-  console.log("PostTutorialPopup: Rendering", { targetRect, panelPosition });
-
   if (!targetRect) {
-    console.log("PostTutorialPopup: Not rendering - no targetRect");
     return null;
   }
 
@@ -122,8 +118,12 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
       }}
     >
       {/* Arrow indicator pointing to target */}
-      <div className={`popup-arrow popup-arrow-${panelPosition.arrowPosition || 'left'}`} />
-      
+      <div
+        className={`popup-arrow popup-arrow-${
+          panelPosition.arrowPosition || "left"
+        }`}
+      />
+
       <div className="explanation-panel-header">
         <div className="step-indicator">Quick Tip</div>
         <h3 className="explanation-title">Parameter Editing</h3>
@@ -135,11 +135,13 @@ export default function PostTutorialPopup({ targetRect, onClose }) {
         </p>
       </div>
       <div className="explanation-panel-footer">
-        <button className="explanation-btn explanation-btn-primary" onClick={onClose}>
+        <button
+          className="explanation-btn explanation-btn-primary"
+          onClick={onClose}
+        >
           Got It
         </button>
       </div>
     </motion.div>
   );
 }
-

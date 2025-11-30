@@ -41,25 +41,9 @@ class Analytics {
     if (isSupabaseConfigured()) {
       try {
         this.supabase = await getSupabaseClient();
-
-        if (this.supabase) {
-          console.log("[Analytics] ✅ Supabase connected successfully");
-        }
       } catch (error) {
-        console.warn(
-          "[Analytics] Supabase not available. Install with: npm install @supabase/supabase-js. Error:",
-          error
-        );
-        console.warn("[Analytics] Falling back to localStorage only");
+        // Supabase not available, falling back to localStorage
       }
-    } else {
-      console.warn(
-        "[Analytics] ⚠️ Supabase not configured - missing environment variables"
-      );
-      console.warn(
-        "[Analytics] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment"
-      );
-      console.log("[Analytics] 📦 Using localStorage only");
     }
   }
 
@@ -222,14 +206,6 @@ class Analytics {
     const isCriticalEvent =
       eventName === "click" && properties.element?.includes("social");
 
-    // Log social media clicks specifically for debugging
-    if (isCriticalEvent) {
-      console.log(
-        `[Analytics] 🎯 Social click tracked: ${properties.element}`,
-        event
-      );
-    }
-
     if (isCriticalEvent && !import.meta.env.DEV) {
       this.sendEventWithBeacon(event);
     } else {
@@ -244,9 +220,6 @@ class Analytics {
    */
   async processEventQueue() {
     if (this.eventQueue.length > 0) {
-      console.log(
-        `[Analytics] Processing ${this.eventQueue.length} queued events`
-      );
       for (const event of this.eventQueue) {
         await this.sendEventToSupabase(event);
       }
@@ -258,10 +231,8 @@ class Analytics {
    * Send event to Supabase or store locally
    */
   async sendEvent(event) {
-    // Log to console in development
+    // In development, only store locally
     if (import.meta.env.DEV) {
-      console.log("[Analytics] [DEV MODE - Not sending to Supabase]", event);
-      // Only store locally in dev mode, don't send to Supabase
       this.storeEventLocally(event);
       return;
     }
@@ -304,17 +275,10 @@ class Analytics {
         ]);
 
         if (error) {
-          console.error("[Analytics] Supabase error:", error);
           // Fall back to localStorage on error
           this.storeEventLocally(event);
-        } else {
-          console.log(
-            `[Analytics] ✅ Event sent to Supabase: ${event.type}`,
-            event.eventName || ""
-          );
         }
       } catch (error) {
-        console.error("[Analytics] Failed to send to Supabase:", error);
         // Fall back to localStorage on error
         this.storeEventLocally(event);
       }
@@ -331,7 +295,6 @@ class Analytics {
    */
   sendEventWithBeacon(event) {
     if (!this.supabase || !this.isInitialized) {
-      console.warn("[Analytics] ⚠️ Supabase not ready, cannot use sendBeacon");
       this.storeEventLocally(event);
       return;
     }
@@ -381,19 +344,10 @@ class Analytics {
         headers: headers,
         body: JSON.stringify(payload),
         keepalive: true, // This is the key - sends even after page unload
-      })
-        .then(() => {
-          console.log(
-            `[Analytics] ✅ Critical event sent (keepalive): ${event.type}`,
-            event.eventName || ""
-          );
-        })
-        .catch((error) => {
-          console.error("[Analytics] Failed to send critical event:", error);
-          this.storeEventLocally(event);
-        });
+      }).catch((error) => {
+        this.storeEventLocally(event);
+      });
     } catch (error) {
-      console.error("[Analytics] sendBeacon failed:", error);
       this.storeEventLocally(event);
     }
   }
@@ -416,7 +370,6 @@ class Analytics {
       localStorage.setItem("analytics_events", JSON.stringify(events));
     } catch (e) {
       // Storage full or disabled
-      console.warn("[Analytics] Could not store event locally:", e);
     }
   }
 
@@ -464,10 +417,6 @@ class Analytics {
               depth: milestone,
               reached_at: new Date().toISOString(),
             });
-
-            if (import.meta.env.DEV) {
-              console.log(`[Analytics] 📜 Scroll depth: ${milestone}%`);
-            }
           }
         });
       }, 200); // Debounce scroll events
