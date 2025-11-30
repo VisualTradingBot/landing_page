@@ -520,6 +520,12 @@ export default function ParameterBlock({
               "application/reactflow",
               JSON.stringify(buildDragPayload(param))
             );
+            document.body.classList.add("dragging-parameter");
+            document.body.setAttribute("data-drag-color", param.paramType.color);
+          }}
+          onDragEnd={() => {
+            document.body.classList.remove("dragging-parameter");
+            document.body.removeAttribute("data-drag-color");
           }}
         >
           <span className="parameter-label">

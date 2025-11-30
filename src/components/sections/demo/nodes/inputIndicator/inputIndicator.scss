@@ -246,3 +246,101 @@
     }
   }
 }
+@keyframes pulse-border {
+  0% {
+    border-color: var(--pulse-color-light, #93c5fd);
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color-rgb, 59, 130, 246), 0);
+    background: #ffffff;
+  }
+  50% {
+    border-color: var(--pulse-color-strong, #2563eb);
+    box-shadow: 0 0 0 6px rgba(var(--pulse-color-rgb, 37, 99, 235), 0.25);
+    background: var(--pulse-bg, #eff6ff);
+  }
+  100% {
+    border-color: var(--pulse-color-light, #93c5fd);
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color-rgb, 59, 130, 246), 0);
+    background: #ffffff;
+  }
+}
+
+.parameter-placeholder {
+  // ... existing styles ...
+
+  // When dragging a parameter globally
+  body.dragging-parameter & {
+    // Default Blue
+    --pulse-color-light: #93c5fd;
+    --pulse-color-strong: #2563eb;
+    --pulse-color-rgb: 37, 99, 235;
+    --pulse-bg: #eff6ff;
+
+    // Green
+    body[data-drag-color="green"] & {
+      --pulse-color-light: #6ee7b7;
+      --pulse-color-strong: #059669;
+      --pulse-color-rgb: 5, 150, 105;
+      --pulse-bg: #ecfdf5;
+    }
+
+    // Dark Blue
+    body[data-drag-color="dark-blue"] & {
+      --pulse-color-light: #93c5fd;
+      --pulse-color-strong: #1d4ed8;
+      --pulse-color-rgb: 29, 78, 216;
+      --pulse-bg: #eff6ff;
+    }
+
+    // Pink
+    body[data-drag-color="pink"] & {
+      --pulse-color-light: #f9a8d4;
+      --pulse-color-strong: #db2777;
+      --pulse-color-rgb: 219, 39, 119;
+      --pulse-bg: #fdf2f8;
+    }
+
+    // Purple
+    body[data-drag-color="purple"] & {
+      --pulse-color-light: #c4b5fd;
+      --pulse-color-strong: #7c3aed;
+      --pulse-color-rgb: 124, 58, 237;
+      --pulse-bg: #f5f3ff;
+    }
+
+    // System Variants
+    body[data-drag-color="system-variant-1"] & {
+      --pulse-color-light: #f9a8d4;
+      --pulse-color-strong: #db2777;
+      --pulse-color-rgb: 219, 39, 119;
+      --pulse-bg: #fdf2f8;
+    }
+
+    body[data-drag-color="system-variant-2"] & {
+      --pulse-color-light: #a5b4fc;
+      --pulse-color-strong: #4f46e5;
+      --pulse-color-rgb: 79, 70, 229;
+      --pulse-bg: #eef2ff;
+    }
+
+    body[data-drag-color="system-variant-3"] & {
+      --pulse-color-light: #5eead4;
+      --pulse-color-strong: #0d9488;
+      --pulse-color-rgb: 13, 148, 136;
+      --pulse-bg: #f0fdfa;
+    }
+
+    animation: pulse-border 1.5s infinite;
+    background: #f8fafc; // Fallback
+    border-style: dashed;
+    
+    // If we are hovering over THIS specific dropzone, stop pulsing and show solid active state
+    &:hover,
+    &.drag-over {
+      animation: none;
+      border-style: solid;
+      border-color: var(--pulse-color-strong);
+      background: var(--pulse-bg);
+      box-shadow: 0 0 0 2px rgba(var(--pulse-color-rgb), 0.2);
+    }
+  }
+}
