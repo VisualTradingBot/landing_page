@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import "./tutorial.scss";
+import PropTypes from "prop-types";
 
 export default function IntroductionMask({
   onComplete,
-  targetSectionId = "demo",
+  onSkip,
   alwaysShow = false,
 }) {
   const [showMask, setShowMask] = useState(false);
-  const observerRef = useRef(null);
 
   useEffect(() => {
     // Parent controls mounting; when mounted, optionally force-show regardless of history
@@ -37,6 +37,17 @@ export default function IntroductionMask({
     onComplete();
   };
 
+  const handleSkipTutorial = () => {
+    setShowMask(false);
+    localStorage.setItem("demo-introduction-mask-shown", "true");
+    if (onSkip) {
+      onSkip();
+    } else {
+      // Fallback: if onSkip is not provided, just call onComplete
+      onComplete();
+    }
+  };
+
   if (!showMask) return null;
 
   return (
@@ -58,9 +69,6 @@ export default function IntroductionMask({
       >
         <div className="introduction-mask-header">
           <h2>Interactive Demo</h2>
-          <button className="close-button" onClick={handleClose}>
-            ×
-          </button>
         </div>
 
         <div className="introduction-mask-body">
@@ -89,8 +97,8 @@ export default function IntroductionMask({
           <h3>Welcome to the CRYPTIQ Editor</h3>
 
           <p>
-            You're about to explore an interactive flowchart that shows how
-            trading strategies are made. Here's what you can do:
+            You&apos;re about to explore an interactive flowchart that shows how
+            trading strategies are made. Here&apos;s what you can do:
           </p>
 
           <ul className="instruction-list">
@@ -114,8 +122,14 @@ export default function IntroductionMask({
           </ul>
 
           <div className="introduction-mask-actions">
+            <button
+              className="skip-tutorial-button"
+              onClick={handleSkipTutorial}
+            >
+              Skip Tutorial
+            </button>
             <button className="get-started-button" onClick={handleGetStarted}>
-              Let's start
+              Let&apos;s start
             </button>
           </div>
         </div>
@@ -123,3 +137,10 @@ export default function IntroductionMask({
     </motion.div>
   );
 }
+
+IntroductionMask.propTypes = {
+  onComplete: PropTypes.func.isRequired,
+  onSkip: PropTypes.func,
+  targetSectionId: PropTypes.string,
+  alwaysShow: PropTypes.bool,
+};

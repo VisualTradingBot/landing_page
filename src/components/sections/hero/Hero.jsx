@@ -45,7 +45,7 @@ export default function Hero({ onOpenModal }) {
   useEffect(() => {
     const mainText = "CRYPTIQ";
     const taglineText =
-      "New generation platform for visual trading automation.";
+      "New generation platform for visual trading automation";
     let currentIndex = 0;
 
     // Type main title

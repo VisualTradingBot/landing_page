@@ -36,27 +36,27 @@
     margin: 0 auto;
   }
 
-  // Demo flow visualization
-  &::before {
-    content: "";
-    position: absolute;
-    top: 142px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--accent) 20%,
-      var(--accent) 80%,
-      transparent 100%
-    );
-    opacity: 0.3;
+  // // Demo flow visualization
+  // &::before {
+  //   content: "";
+  //   position: absolute;
+  //   top: 142px;
+  //   left: 0;
+  //   right: 0;
+  //   height: 2px;
+  //   background: linear-gradient(
+  //     90deg,
+  //     transparent 0%,
+  //     var(--accent) 20%,
+  //     var(--accent) 80%,
+  //     transparent 100%
+  //   );
+  //   opacity: 0.3;
 
-    @media (max-width: 1024px) {
-      content: unset;
-    }
-  }
+  //   @media (max-width: 1024px) {
+  //     content: unset;
+  //   }
+  // }
 
   .run-backtest-overlay {
     position: absolute;

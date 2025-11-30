@@ -2,6 +2,7 @@
 export const DEFAULT_ASSET = "bitcoin";
 export const DEFAULT_LOOKBACK = 30;
 export const DEFAULT_FEE_PERCENT = 0.05;
+export const DEFAULT_PORTFOLIO_VALUE = 10000;
 export const DEFAULT_DATA_RESOLUTION = "1d"; // daily candles by default
 export const DEFAULT_INTERVAL_BY_RESOLUTION = {
   "1d": 180, // days
@@ -17,6 +18,7 @@ export default {
   DEFAULT_ASSET,
   DEFAULT_LOOKBACK,
   DEFAULT_FEE_PERCENT,
+  DEFAULT_PORTFOLIO_VALUE,
   DEFAULT_DATA_RESOLUTION,
   DEFAULT_INTERVAL_BY_RESOLUTION,
   DEFAULT_HISTORY_WINDOW,

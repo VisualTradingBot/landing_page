@@ -21,6 +21,7 @@ import {
 } from "recharts";
 
 import { mapCoinGeckoPricesToOHLC } from "../../../../utils/indicators";
+import { DEFAULT_PORTFOLIO_VALUE } from "../defaults";
 
 import CustomTooltip from "./CustomTooltip/CustomTooltip.jsx";
 import InfoButton from "../InfoButton";
@@ -109,6 +110,17 @@ export default function BacktestView({
     []
   );
 
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
   useEffect(() => {
     if (optionsInitializedRef.current) return;
     if (!options) return;
@@ -123,6 +135,19 @@ export default function BacktestView({
     setWorkerNotice(null);
   }, [options]);
 
+  // Keep the initial pending run aligned with the latest props before results exist.
+  useEffect(() => {
+    if (!optionsInitializedRef.current) return;
+    if (!options) return;
+    if (stats) return;
+    if (runInProgressRef.current) return;
+
+    if (activeOptions !== options) {
+      setActiveOptions(options);
+    }
+    pendingRunRef.current = options;
+  }, [options, stats, activeOptions]);
+
   // === Backtest options ===
   const asset = activeOptions?.asset ?? "bitcoin";
   const assetSymbol =
@@ -135,6 +160,13 @@ export default function BacktestView({
   // rely on Demo to provide the canonical lookback; if absent, treat as undefined
   const lookback = activeOptions?.lookback ?? 30;
   const feePercent = activeOptions?.feePercent ?? 0.05;
+  const rawPortfolio = Number(
+    activeOptions?.portfolioValue ?? activeOptions?.initialCapital
+  );
+  const portfolioValue =
+    Number.isFinite(rawPortfolio) && rawPortfolio > 0
+      ? rawPortfolio
+      : DEFAULT_PORTFOLIO_VALUE;
 
   const xAxisUnitLabel = useMemo(() => {
     switch (dataResolution) {
@@ -197,6 +229,13 @@ export default function BacktestView({
 
     const numericFee = Number(runOptions?.feePercent);
     const feeForRun = Number.isFinite(numericFee) ? numericFee : 0.05;
+    const numericPortfolio = Number(
+      runOptions?.portfolioValue ?? runOptions?.initialCapital
+    );
+    const portfolioForRun =
+      Number.isFinite(numericPortfolio) && numericPortfolio > 0
+        ? numericPortfolio
+        : DEFAULT_PORTFOLIO_VALUE;
 
     setIsLoading(true);
     setProgress(0);
@@ -213,6 +252,8 @@ export default function BacktestView({
       parameters: runOptions.parameters,
       prices: priceSeries,
       feePercent: feeForRun,
+      portfolioValue: portfolioForRun,
+      initialCapital: portfolioForRun,
     });
   }, []);
 
@@ -359,36 +400,49 @@ export default function BacktestView({
           windowSize
         );
         if (cancelled) return;
-        priceKeyRef.current = windowKey;
+
+        const previousKey = priceKeyRef.current;
         const limited = series.slice(
           -Math.min(series.length, normalizedWindow)
         );
-        // Skip state updates when the derived series hasn't actually changed;
-        // this prevents an infinite fetch/set loop when cached data already
-        // satisfies the requested window.
-        const shouldUpdate = (() => {
-          if (!storedPrices || storedPrices.length !== limited.length) {
+
+        const shouldReplace = (() => {
+          if (!storedPrices) {
             return true;
           }
-          if (!storedPrices.length) {
-            return false;
+          if (previousKey !== windowKey) {
+            return true;
           }
-          const lastExisting = storedPrices[storedPrices.length - 1];
-          const lastNext = limited[limited.length - 1];
+          if (storedPrices.length !== limited.length) {
+            return true;
+          }
+          if (!storedPrices.length || !limited.length) {
+            return storedPrices.length !== limited.length;
+          }
 
-          const existingTs =
-            lastExisting?.time instanceof Date
-              ? lastExisting.time.getTime()
+          const firstExisting =
+            storedPrices[0]?.time instanceof Date
+              ? storedPrices[0].time.getTime()
               : null;
-          const nextTs =
-            lastNext?.time instanceof Date ? lastNext.time.getTime() : null;
+          const firstNext =
+            limited[0]?.time instanceof Date ? limited[0].time.getTime() : null;
+          const lastExisting =
+            storedPrices[storedPrices.length - 1]?.time instanceof Date
+              ? storedPrices[storedPrices.length - 1].time.getTime()
+              : null;
+          const lastNext =
+            limited[limited.length - 1]?.time instanceof Date
+              ? limited[limited.length - 1].time.getTime()
+              : null;
 
-          return existingTs !== nextTs;
+          return firstExisting !== firstNext || lastExisting !== lastNext;
         })();
 
-        if (shouldUpdate) {
+        if (shouldReplace) {
           setStoredPrices(limited);
         }
+
+        priceKeyRef.current = windowKey;
       } catch (error) {
         if (!cancelled) {
           console.error("Error fetching prices:", error);
@@ -924,7 +978,7 @@ export default function BacktestView({
     if (value == null) return "";
     // Convert normalized equity (starting at 1.0) to percentage return
     const returnPercent = (value - 1) * 100;
-    return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(1)}%`;
+    return `${returnPercent >= 0 ? "+" : ""}${returnPercent.toFixed(2)}%`;
   }, []);
 
   // Render priority:
@@ -986,6 +1040,12 @@ export default function BacktestView({
           <div className="param-block">
             <div className="param-label">Asset</div>
             <div className="param-value">{assetLabel}</div>
+          </div>
+          <div className="param-block">
+            <div className="param-label">Portfolio</div>
+            <div className="param-value">
+              {currencyFormatter.format(portfolioValue)}
+            </div>
           </div>
         </div>
       </div>
@@ -1194,7 +1254,7 @@ export default function BacktestView({
         {/* Equity Chart */}
         <div className="backtest-chart-container">
           <InfoButton
-            explanation="The equity curve shows how your portfolio value changes over time. It starts at 100% (baseline) and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns."
+            explanation="The equity curve shows how your portfolio value changes over time. It starts at 0% and shows the cumulative return percentage. An upward trend indicates profitable trades, while downward movements show drawdowns."
             variant="absolute"
           />
           <div className="chart-title">Equity Curve</div>
@@ -1333,6 +1393,8 @@ BacktestView.propTypes = {
     asset: PropTypes.string,
     lookback: PropTypes.number,
     feePercent: PropTypes.number,
+    portfolioValue: PropTypes.number,
+    initialCapital: PropTypes.number,
     graph: PropTypes.object,
     nodes: PropTypes.array,
     edges: PropTypes.array,

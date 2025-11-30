@@ -95,18 +95,18 @@ function DemoTutorialInner({
           const bodyRect = blockBody.getBoundingClientRect();
           return {
             left: bodyRect.left - padding,
-            top: bodyRect.top - padding,
+            top: bodyRect.top - 3*padding ,
             right: bodyRect.right + padding,
             bottom: bodyRect.bottom + padding,
             width: bodyRect.width + padding * 2,
-            height: bodyRect.height + padding * 2,
+            height: bodyRect.height + padding * 4,
           };
         }
         // Fallback to whole block if body not found
         const blockRect = blockElement.getBoundingClientRect();
         return {
           left: blockRect.left - padding,
-          top: blockRect.top - padding,
+          top: blockRect.top - padding ,
           right: blockRect.right + padding,
           bottom: blockRect.bottom + padding,
           width: blockRect.width + padding * 2,
@@ -200,45 +200,76 @@ function DemoTutorialInner({
             demoSection.scrollIntoView({ behavior: "smooth", block: "start" });
           }
 
-          // 3) After scroll, open the dashboard.
-          setTimeout(() => {
-            if (onParameterDashboardToggle) {
-              onParameterDashboardToggle(true);
-            }
+          // 3) Open the dashboard immediately
+          if (onParameterDashboardToggle) {
+            onParameterDashboardToggle(true);
+          }
 
-            // 4) Poll for the actual open dashboard element and highlight that.
-            let attempts = 0;
-            const maxAttempts = 10; // ~1s total
+          // 4) Wait for the dashboard to fully expand, then highlight it
+          // The dashboard has a 0.4s transition, and content may take time to render
+          const updateHighlight = () => {
+            // Look for the open dashboard element - MUST have expanded class
+            const dashboardElement = document.querySelector(
+              ".parameters-dropdown.expanded, .parameter-dashboard.expanded, .parameters-panel.expanded"
+            );
 
-            const tryHighlight = () => {
-              attempts += 1;
+            if (dashboardElement) {
+              // Verify it's actually expanded by checking if content is visible
+              const content = dashboardElement.querySelector(".dropdown-content");
+              const parametersList = dashboardElement.querySelector(".parameters-list");
+              const isActuallyExpanded = dashboardElement.classList.contains("expanded") &&
+                content && 
+                content.offsetHeight > 0 &&
+                dashboardElement.offsetHeight > 100; // More than just the title height
 
-              // Prefer the full dashboard container when open
-              const dashboardElement = document.querySelector(
-                ".parameter-dashboard, .parameters-panel, .parameters-dropdown"
-              );
-
-              if (dashboardElement) {
+              if (isActuallyExpanded) {
                 const padding = 12;
+                const extraBottomPadding = 12; // Extra padding at bottom to prevent cutting
+                // Always use the full container rect to include title + content
                 const rect = dashboardElement.getBoundingClientRect();
+                
+                // If parameters list exists, make sure we include its full height
+                let finalHeight = rect.height;
+                if (parametersList) {
+                  const listRect = parametersList.getBoundingClientRect();
+                  const listBottom = listRect.bottom;
+                  const containerBottom = rect.bottom;
+                  // If list extends beyond container, use list bottom
+                  if (listBottom > containerBottom) {
+                    finalHeight = listBottom - rect.top;
+                  }
+                }
+                
                 setTargetRect({
                   left: rect.left - padding,
                   top: rect.top - padding,
                   right: rect.right + padding,
-                  bottom: rect.bottom + padding,
+                  bottom: rect.top + finalHeight + extraBottomPadding,
                   width: rect.width + padding * 2,
-                  height: rect.height + padding * 2,
+                  height: finalHeight + padding * 2 + extraBottomPadding,
                 });
-                return;
+                return true; // Successfully updated
               }
+            }
+            return false; // Not ready yet
+          };
 
-              if (attempts < maxAttempts) {
-                setTimeout(tryHighlight, 50);
+          // Don't show highlight until dashboard is fully expanded
+          // Try multiple times to catch the expansion and content rendering
+          const tryHighlight = (attempt = 0) => {
+            const maxAttempts = 15; // More attempts to catch content rendering
+            if (updateHighlight() || attempt >= maxAttempts) {
+              // Even after success, recalculate once more after a delay to catch final render
+              if (attempt < maxAttempts) {
+                setTimeout(() => updateHighlight(), 200);
               }
-            };
+              return; // Success or gave up
+            }
+            setTimeout(() => tryHighlight(attempt + 1), 100);
+          };
 
-            setTimeout(tryHighlight, 50);
-          }, 500);
+          // Start trying after transition completes (400ms) + buffer
+          setTimeout(() => tryHighlight(), 500);
 
           return;
         }
@@ -523,6 +554,36 @@ function DemoTutorialInner({
           const element = document.querySelector(step.selector);
           if (element) {
             const padding = 12;
+            
+            // Special handling for parameter dashboard - only highlight if expanded
+            if (step.type === "parameter") {
+              // Only highlight if dashboard is actually expanded - don't show closed title
+              const dashboardElement = document.querySelector(
+                ".parameter-dashboard.expanded, .parameters-panel.expanded, .parameters-dropdown.expanded"
+              );
+              if (dashboardElement) {
+                // Verify it's actually expanded by checking if content is visible
+                const content = dashboardElement.querySelector(".dropdown-content");
+                const isActuallyExpanded = dashboardElement.classList.contains("expanded") &&
+                  content && 
+                  content.offsetHeight > 0 &&
+                  dashboardElement.offsetHeight > 100; // More than just the title height
+                
+                if (isActuallyExpanded) {
+                  const rect = dashboardElement.getBoundingClientRect();
+                  setTargetRect({
+                    left: rect.left - padding,
+                    top: rect.top - padding,
+                    right: rect.right + padding,
+                    bottom: rect.bottom + padding,
+                    width: rect.width + padding * 2,
+                    height: rect.height + padding * 2,
+                  });
+                }
+              }
+              return; // Always return for parameter type, even if not expanded yet
+            }
+            
             if (step.type === "backtest") {
               const backtestContainer = element.closest(".backtest") || element;
               const titleElement = backtestContainer.querySelector("h3");
@@ -597,6 +658,37 @@ function DemoTutorialInner({
           const element = document.querySelector(step.selector);
           if (!element) return;
           const padding = 12;
+          
+          // Special handling for parameter dashboard - only highlight if expanded
+          if (step.type === "parameter") {
+            // Only highlight if dashboard is actually expanded - don't show closed title
+            const dashboardElement = document.querySelector(
+              ".parameter-dashboard.expanded, .parameters-panel.expanded, .parameters-dropdown.expanded"
+            );
+            if (dashboardElement) {
+              // Verify it's actually expanded by checking if content is visible
+              const content = dashboardElement.querySelector(".dropdown-content");
+              const isActuallyExpanded = dashboardElement.classList.contains("expanded") &&
+                content && 
+                content.offsetHeight > 0 &&
+                dashboardElement.offsetHeight > 100; // More than just the title height
+              
+              if (isActuallyExpanded) {
+                const rect = dashboardElement.getBoundingClientRect();
+                setTargetRect({
+                  left: rect.left - padding,
+                  top: rect.top - padding,
+                  right: rect.right + padding,
+                  bottom: rect.bottom + padding,
+                  width: rect.width + padding * 2,
+                  height: rect.height + padding * 2,
+                });
+              }
+              return; // Always return for parameter type, even if not expanded yet
+            }
+            return; // Return without setting targetRect if dashboard not found/expanded
+          }
+          
           if (step.type === "backtest") {
             const backtestContainer = element.closest(".backtest") || element;
             const titleElement = backtestContainer.querySelector("h3");

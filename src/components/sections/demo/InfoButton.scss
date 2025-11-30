@@ -64,6 +64,23 @@
     display: block;
     line-height: 1;
     font-style: normal;
+    // Force text rendering (not emoji) on all devices including iPad
+    // Use a font that doesn't have emoji variants for this character
+    font-family: "ITC Avant Garde", "AvantGarde", "Orbitron", "Inter", "Arial Unicode MS", "Lucida Grande", sans-serif;
+    // Prevent emoji rendering on iOS/iPad - force text variant
+    -webkit-font-feature-settings: "liga" off;
+    font-feature-settings: "liga" off;
+    text-rendering: optimizeLegibility;
+    // Force text variant, not emoji
+    font-variant: normal !important;
+    // Additional iOS/iPad specific fixes
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    // Prevent iOS from using emoji rendering
+    -webkit-text-emphasis: none;
+    text-emphasis: none;
+    // Force character to render as text symbol
+    unicode-bidi: isolate;
   }
 }
 
