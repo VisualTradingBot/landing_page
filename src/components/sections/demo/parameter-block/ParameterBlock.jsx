@@ -498,6 +498,17 @@ export default function ParameterBlock({
           className={`parameter-item ${param.paramType.color} ${
             isData ? "data-parameter" : ""
           }`}
+          draggable={!isEditingLabel && !isEditingValue}
+          onDragStart={(event) => {
+            if (isEditingLabel || isEditingValue) {
+              event.preventDefault();
+              return;
+            }
+            event.dataTransfer.setData(
+              "application/reactflow",
+              JSON.stringify(buildDragPayload(param))
+            );
+          }}
         >
           <span className="parameter-label">
             <span className={`parameter-icon ${param.paramType.color}`}>
@@ -517,18 +528,11 @@ export default function ParameterBlock({
             ) : (
               <span
                 className="parameter-label-content"
-                draggable
                 onClick={() =>
                   labelEditable &&
                   startEditing(originalIndex, "label", param.label)
                 }
-                onDragStart={(event) => {
-                  event.dataTransfer.setData(
-                    "application/reactflow",
-                    JSON.stringify(buildDragPayload(param))
-                  );
-                }}
-                style={{ cursor: labelEditable ? "pointer" : "default" }}
+                style={{ cursor: labelEditable ? "pointer" : "inherit" }}
                 title={labelTitle}
               >
                 {param.label}

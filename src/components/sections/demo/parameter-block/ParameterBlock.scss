@@ -617,6 +617,12 @@
         transform: translateY(0);
         
         // Color coding for bot-received parameters
+        cursor: grab;
+        
+        &:active {
+          cursor: grabbing;
+        }
+
         &.green {
           border-left: 4px solid #10b981;
           background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, #ffffff 10%);
@@ -695,7 +701,6 @@
           flex: 1;
           font-weight: 600;
           color: #000000;
-          cursor: pointer;
           font-size: 13px;
           display: flex;
           align-items: center;
